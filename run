@@ -1,0 +1,32 @@
+#!/bin/bash
+set -e
+# cd inventario-persianas/
+# echo "hi"
+# uv run  src/inventario_persianas/main.py
+#
+# cd UI/
+# npm run dev
+#
+#
+# # Kill all background jobs when you press Ctrl+C or script exits
+# trap 'kill 0' EXIT
+#
+# # 1. Run Backend in its own isolated subshell
+# (
+#   cd inventario-persianas/ 
+#   echo "Starting Backend from $(pwd)..."
+#   uv run src/inventario_persianas/main.py
+# ) &
+#
+# # 2. Run Frontend in its own isolated subshell
+# (
+#   cd ~/programming/projects/inverntarios-persianas/Back/UI
+#   echo "Starting Frontend from $(pwd)..."
+#   npm run dev
+# ) &
+#
+# # Keep the script running to listen for Ctrl+C
+# wait
+
+
+cd inventario-persianas/ && uv run src/inventario_persianas/main.py

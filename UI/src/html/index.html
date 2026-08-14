@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/static/js/lib/datatables.min.css " rel="stylesheet" />
+    <link href="/static/css/output.css" rel="stylesheet" />
+
+    <title></title>
+  </head>
+  <body>
+    <div class="navbar bg-base-100 shadow-sm">
+      <div class="flex-1">
+        <a class="btn btn-ghost text-xl">Horvert Persianas</a>
+      </div>
+      <div class="flex-none">
+        <button class="btn btn-square btn-ghost">
+          <%= require('../assets/icons/gear.svg') %>
+        </button>
+      </div>
+    </div>
+
+    <!-- Container with 12 columns -->
+    
+<div class="grid grid-rows-[auto_1fr] gap-4 w-full h-screen">
+
+      <!-- Takes up 25% width (3 out of 12 columns) -->
+
+      <div class="flex col-span-3">
+        <!-- <button class="btn" onclick="my_modal_1.showModal()">Creart Tubo</button> -->
+
+	  <div id="btn-new-tube" class="flex bg-green-900 p-2 btn ">
+	    <p class="text-lg">Tubo</p>
+	    <span type="" class="btn w-7 h-7 btn-circle border-none bg-green-600">
+	      <%= require('../assets/icons/plus.svg') %>
+	    </span>
+	  </div>
+
+      </div>
+
+      <!-- Takes up 75% width (9 out of 12 columns) -->
+      <div class="col-span-9  overflow-auto">
+        <table id="myTable" class="display">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Open the modal using ID.showModal() method -->
+    <dialog id="my_modal_1" class="modal">
+      <div class="modal-box w-11/12 max-w-7xl">
+        <div class="flex gap-2.5 items-center">
+          <h3 class="text-lg font-bold">Agregar Tela</h3>
+          <button type="" class="btn w-7 h-7 btn-circle bg-green-900">
+            <%= require('../assets/icons/plus.svg') %>
+          </button>
+        </div>
+
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn">empty</button>
+          </form>
+        </div>
+      </div>
+    </dialog>
+
+    <script type="module" src="/static/bundle.js"></script>
+
+    <!-- <script src="{{ url_for('static', filename='js/main.js') }}"></script> -->
+  </body>
+</html>

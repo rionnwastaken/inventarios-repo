@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./static",
+    "target": "ES2022",
+    "moduleResolution": "bundler",
+    "module":"NodeNext",
+    // "types": ["node"],
+    "typeRoots": ["./node_modules/@types"] ,
+    "noEmit": false,
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+
+
+    // ... rest of your config
+  }
+}

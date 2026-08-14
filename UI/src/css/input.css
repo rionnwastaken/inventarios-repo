@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+
+  themes: winter --default, dark --prefersdark, cupcake, dracula;
+}
+
+
+@source "../src/**/*.html";
+
+:root {
+  color-scheme: light;
+}
+

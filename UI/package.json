@@ -1,0 +1,38 @@
+{
+    "name": "ui",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "module",
+    "devDependencies": {
+        "@tailwindcss/cli": "^4.3.3",
+        "@types/jquery": "^4.0.1",
+        "chokidar-cli": "^3.0.0",
+        "concurrently": "^9.2.4",
+        "copyfiles": "2.4.1",
+        "css-loader": "^7.1.4",
+        "daisyui": "^5.7.17",
+        "datatables.net-dt": "^3.0.0",
+        "html-webpack-plugin": "^5.6.8",
+        "style-loader": "^4.0.0",
+        "tailwindcss": "4.3.3",
+        "ts-loader": "^9.6.2",
+        "typescript": "^5.9.3",
+        "webpack": "^5.109.2",
+        "webpack-cli": "^7.2.2"
+    },
+    "scripts": {
+        "build": "webpack --mode production",
+        "watch:webpack": "webpack --watch",
+        "copy": "copyfiles -u 1  \"src/**/*.js\" \"src/**/*.css\" static",
+        "watch:assets": "chokidar \"src/**/*.html\" --initial -c \"npm run copy\"",
+        "tail": "npx tailwindcss -i ./src/css/input.css -o ./static/css/output.css --watch",
+        "dev": "concurrently \"npm:watch:webpack\" \"npm:watch:assets\" \"npm:tail\""
+    },
+    "dependencies": {
+        "datatables.net": "^3.0.1"
+    }
+}
