@@ -1,0 +1,410 @@
+import { getLogger } from "loglevel";
+import { Fabric, Tube } from "../../schema";
+import {
+  CatalogItem,
+  FabricData,
+  FabricExData,
+  TubeExtraD,
+} from "../../typeObj";
+import { fcolumn, tcolumn } from "../utils.ts";
+import { Api, ColumnsConfig } from "datatables.net-dt";
+import { state } from "../../state.ts";
+import { showRecycleDialog } from "../utils.ts";
+
+import DataTable from "datatables.net-dt";
+
+import TomSelect from "tom-select";
+import "tom-select/dist/css/tom-select.css";
+import { CatalogApi } from "../../api/catalog.ts";
+import { TypedEventEmitter } from "../../emitter.ts";
+import { CoreAPI } from "../../api/core.ts";
+import { RowModalEvents } from "./tubo_overview.ts";
+
+export type CraftMode =
+  "creating" | "editing_just_created" | "editing" | "normal" | "deleted";
+
+const modal_filling_data: HTMLDialogElement = document.querySelector(
+  "#modal-filling-data",
+);
+const modal_filling_data_save_btn: HTMLHeadingElement = document.querySelector(
+  "#modal-filling-data-save-btn",
+);
+
+const filling_data_close_btn: HTMLHeadingElement = document.querySelector(
+  "#filling-data-close-btn",
+);
+
+const filling_data_form: HTMLFormElement =
+  document.querySelector("#filling-data-form");
+
+const input_width: HTMLInputElement = document.querySelector(
+  "#filling-data-width",
+);
+let err_mess_width_active = false;
+
+const input_height: HTMLInputElement = document.querySelector(
+  "#filling-data-height",
+);
+let err_mess_height_active = false;
+
+input_width.addEventListener("focus", function (e) {
+  if (err_mess_width_active) {
+    err_mess_width_active = false;
+    let err_mess = document.querySelector(`#error_text_filling-data-width`);
+    err_mess.textContent = "";
+  }
+});
+
+input_height.addEventListener("focus", function (e) {
+  if (err_mess_height_active) {
+    err_mess_height_active = false;
+    let err_mess = document.querySelector(`#error_text_filling-data-height`);
+    err_mess.textContent = "";
+  }
+});
+
+export class FabricCraft {
+  public events = new TypedEventEmitter<RowModalEvents>();
+  tom_selects: Array<TomSelect>;
+  mode: CraftMode;
+  tube_id: number;
+  fabricData: FabricData;
+  private resolvePromise?: (value: FabricExData) => void;
+
+  constructor(events) {
+    this.init_bindings();
+    this.events = events;
+    this.tom_selects = new Array();
+  }
+
+  init_bindings() {
+    this.bind_dialog();
+    this.bind_save();
+    this.bind_cancel();
+  }
+
+  bind_dialog() {
+    modal_filling_data.addEventListener("submit", (e) => {
+      e.preventDefault();
+    });
+  }
+
+  bind_save() {
+    modal_filling_data_save_btn.addEventListener("click", (e) => {
+      //validation phase
+      let result = this.get_data_from_form();
+
+      if (!result.correct) {
+        return;
+      }
+
+      log.debug(`Mode when saving ${this.mode}`);
+
+      if (this.mode == "editing_just_created") {
+        this.fabricData.mode = "creating";
+        Object.assign(this.fabricData.original_fabric, result.data);
+      }
+
+      if (this.mode == "editing") {
+        Object.assign(this.fabricData.modified_fabric, result.data);
+      }
+
+      log.debug(`Correct ${result.correct}`);
+      this.resolveIt(result.data);
+    });
+  }
+
+  resolveIt(data) {
+    if (this.resolvePromise) {
+      log.debug(`Data after saving row `, data);
+      this.resolvePromise(data); // Resolves the awaiting Promise
+      this.resolvePromise = undefined; // Clean up reference
+    }
+
+    for (let tom of this.tom_selects) {
+      tom.clear();
+    }
+    modal_filling_data.close();
+    filling_data_form.reset();
+  }
+
+  bind_cancel() {
+    filling_data_close_btn.addEventListener("click", (e) => {
+      modal_filling_data.close();
+      filling_data_form.reset();
+
+      if (this.resolvePromise) {
+        this.resolvePromise(null); // Resolves the awaiting Promise
+        this.resolvePromise = undefined; // Clean up reference
+      }
+
+      for (let tom of this.tom_selects) {
+        tom.clear();
+      }
+    });
+  }
+
+  get_data_from_form() {
+    let data: Fabric = {};
+    const optional_tables = state.catalagoData.fabric_optional_tables;
+    let isValid = true;
+
+    let width = input_width.value;
+    if (width === "") {
+      log.debug(`width is empty`);
+      let el = document.querySelector("#error_text_filling-data-width");
+      el.textContent = "*Obligatorio";
+      err_mess_width_active = true;
+      isValid = false;
+    }
+
+    let height = input_height.value;
+    if (height === "") {
+      log.debug(`height is empty`);
+      let el = document.querySelector("#error_text_filling-data-height");
+      el.textContent = "*Obligatorio";
+
+      err_mess_height_active = true;
+      isValid = false;
+    }
+
+    for (const tom of this.tom_selects) {
+      let table_name = tom.customData.table_name;
+      let item = tom.getValue();
+      let item_option = tom.options[item];
+      let optional: Boolean;
+
+      let fabric_column_name = fabric_column_name_from_tablename(table_name);
+      if (fabric_column_name) {
+        data[fabric_column_name] = item_option ? item_option.value : null;
+      }
+
+      // row_data[table_name] = item_option ? item_option : null;
+
+      if (optional_tables[table_name]) {
+        optional = optional_tables[table_name].optional;
+      } else {
+        log.error(
+          `TableName ${table_name} not in optional_tables ${optional_tables}`,
+        );
+        continue;
+      }
+
+      if (!optional && item === "") {
+        log.debug(`Found not optional ${table_name}`);
+        let err_mess = document.querySelector(`#error_text_${table_name}`);
+        err_mess.textContent = "*Obligatorio";
+        tom.customData.err_message_active = true;
+        isValid = false;
+      }
+    }
+
+    const now = new Date().toISOString();
+    data["created_at"] = now;
+    data["updated_at"] = now;
+
+    data["tube_id"] = this.tube_id;
+    data["original_width"] = parseFloat(width);
+    data["original_height"] = parseFloat(height);
+
+    return {
+      data: data,
+      correct: isValid,
+    };
+  }
+
+  showCreating(tube_id: number): Promise<any> {
+    return new Promise((resolve) => {
+      this.resolvePromise = resolve;
+      this.mode = "creating";
+      this.tube_id = tube_id;
+
+      modal_filling_data.showModal();
+    });
+  }
+
+  showEditing_created(fabricData: FabricData): Promise<any> {
+    return new Promise((resolve) => {
+      this.resolvePromise = resolve;
+      this.fabricData = fabricData;
+      this.mode = "editing_just_created";
+
+      this.insert_data_to_tom_selects(fabricData.original_fabric);
+      modal_filling_data.showModal();
+    });
+  }
+
+  showEditing(fabricData: FabricData): Promise<any> {
+    return new Promise((resolve) => {
+      this.resolvePromise = resolve;
+      this.fabricData = fabricData;
+
+      this.mode = "editing";
+      //Create editing copy just in case if the user decides to save
+      if (!fabricData.modified_fabric) {
+        fabricData.modified_fabric = structuredClone(
+          fabricData.original_fabric,
+        );
+      }
+      this.insert_data_to_tom_selects(fabricData.modified_fabric);
+      modal_filling_data.showModal();
+      //FIll data
+    });
+  }
+
+  insert_data_to_tom_selects(data: Fabric) {
+    for (let tom of this.tom_selects) {
+      tom.clear();
+      let table_name = tom.customData.table_name;
+      let column_id = table2column[table_name];
+      let value = data[column_id];
+
+      if (value) {
+        tom.setValue(value);
+        tom.refreshItems();
+      }
+    }
+
+    input_width.value = data.original_width;
+    input_height.value = data.original_width;
+  }
+
+  get_tom_select_id(tablename) {
+    return `#select-${tablename}`;
+  }
+
+  createToms<
+    T extends {
+      id: number;
+      name?: string;
+    },
+  >(
+    selectId: string,
+    items: T[],
+    labelKey: keyof T = "name",
+    table_name: string,
+  ) {
+    // return
+    log.debug(`id is ${selectId} and table ${table_name}`);
+    const tom = new TomSelect(`${selectId}`, {
+      create: true,
+      openOnFocus: true,
+      selectOnTab: true,
+      refreshThrottle: 0,
+
+      onOptionAdd: async (value, data) =>
+        this.request_to_create_value_on_table(tom, value, table_name),
+    });
+
+    tom.customData = {
+      table_name: table_name,
+      err_message_active: false,
+    };
+
+    tom.control_input.addEventListener("input", function (e) {
+      const pos = e.target.selectionStart;
+      e.target.value = e.target.value.toLowerCase();
+      e.target.setSelectionRange(pos, pos);
+    });
+
+    tom.control_input.addEventListener("focus", function (e) {
+      if (tom.customData.err_message_active) {
+        tom.customData.err_message_active = false;
+        let err_mess = document.querySelector(`#error_text_${table_name}`);
+        err_mess.textContent = "";
+      }
+    });
+
+    console.log(items);
+
+    items.forEach((item) => {
+      let display = item.name ? item.name : item.id;
+      tom.addOption({ value: item.id, text: display, table_name: table_name });
+      log.debug({ value: item.id, text: display });
+    });
+
+    this.tom_selects.push(tom);
+    tom.refreshOptions();
+    tom.close();
+  }
+
+  async request_to_create_value_on_table(tom: TomSelect, value, table_name) {
+    const userConfirmed = await showRecycleDialog({
+      header: `El elemento ${value} no existe en la tabla`,
+      message: "Desea crearlo?",
+      cancelText: "No",
+      confirmText: "Si",
+    });
+
+    if (userConfirmed) {
+      console.log("User clicked confirm action");
+      const res = await CatalogApi.addItem(table_name, value);
+
+      if (res.success) {
+        const item = res.data["item"];
+
+        this.events.emit("catalog_item:added", item);
+        tom.removeOption(value);
+        tom.addOption({
+          value: item.id,
+          text: item.name,
+        });
+        tom.setValue(item.id);
+        tom.refreshItems();
+        log.debug(item);
+      }
+    } else {
+      tom.removeOption(value);
+      tom.clear();
+      console.log("User cancelled or closed the modal");
+    }
+  }
+}
+
+const table2column = new Map();
+const column2table = new Map();
+
+table2column["color"] = "color_id";
+table2column["blind_model"] = "blind_model_id";
+table2column["fabric_classification"] = "classification_id";
+table2column["supplier"] = "supplier_id";
+
+viceversa_map(table2column, column2table);
+
+function viceversa_map(
+  map1: Map<string, string>,
+  map2: Map<string, string>,
+): void {
+  // Populate map2 with the inverse of map1 (key -> value becomes value -> key)
+  for (const [key, value] of map1.entries()) {
+    map2.set(value, key);
+  }
+
+  // Populate map1 with the inverse of map2
+  for (const [key, value] of map2.entries()) {
+    map1.set(value, key);
+  }
+}
+
+function fabric_column_name_from_tablename(tablename: string): string | null {
+  const column_name = table2column[tablename];
+
+  if (!column_name) {
+    log.error(`Tablename ${tablename} was not found in map ${table2column}`);
+    return null;
+  }
+
+  return column_name;
+}
+
+
+/*
+Modes
+Creating -> fabric created by clickin button
+Editing -> row loaded into table double clicked and modified
+notmal -> rows loaded into table
+Deleted
+
+if a fabric is created, it can be edited but it will only do a sql insert clause cause its not in db yet
+
+  */
