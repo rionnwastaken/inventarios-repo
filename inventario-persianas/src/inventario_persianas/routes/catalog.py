@@ -1,7 +1,8 @@
 from flask import Blueprint,request
 from sqlalchemy import Delete, Select, delete
+from sqlmodel import SQLModel, select
 import inventario_persianas.services.catalogs as catalago
-from inventario_persianas.model import Color, db
+from inventario_persianas.model import BlindModel, Color, FabricClassification, LocationImage, Supplier, db
 import inventario_persianas.model as mod
 import logging
 
@@ -85,3 +86,82 @@ def colors_bulk_remove():
     return {"count_deleted":len(id_colors)}, 200
 
 
+@catalago_bp.get('/all/')
+def get_all_catalago():
+    models = [
+        FabricClassification,
+        BlindModel,
+        Supplier,
+        Color,
+        LocationImage,
+    ]
+
+    catalog_data = {
+        model.__tablename__: 
+            [
+            obj.model_dump()
+            for obj in db.session.scalars(select(model))
+        ]
+        
+        for model in models
+    }
+
+    return catalog_data, 200
+
+
+@catalago_bp.get('/fabric/optional_table_names_attributes')
+def get_optional_attributs_of_fabric():
+
+    models = [
+        ( FabricClassification ,False),
+        (BlindModel,True),
+        (Supplier,True),
+        (Color,True),
+    ]
+
+    catalog_data = {
+        model.__tablename__: {
+            "optional" :optional
+        }
+        for model,optional in models
+    }
+
+
+    return catalog_data, 200
+
+
+
+
+@catalago_bp.post('/add/')
+def add_to_catalago():
+
+    data = request.get_json()
+
+    if not data:
+        return {"error":"Data was not passed"},400
+
+    table_name = data.get("table_name")
+    value:str = data.get("value")
+
+    cat_arr:list[type[SQLModel]] = [Color,Supplier,FabricClassification,BlindModel]
+    cat_map = {c.__tablename__:c for c in cat_arr}
+
+    if not value:
+        return {"error":"value key is None"},400
+
+
+    if table_name not in cat_map:
+        return {"error":f"table_name {table_name} does not exist"},400
+
+    cleaned_value = value.lower()
+
+    catobj = cat_map[table_name]
+    obj = catobj(name=value)
+    db.session.add(obj)
+    db.session.flush()
+    obj_json = obj.model_dump()
+    obj_json["table_name"] = table_name
+
+    db.session.commit()
+
+    return {"success":"Catalago item has been created","item":obj_json},200
