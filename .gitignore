@@ -3,6 +3,8 @@ out/
 *.pyc
 static/
 
+schema.ts
+query.sql
 icons/
 lib/
 

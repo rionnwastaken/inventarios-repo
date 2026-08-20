@@ -22,7 +22,10 @@
         "ts-loader": "^9.6.2",
         "typescript": "^5.9.3",
         "webpack": "^5.109.2",
-        "webpack-cli": "^7.2.2"
+        "webpack-cli": "^7.2.2",
+
+        "prettier": "^3.7.4",
+        "prettier-plugin-jinja-template": "^2.1.0"
     },
     "scripts": {
         "build": "webpack --mode production",
@@ -33,6 +36,8 @@
         "dev": "concurrently \"npm:watch:webpack\" \"npm:watch:assets\" \"npm:tail\""
     },
     "dependencies": {
-        "datatables.net": "^3.0.1"
+        "datatables.net": "^3.0.1",
+        "loglevel": "^1.9.2",
+        "tom-select":"^2.6.2"
     }
 }
