@@ -1,15 +1,57 @@
+
+import {getLogger } from "loglevel";
+let log = getLogger("app")
+log.setLevel("DEBUG")
+globalThis.log = log;
+
 import { CatalogApi } from "./api/catalog.ts";
+
+
 import { CoreAPI } from "./api/core.ts";
+import { Fabric, Tube } from "./schema.ts";
+
+import {ColumnsConfig} from 'datatables.net-dt';
+
+
+import TomSelect from "tom-select";
+
+
+import { controlPanel } from "./ui/control_panel.ts";
+import { tableController } from "./ui/table_controller.ts";
+import { rowModal } from "./ui/tubo_view/tubo_overview.ts";
 
 import '../css/input.css';
+import { TableView } from "./typeObj.ts";
+import { state } from "./state.ts";
 
 
-const btn_new_tube = document.querySelector("#btn-new-tube")
 
 
-btn_new_tube.addEventListener("click", async () => {
-   const data = await CoreAPI.newTube()
-   console.log(data)
+state.init()
+
+
+controlPanel.events.on("view:changed",(...args) => {
+  console.log("hey?")
+  tableController.toggle_group_colums(...args)
+})
+
+
+
+tableController.events.on("tube:dblclick",(...args) => {
+  rowModal.cb_open_modal_tube(...args)
+})
+
+tableController.events.on("fabric:dblclick",(...args) => {
+  rowModal.cb_open_modal_fabric(...args)
+})
+
+state.events.on("catalago:loaded",() => {
+  console.log("fuck")
+  rowModal.cb_initModalDropdowns()
+})
+
+rowModal.events.on("catalog_item:added",(...args) => {
+  state.cb_catalog_item_added(...args)
 })
 
 
@@ -17,97 +59,7 @@ btn_new_tube.addEventListener("click", async () => {
 document.addEventListener("DOMContentLoaded", () => {
 });
 
-import DataTable from "datatables.net-dt";
-import "datatables.net-dt/css/dataTables.dataTables.css";
 
-// Initialize DataTable
-
-function Employee ( name, position, salary, office ) {
-    this.name = name;
-    this.position = position;
-    this.salary = salary;
-    this._office = office;
-
-    this.office = function () {
-        return this._office;
-    }
-};
-
-
-function money(data, type, setVal, meta) {
-    // 1. SETTER MODE: DataTables is writing a new value
-
-    let salary = data
-
-    if (type === 'set') {
-        // Strip '$' or commas if passed as string, save raw number to row
-        salary = typeof setVal === 'string' 
-            ? parseFloat(setVal.replace(/[^0-9.-]+/g, '')) 
-            : setVal;
-        return;
-    }
-
-    // 2. DISPLAY MODE: What the user sees on screen
-    if (type === 'display') {
-        // Formats 3120 as "$3,120"
-        return '$' + Number(salary).toLocaleString();
-    }
-
-    // 3. SORT / FILTER / TYPE MODE: Return raw number
-    // Returning 3120 here ensures DataTables sorts numerically ($500 comes before $3,120)
-    return salary;
-}
-
-const table = new DataTable('#myTable', {
-    // data: [
-    //     new Employee( "Tiger Nixon", "System Architect", 3120, "Edinburgh" ),
-    //     new Employee( "Tiger Nixon", "System Architect", 3120, "Edinburgh" ),
-    //     new Employee( "Tiger Nixon", "System Architect", 3120, "Edinburgh" ),
-    //     new Employee( "Garrett Winters", "Director", 5300, "Edinburgh" )
-    // ],
-    columns: [
-        { data: 'name', title:"color",width:"0.4" },
-	  //      { data: 'salary', title:"salary",render(data, type, row, meta) {
-	  // return money(data,type,row,meta)
-	  //
-	  //      },},
-	  //      { data: 'office', title:"office"  },
-	  //      { data: 'position', title:"position"  }
-    ],
-    ajax: async function (data,cb,settings) {
-      try {
-            let res = await CatalogApi.getColors()
-
-	    console.log("Ajasx")
-	    console.log(res)
-	    console.log(res.data)
-
-	    if (res.success) {
-	      cb({
-		  data: res.data.data
-	      });
-
-	    }
-
-        } catch (error) {
-            console.error("Fetch failed:", error);
-        }
-
-    },
-    paging:false,
-    autoWidth:true,
-
-});
-
-
-
-let rows = table.rows((idx,data) => data.salary <= 4000)
-let data = rows.data()
-
-
-data.each((value,index,dt) => {
-  console.log(value)
-})
 
 
 
