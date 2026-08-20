@@ -10,7 +10,9 @@
     "noEmit": false,
     "allowImportingTsExtensions": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "allowUmdGlobalAccess": true
+
 
 
     // ... rest of your config
