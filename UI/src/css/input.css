@@ -2,7 +2,7 @@
 
 @plugin "daisyui" {
 
-  themes: winter --default, dark --prefersdark, cupcake, dracula;
+  themes: winter --default, winter --prefersdark, cupcake, dracula;
 }
 
 
@@ -12,3 +12,20 @@
   color-scheme: light;
 }
 
+
+
+
+table.dataTable th.dt-left, 
+table.dataTable td.dt-left {
+    text-align: left !important;
+}
+
+/* Add to your global CSS stylesheet */
+.ts-dropdown {
+  z-index: 9999 !important;
+}
+
+
+.input-lowercase {
+    text-transform: lowercase;
+}
