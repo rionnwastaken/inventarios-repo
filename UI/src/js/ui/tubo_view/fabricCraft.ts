@@ -19,7 +19,12 @@ import { CatalogApi } from "../../api/catalog.ts";
 import { TypedEventEmitter } from "../../emitter.ts";
 import { CoreAPI } from "../../api/core.ts";
 import { RowModalEvents } from "./tubo_overview.ts";
-import { fabric_column_name_from_tablename, isFabricUnchanged, request_to_create_value_on_table, viceversa_map } from "./utils.ts";
+import {
+  fabric_column_name_from_tablename,
+  isFabricUnchanged,
+  request_to_create_value_on_table,
+  viceversa_map,
+} from "./utils.ts";
 
 export type FabricState = "created" | "edited" | "normal" | "deleted";
 
@@ -37,38 +42,41 @@ const modal_filling_data_save_btn: HTMLHeadingElement = document.querySelector(
   "#modal-filling-data-save-btn",
 );
 
-const filling_data_close_btn: HTMLHeadingElement = document.querySelector(
+const close_btn: HTMLHeadingElement = document.querySelector(
   "#filling-data-close-btn",
 );
 
 const filling_data_form: HTMLFormElement =
   document.querySelector("#filling-data-form");
 
-const input_width: HTMLInputElement = document.querySelector(
+
+function init_input(el_id, err_id) {
+  const el: HTMLInputElement = document.querySelector(el_id);
+
+  let data = {
+    active: false,
+    input: el,
+  };
+
+  el.addEventListener("focus", function (e) {
+    if (data.active) {
+      data.active = false;
+      let err_mess = document.querySelector(`#error_text_filling-data-width`);
+      err_mess.textContent = "";
+    }
+  });
+
+  return data;
+}
+let width_obj = init_input(
   "#filling-data-width",
+  `#error_text_filling-data-width`,
 );
-let err_mess_width_active = false;
-
-const input_height: HTMLInputElement = document.querySelector(
+let height_obj = init_input(
   "#filling-data-height",
+  `#error_text_filling-data-height`,
 );
-let err_mess_height_active = false;
 
-input_width.addEventListener("focus", function (e) {
-  if (err_mess_width_active) {
-    err_mess_width_active = false;
-    let err_mess = document.querySelector(`#error_text_filling-data-width`);
-    err_mess.textContent = "";
-  }
-});
-
-input_height.addEventListener("focus", function (e) {
-  if (err_mess_height_active) {
-    err_mess_height_active = false;
-    let err_mess = document.querySelector(`#error_text_filling-data-height`);
-    err_mess.textContent = "";
-  }
-});
 
 export class FabricCraft {
   public events = new TypedEventEmitter<RowModalEvents>();
@@ -120,8 +128,8 @@ export class FabricCraft {
       if (this.mode == "editing") {
         Object.assign(this.fabricData.modified_fabric, result.data);
 
-	log.debug("Assignind data to modified, the data:",result.data)
-	log.debug("modified looks now like",this.fabricData.modified_fabric)
+        log.debug("Assignind data to modified, the data:", result.data);
+        log.debug("modified looks now like", this.fabricData.modified_fabric);
 
         if (
           isFabricUnchanged(
@@ -134,7 +142,9 @@ export class FabricCraft {
           this.fabricData.mode = "edited";
         }
 
-	log.debug(`Mode assign to fabric in editing mode is ${this.fabricData.mode}`)
+        log.debug(
+          `Mode assign to fabric in editing mode is ${this.fabricData.mode}`,
+        );
       }
 
       if (this.mode == "creating") {
@@ -158,26 +168,22 @@ export class FabricCraft {
   }
 
   clean_dialog() {
+    if (this.resolvePromise) {
+      this.resolvePromise(null); // Resolves the awaiting Promise
+      this.resolvePromise = undefined; // Clean up reference
+    }
+
     for (let tom of this.tom_selects) {
       tom.clear();
+      tom.refreshItems();
     }
     modal_filling_data.close();
     filling_data_form.reset();
   }
 
   bind_cancel() {
-    filling_data_close_btn.addEventListener("click", (e) => {
-      modal_filling_data.close();
-      filling_data_form.reset();
-
-      if (this.resolvePromise) {
-        this.resolvePromise(null); // Resolves the awaiting Promise
-        this.resolvePromise = undefined; // Clean up reference
-      }
-
-      for (let tom of this.tom_selects) {
-        tom.clear();
-      }
+    close_btn.addEventListener("click", (e) => {
+      this.clean_dialog();
     });
   }
 
@@ -186,22 +192,22 @@ export class FabricCraft {
     const optional_tables = state.catalagoData.fabric_optional_tables;
     let isValid = true;
 
-    let width = input_width.value;
+    let width = width_obj.input.value;
     if (width === "") {
       log.debug(`width is empty`);
       let el = document.querySelector("#error_text_filling-data-width");
       el.textContent = "*Obligatorio";
-      err_mess_width_active = true;
+      width_obj.active = true;
       isValid = false;
     }
 
-    let height = input_height.value;
+    let height = height_obj.input.value;
     if (height === "") {
       log.debug(`height is empty`);
       let el = document.querySelector("#error_text_filling-data-height");
       el.textContent = "*Obligatorio";
 
-      err_mess_height_active = true;
+      height_obj.active = true;
       isValid = false;
     }
 
@@ -211,10 +217,13 @@ export class FabricCraft {
       let item_option = tom.options[item];
       let optional: Boolean;
 
-      let fabric_column_name = fabric_column_name_from_tablename(table2column,table_name);
+      let fabric_column_name = fabric_column_name_from_tablename(
+        table2column,
+        table_name,
+      );
       if (fabric_column_name) {
         data[fabric_column_name] = item_option ? item_option.value : null;
-	log.debug(`Column name ${fabric_column_name} and item `,item_option)
+        log.debug(`Column name ${fabric_column_name} and item `, item_option);
       }
 
       // row_data[table_name] = item_option ? item_option : null;
@@ -251,23 +260,34 @@ export class FabricCraft {
     };
   }
 
-  showEditing(fabricData: FabricData,actionState:ActionState): Promise<any> {
+  showCreating(fabricData: FabricData, tube_id: number): Promise<any> {
     return new Promise((resolve) => {
       this.resolvePromise = resolve;
       this.fabricData = fabricData;
-      this.mode = actionState
-      this.tube_id = fabricData.original_fabric.tube_id
+      this.mode = "creating";
+      this.tube_id = tube_id;
+      modal_filling_data.showModal();
+    });
+  }
+
+  show(fabricData: FabricData, actionState: ActionState): Promise<any> {
+    return new Promise((resolve) => {
+      this.resolvePromise = resolve;
+      this.fabricData = fabricData;
+      this.mode = actionState;
+      this.tube_id = fabricData.original_fabric.tube_id;
       //Create editing copy just in case if the user decides to save
 
-      if (actionState == "editing" && !fabricData.modified_fabric) {
-        fabricData.modified_fabric = structuredClone(
-          fabricData.original_fabric,
-        );
-
-	log.debug("clone of this has ",fabricData.modified_fabric)
-	this.insert_data_to_tom_selects(fabricData.modified_fabric);
-      }else {
-	this.insert_data_to_tom_selects(fabricData.original_fabric);
+      if (actionState == "editing") {
+        if (!fabricData.modified_fabric) {
+          fabricData.modified_fabric = structuredClone(
+            fabricData.original_fabric,
+          );
+          log.debug("clone of this has ", fabricData.modified_fabric);
+        }
+        this.insert_data_to_tom_selects(fabricData.modified_fabric);
+      } else {
+        this.insert_data_to_tom_selects(fabricData.original_fabric);
       }
       modal_filling_data.showModal();
     });
@@ -286,8 +306,8 @@ export class FabricCraft {
       }
     }
 
-    input_width.value = data.original_width;
-    input_height.value = data.original_height;
+    width_obj.input.value = data.original_width;
+    height_obj.input.value = data.original_height;
   }
 
   get_tom_select_id(tablename) {
@@ -348,7 +368,6 @@ export class FabricCraft {
     tom.refreshOptions();
     tom.close();
   }
-
 }
 
 const table2column = new Map();
@@ -360,8 +379,6 @@ table2column["fabric_classification"] = "classification_id";
 table2column["supplier"] = "supplier_id";
 
 viceversa_map(table2column, column2table);
-
-
 
 /*
 Modes

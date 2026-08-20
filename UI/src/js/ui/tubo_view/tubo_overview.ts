@@ -396,12 +396,11 @@ class RowModal {
 
         //We are passing data by reference
         if (data.mode == "created") {
-          await this.fabricCraft.showEditing(data,"editing_created");
-          // await this.fabricCraft.showEditing_created(data);
+          await this.fabricCraft.show(data,"editing_created");
         }
 
         if (data.mode == "normal" || data.mode == "edited") {
-          await this.fabricCraft.showEditing(data,"editing");
+          await this.fabricCraft.show(data,"editing");
         }
 
         log.info("Redrawing table");
