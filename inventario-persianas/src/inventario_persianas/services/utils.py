@@ -4,14 +4,19 @@ from sqlalchemy.orm import Session
 from sqlalchemy import Delete
 from inventario_persianas.model import AuditLog, Color, Supplier, Location, BlindModel, FabricClassification
 from inventario_persianas.model import Color, db
+from typing import Literal
+
 
 
 from typing import Optional, Dict, Any
 
-from inventario_persianas.types import Change
+from inventario_persianas.app_types import Change
 
+
+
+type Action = Literal["Insert", "Edit", "Delete","Update"]
 def create_audit_log(
-    action: str,
+    action: Action,
     target_table: str,
     target_id: int,
     user_info: Optional[str] = None,
