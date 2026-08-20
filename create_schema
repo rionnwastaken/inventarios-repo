@@ -1,0 +1,3 @@
+#!/bin/bash
+cd inventario-persianas/
+uv run pydantic2ts --module ./src/inventario_persianas/model.py --output ../UI/src/js/schema.ts
