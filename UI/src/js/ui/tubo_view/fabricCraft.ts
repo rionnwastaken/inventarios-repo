@@ -19,9 +19,16 @@ import { CatalogApi } from "../../api/catalog.ts";
 import { TypedEventEmitter } from "../../emitter.ts";
 import { CoreAPI } from "../../api/core.ts";
 import { RowModalEvents } from "./tubo_overview.ts";
+import { fabric_column_name_from_tablename, isFabricUnchanged, request_to_create_value_on_table, viceversa_map } from "./utils.ts";
 
-export type CraftMode =
-  "creating" | "editing_just_created" | "editing" | "normal" | "deleted";
+export type FabricState = "created" | "edited" | "normal" | "deleted";
+
+export type ActionState = "creating" | "editing" | "editing_created";
+
+const fabric_action_map: Partial<Record<FabricState, ActionState>> = {
+  created: "creating",
+  edited: "editing",
+};
 
 const modal_filling_data: HTMLDialogElement = document.querySelector(
   "#modal-filling-data",
@@ -66,7 +73,7 @@ input_height.addEventListener("focus", function (e) {
 export class FabricCraft {
   public events = new TypedEventEmitter<RowModalEvents>();
   tom_selects: Array<TomSelect>;
-  mode: CraftMode;
+  mode: ActionState;
   tube_id: number;
   fabricData: FabricData;
   private resolvePromise?: (value: FabricExData) => void;
@@ -87,6 +94,10 @@ export class FabricCraft {
     modal_filling_data.addEventListener("submit", (e) => {
       e.preventDefault();
     });
+
+    modal_filling_data.addEventListener("close", (event) => {
+      this.clean_dialog();
+    });
   }
 
   bind_save() {
@@ -99,14 +110,36 @@ export class FabricCraft {
       }
 
       log.debug(`Mode when saving ${this.mode}`);
+      // this.fabricData.mode = this.mode
 
-      if (this.mode == "editing_just_created") {
-        this.fabricData.mode = "creating";
+      if (this.mode == "editing_created") {
+        this.fabricData.mode = "created";
         Object.assign(this.fabricData.original_fabric, result.data);
       }
 
       if (this.mode == "editing") {
         Object.assign(this.fabricData.modified_fabric, result.data);
+
+	log.debug("Assignind data to modified, the data:",result.data)
+	log.debug("modified looks now like",this.fabricData.modified_fabric)
+
+        if (
+          isFabricUnchanged(
+            this.fabricData.original_fabric,
+            this.fabricData.modified_fabric,
+          )
+        ) {
+          this.fabricData.mode = "normal";
+        } else {
+          this.fabricData.mode = "edited";
+        }
+
+	log.debug(`Mode assign to fabric in editing mode is ${this.fabricData.mode}`)
+      }
+
+      if (this.mode == "creating") {
+        this.fabricData.mode = "created";
+        this.fabricData.original_fabric = result.data;
       }
 
       log.debug(`Correct ${result.correct}`);
@@ -116,11 +149,15 @@ export class FabricCraft {
 
   resolveIt(data) {
     if (this.resolvePromise) {
-      log.debug(`Data after saving row `, data);
+      // log.debug(`Data after saving row `, data);
       this.resolvePromise(data); // Resolves the awaiting Promise
       this.resolvePromise = undefined; // Clean up reference
     }
 
+    this.clean_dialog();
+  }
+
+  clean_dialog() {
     for (let tom of this.tom_selects) {
       tom.clear();
     }
@@ -174,9 +211,10 @@ export class FabricCraft {
       let item_option = tom.options[item];
       let optional: Boolean;
 
-      let fabric_column_name = fabric_column_name_from_tablename(table_name);
+      let fabric_column_name = fabric_column_name_from_tablename(table2column,table_name);
       if (fabric_column_name) {
         data[fabric_column_name] = item_option ? item_option.value : null;
+	log.debug(`Column name ${fabric_column_name} and item `,item_option)
       }
 
       // row_data[table_name] = item_option ? item_option : null;
@@ -213,42 +251,25 @@ export class FabricCraft {
     };
   }
 
-  showCreating(tube_id: number): Promise<any> {
-    return new Promise((resolve) => {
-      this.resolvePromise = resolve;
-      this.mode = "creating";
-      this.tube_id = tube_id;
-
-      modal_filling_data.showModal();
-    });
-  }
-
-  showEditing_created(fabricData: FabricData): Promise<any> {
+  showEditing(fabricData: FabricData,actionState:ActionState): Promise<any> {
     return new Promise((resolve) => {
       this.resolvePromise = resolve;
       this.fabricData = fabricData;
-      this.mode = "editing_just_created";
-
-      this.insert_data_to_tom_selects(fabricData.original_fabric);
-      modal_filling_data.showModal();
-    });
-  }
-
-  showEditing(fabricData: FabricData): Promise<any> {
-    return new Promise((resolve) => {
-      this.resolvePromise = resolve;
-      this.fabricData = fabricData;
-
-      this.mode = "editing";
+      this.mode = actionState
+      this.tube_id = fabricData.original_fabric.tube_id
       //Create editing copy just in case if the user decides to save
-      if (!fabricData.modified_fabric) {
+
+      if (actionState == "editing" && !fabricData.modified_fabric) {
         fabricData.modified_fabric = structuredClone(
           fabricData.original_fabric,
         );
+
+	log.debug("clone of this has ",fabricData.modified_fabric)
+	this.insert_data_to_tom_selects(fabricData.modified_fabric);
+      }else {
+	this.insert_data_to_tom_selects(fabricData.original_fabric);
       }
-      this.insert_data_to_tom_selects(fabricData.modified_fabric);
       modal_filling_data.showModal();
-      //FIll data
     });
   }
 
@@ -266,7 +287,7 @@ export class FabricCraft {
     }
 
     input_width.value = data.original_width;
-    input_height.value = data.original_width;
+    input_height.value = data.original_height;
   }
 
   get_tom_select_id(tablename) {
@@ -293,7 +314,7 @@ export class FabricCraft {
       refreshThrottle: 0,
 
       onOptionAdd: async (value, data) =>
-        this.request_to_create_value_on_table(tom, value, table_name),
+        request_to_create_value_on_table(tom, value, table_name),
     });
 
     tom.customData = {
@@ -328,37 +349,6 @@ export class FabricCraft {
     tom.close();
   }
 
-  async request_to_create_value_on_table(tom: TomSelect, value, table_name) {
-    const userConfirmed = await showRecycleDialog({
-      header: `El elemento ${value} no existe en la tabla`,
-      message: "Desea crearlo?",
-      cancelText: "No",
-      confirmText: "Si",
-    });
-
-    if (userConfirmed) {
-      console.log("User clicked confirm action");
-      const res = await CatalogApi.addItem(table_name, value);
-
-      if (res.success) {
-        const item = res.data["item"];
-
-        this.events.emit("catalog_item:added", item);
-        tom.removeOption(value);
-        tom.addOption({
-          value: item.id,
-          text: item.name,
-        });
-        tom.setValue(item.id);
-        tom.refreshItems();
-        log.debug(item);
-      }
-    } else {
-      tom.removeOption(value);
-      tom.clear();
-      console.log("User cancelled or closed the modal");
-    }
-  }
 }
 
 const table2column = new Map();
@@ -371,31 +361,6 @@ table2column["supplier"] = "supplier_id";
 
 viceversa_map(table2column, column2table);
 
-function viceversa_map(
-  map1: Map<string, string>,
-  map2: Map<string, string>,
-): void {
-  // Populate map2 with the inverse of map1 (key -> value becomes value -> key)
-  for (const [key, value] of map1.entries()) {
-    map2.set(value, key);
-  }
-
-  // Populate map1 with the inverse of map2
-  for (const [key, value] of map2.entries()) {
-    map1.set(value, key);
-  }
-}
-
-function fabric_column_name_from_tablename(tablename: string): string | null {
-  const column_name = table2column[tablename];
-
-  if (!column_name) {
-    log.error(`Tablename ${tablename} was not found in map ${table2column}`);
-    return null;
-  }
-
-  return column_name;
-}
 
 
 /*
