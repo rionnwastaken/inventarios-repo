@@ -1,0 +1,189 @@
+import { CatalogApi } from "../api/catalog.ts";
+import { CoreAPI } from "../api/core.ts";
+import { Fabric, Tube } from "../schema.ts";
+
+import { Api, ColumnsConfig } from "datatables.net-dt";
+import { TableView, TubeExtraD as TubeExtraD, ViewMode } from "../typeObj.ts";
+import { TypedEventEmitter } from "../emitter.ts";
+
+import DataTable from "datatables.net-dt";
+
+import "datatables.net-dt/css/dataTables.dataTables.css";
+import { fcolumn, tcolumn } from "./utils.ts";
+import { state } from "../state.ts";
+//TODO ON TUBO ADD BUTTON, add tube to table and refresh it
+
+
+
+
+const tbody = document.querySelector("#myTable tbody");
+
+type TubeColumns = ColumnsConfig & { data: keyof Tube };
+
+export interface TableControllerEvents {
+  // "row:dblclick": (tube_data: TubeExtraD, fabrics: Fabric[]) => void;
+  "tube:dblclick": (tube_data: TubeExtraD) => void;
+  "fabric:dblclick": (fabric: Fabric) => void;
+}
+
+class TableController {
+  table: Api<TubeExtraD | Fabric>;
+  fabricColumns: (ColumnsConfig & { data: keyof Tube })[];
+  public events = new TypedEventEmitter<TableControllerEvents>();
+
+  constructor() {
+    this.init_columns()
+    this.init_table();
+    this.init_visible_group();
+    this.init_bindings();
+  }
+
+  init_columns() {
+    this.fabricColumns = [
+      tcolumn("id", "Tubo ID"),
+      tcolumn("fabric_count", "Cantidad Telas"),
+      tcolumn("fabric_count", "Ubicacion ID", {
+        render: (data, type, row, meta) => {
+          if (type === "display") {
+            let text = data ? data : -1;
+            return `${text}`;
+          }
+        },
+      }),
+      // tcolumn("location_id","Ubicacion"),
+      tcolumn("rectified", "Retificado"),
+      tcolumn("updated_at", "Ultima actualizacion", {
+        render: (data, type, row, meta) => {
+          if (type === "display") {
+            const date = new Date(data);
+            return date.toLocaleString("es-MX", { hour12: true });
+          }
+        },
+      }),
+
+      // Fabric columns
+      fcolumn("id", "Fabric"),
+    ];
+  }
+
+  init_table() {
+    this.table = new DataTable("#myTable", {
+      columns: this.fabricColumns,
+      ajax: this.load_data,
+      paging: false,
+      autoWidth: true,
+
+      order: { name: "updated_at", dir: "desc" },
+      columnDefs: [
+        {
+          targets: "_all", // Zero-based index of the columns you want to left-align
+          className: "dt-left", // Applies left-alignment to both header and body cells
+        },
+      ],
+    });
+  }
+
+  async load_data(data, cb, settings) {
+    try {
+      let res = await CoreAPI.recentTubes();
+
+      if (res.success) {
+
+
+        state.tableData.tubes = res.data.tubes;
+        state.tableData.fabrics = res.data.fabrics;
+        state.tableData.size = res.data.size;
+
+        log.debug("Data loaded in main table ",res.data);
+
+        cb({
+          data: state.tableData.tubes,
+        });
+      }
+    } catch (error) {
+      console.error("Fetch failed:", error);
+    }
+  }
+
+  init_bindings() {
+    this.bind_row_click();
+    this.bind_row_double_click();
+  }
+
+  bind_row_click() {
+    // Listen for clicks
+    tbody.addEventListener("click", (event) => {
+      const row = event.target.closest("tr");
+
+      // Ensure click is inside a valid row
+      if (row && tbody.contains(row)) {
+        // Get row data via DataTables API
+        const rowData = this.table.row(row).data();
+        // console.log("Clicked row data:", rowData);
+      }
+    });
+  }
+
+  bind_row_double_click() {
+    // Listen for clicks
+    tbody.addEventListener("dblclick", (event) => {
+      const row = event.target.closest("tr");
+
+      // Ensure click is inside a valid row
+      if (row && tbody.contains(row)) {
+        // Get row data via DataTables API
+        const data = this.table.row(row).data();
+
+	if (data == undefined ) {
+	  log.debug("Double click row undefined")
+	  return
+	}
+
+	log.debug(`Data of row `,data)
+	if (state.active_view == "tube") {
+	  log.info("Double click on tube")
+	  this.events.emit("tube:dblclick", data as TubeExtraD);
+	  return
+	}
+
+	if (state.active_view == "fabric") {
+	  log.info("Double click on Fabric")
+	  this.events.emit("fabric:dblclick", data as Fabric);
+	  return
+	}
+	log.error(`Active view is neither fabric nor tube, that should not have happened, data is ${data}`);
+        
+      }
+    });
+  }
+
+  toggle_group_colums(view: TableView) {
+    console.log("called?");
+    this.table
+      .columns((idx) => {
+        const config = this.table.column(idx).init();
+        return config && config.group === view.previous_view; // Check matching group name
+      })
+      .visible(false); // Pass boolean state directly
+
+    this.table
+      .columns((idx) => {
+        const config = this.table.column(idx).init();
+        return config && config.group === view.new_view; // Check matching group name
+      })
+      .visible(true); // Pass boolean state directly
+  }
+
+  init_visible_group() {
+    this.table
+      .columns((idx) => {
+        const config = this.table.column(idx).init();
+        return config && config.group === "tube"; // Check matching group name
+      })
+      .visible(true); // Pass boolean state directly
+  }
+}
+
+
+const tableController = new TableController();
+export { tableController };
