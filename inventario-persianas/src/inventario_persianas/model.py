@@ -1,6 +1,7 @@
 from datetime import date, datetime, timezone
 from typing import List, Optional
 
+from pydantic import PositiveFloat
 from sqlalchemy import JSON, Column, DateTime, event, func, update
 from sqlmodel import Field, Relationship, SQLModel, Session, create_engine, select
 from typing import ClassVar
@@ -155,6 +156,20 @@ class Fabric(TimestampMixin, table=True):
         back_populates="fabric",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
+
+class FabricUpdate(SQLModel):
+    tube_id: Optional[int] = Field(default=None, foreign_key="tube.id")
+    blind_model_id: Optional[int] = Field(default=None, foreign_key="blind_model.id")
+    color_id: Optional[int] = Field(default=None, foreign_key="color.id")
+    fabric_classification_id: Optional[int] = Field(default=None, foreign_key="fabric_classification.id")
+    supplier_id: Optional[int] = Field(default=None, foreign_key="supplier.id")
+
+    original_width: Optional[PositiveFloat] = None
+    original_height: Optional[PositiveFloat] = None
+    is_archived: Optional[bool] = None
+
+
+
 
 class FabricMarkForDeletion(TimestampMixin):
     __tablename__ = "fabric_mark_for_deletion" #type:ignore #type:ignore
