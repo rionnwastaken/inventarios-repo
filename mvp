@@ -4,6 +4,24 @@ edit tube
 simple filters 
 
 
+deduction:
+Must show
+original measumentes, curremnt measurments 
+list with the deductions, each item has : height, and width removed, optional comment, 	
+
+
+Button to add new deduction (modal)
+button besides to edit or remove deduction
+
+Button to go edit metada of fabric (opens other modal)
+
+Button to save changes
+Button to close
+
+
+
+
+
 mvp2
 bulk editing
 polishing
