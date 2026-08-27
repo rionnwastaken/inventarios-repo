@@ -9,6 +9,10 @@ from inventario_persianas.model import Color, Fabric, Supplier, Location, BlindM
 from inventario_persianas.model import Color, db
 from inventario_persianas.services.utils import create_audit_log
 import logging
+from pydantic import ValidationError
+from typing import Tuple, List, Dict, Optional, Any
+import traceback
+
 
 log = logging.getLogger(__name__)
 
@@ -30,11 +34,13 @@ def new_tube():
 
 
 def recent_tubes_and_fabrics():
-    # 1. Preload fabrics efficiently without duplicate SQL rows
+    log.info("recent_tubes_and_fabrics()")
     stmt_tubes = (
         select(Tube)
         .options(
-            selectinload(Tube.fabrics),
+            selectinload(Tube.fabrics).options(
+                selectinload(Fabric.deductions)
+                ),
             joinedload(Tube.tube_rectified)     
     )
 
@@ -59,7 +65,11 @@ def recent_tubes_and_fabrics():
 
 
         tubes_obj.append(tube_dict)
-        fabrics_obj.extend(f.model_dump() for f in fabrics_list)
+        for fabric in fabrics_list:
+            deductions = fabric.deductions
+            obj = fabric.model_dump()
+            obj["deductions"] = [d.model_dump() for d in deductions]
+            fabrics_obj.append(obj)
 
     return tubes_obj, fabrics_obj, len(tubes_obj)
 
