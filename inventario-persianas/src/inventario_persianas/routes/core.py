@@ -1,11 +1,14 @@
 
 from flask import Blueprint,request
 from sqlalchemy import Delete, Select, delete
+from sqlalchemy.orm import selectinload
 import inventario_persianas.services.catalogs as catalago
-from inventario_persianas.model import Color, db
+from inventario_persianas.model import Color, Fabric, FabricDeduction, db
 import inventario_persianas.model as mod
 import logging
 import inventario_persianas.services.core as core
+from inventario_persianas.services.utils import Error, create_audit_log
+import traceback
 
 log = logging.getLogger(__name__)
 
@@ -54,10 +57,8 @@ def fabric_add_many():
     err,inserted_fabrics = core.add_fabrics(fabrics)
 
     if err:
-        return {"error":err.__str__()},400
+        return err.returnIt()
 
-    if not inserted_fabrics:
-        return {"error":"Fabris were not inserted due to error"} , 400
 
 
     return {"fabrics":inserted_fabrics},200
