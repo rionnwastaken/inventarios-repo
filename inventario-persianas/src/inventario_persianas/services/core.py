@@ -76,7 +76,9 @@ def recent_tubes_and_fabrics():
 
 from sqlalchemy.exc import SQLAlchemyError
 
-def add_fabrics(fabrics_to_add: list[dict]) -> tuple[None | Exception,list[dict] | None]:
+def add_fabrics(fabrics_to_add: list[dict]) -> tuple[None | Error,list[dict] | None]:
+
+    log.debug(f"Fabrics to add data {fabrics_to_add} ")
     try:
         # Option A: Create SQLModel objects using model_validate (filters/validates types)
         fabrics = []
@@ -85,28 +87,48 @@ def add_fabrics(fabrics_to_add: list[dict]) -> tuple[None | Exception,list[dict]
             f.pop("created_at", None)
             f.pop("updated_at", None)
 
+            temp_id = f.get("temp_id")
+            if  temp_id is None:
+                return Error("'temp_id' was not found",400),None
+
+            log.debug(f"Fabric here is {f}")
             fabric_obj = Fabric.model_validate(f)
-            fabrics.append(fabric_obj)
+            db.session.add(fabric_obj)
+            fabrics.append({
+                "temp_id":temp_id,
+                "fabric":fabric_obj
+                })
 
 
         
-        db.session.add_all(fabrics)
         db.session.flush()
-        db.session.commit()
 
         for f in fabrics:
-            create_audit_log(action="Insert",target_table="fabric",target_id=f.id)
+            create_audit_log(action="Insert", target_table="fabric", target_id=f["fabric"].id)
 
-        return None,[obj.model_dump() for obj in fabrics]
+        retval = [{
+            "temp_id":obj["temp_id"],
+            "fabric":obj["fabric"].model_dump(),
+        } for obj in fabrics]
+
+        log.debug(f"Fabrics {fabrics}")
+        log.debug(f"Return value {retval}")
+
+        db.session.commit()
+
+        
+        return None,retval
 
     except SQLAlchemyError as e:
         db.session.rollback()  # Crucial: prevents session corruption in Flask
+        log.error(traceback.format_exc(e))
         log.error(e)
-        return e,None
+        return Error(str(e),400),None
     except Exception as e:
+        log.error(traceback.format_exc(e))
         log.error(e)
         db.session.rollback()
-        return e,None
+        return Error(str(e),400),None
 
 
 
