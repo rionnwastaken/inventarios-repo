@@ -200,6 +200,51 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
         return Error(f"Database update failed: {str(e)}", 500), None
 
 
+def deduction_new(deduction):
+    try:
+        fabricDeduction = FabricDeduction.model_validate(deduction,strict=True)
+    except Exception as e:
+        log.error(e)
+        log.error(traceback.format_exc())
+        return Error(f"Could not validate FabricDeduction {deduction}",400)
+
+    fabric = db.session.get(Fabric,fabricDeduction.fabric_id,options=[selectinload(Fabric.deductions)])
+    if not fabric:
+        log.error(f"Fabric was not found with id {fabricDeduction.fabric_id}")
+        return Error(f"Fabric was not found with id {fabricDeduction.fabric_id}",400).returnIt()
+
+    remaining_width = fabric.original_width
+    remaining_height = fabric.original_height
+
+    for d in fabric.deductions:
+        remaining_width -= d.removed_width
+        remaining_height -= d.removed_height
+
+    
+    if fabricDeduction.removed_width > remaining_width:
+        log.debug(f"Cannot remove  {fabricDeduction.removed_width} from remaining width {remaining_width}")
+        return Error(f"No se puede quitar {fabricDeduction.removed_width} mts  del ancho restante {remaining_width} mts",400).returnIt()
+
+    if fabricDeduction.removed_height > remaining_height:
+        log.debug(f"Cannot remove  {fabricDeduction.removed_height} from remaining height {remaining_height}")
+        return Error(f"No se puede quitar {fabricDeduction.removed_height} mts del alto restante {remaining_height} mts",400).returnIt()
+
+
+    fabric.deductions.append(fabricDeduction)
+    db.session.flush()
+    fabricDeduction_obj = fabricDeduction.model_dump()
+    fabric_obj = fabric.model_dump()
+    fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
+
+    audit_obj = create_audit_log("Insert",target_id=fabricDeduction.id,target_table="fabric_deduction")
+
+    log.debug(f"New deduction {audit_obj}")
+    db.session.commit()
+
+
+    return {"fabric":fabric_obj,"deduction":fabricDeduction_obj},200
+
+
 
 
     
