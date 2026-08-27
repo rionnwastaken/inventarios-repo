@@ -62,3 +62,53 @@ def fabric_add_many():
 
 
     return {"fabrics":inserted_fabrics},200
+
+
+#TODO UPDATE typescript and this to make it be PATCH
+@core_bp.post("/fabric/edit/many/")
+def update_fabrics():
+    data = request.get_json()
+    if not data:
+        return Error("Payload to update was not passed",400).returnIt()
+                
+
+    err,updated_fabrics =  core.update_fabrics(data["data"])
+    if err:
+        return err.returnIt()
+
+    return {
+            "updated_fabrics":data
+            }
+
+
+@core_bp.post("/fabric/deductions/update/")
+def update_deductions():
+    log.debug("update_deductions():")
+    data = request.get_json()
+    if not data:
+        return Error("Payload to update was not passed",400).returnIt()
+                
+
+    err,updated_fabrics =  core.update_deductions(data["data"])
+    if err:
+        return err.returnIt()
+
+    return {
+            "updated_fabrics":data
+            }
+
+
+@core_bp.post("/fabric/new/deduction/")
+def deduction_new():
+    log.debug("deduction_new()")
+    jay = request.get_json()
+    
+    if jay is None:
+        return Error("Didnt receive data",400).returnIt()
+
+
+    deduction = jay['data']
+    if deduction is None:
+        return Error("Deduction is None",400).returnIt()
+
+    return core.deduction_new(deduction)
