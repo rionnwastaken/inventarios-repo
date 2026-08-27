@@ -132,7 +132,7 @@ class Fabric(TimestampMixin, table=True):
     tube_id: int = Field(foreign_key="tube.id")
     blind_model_id: Optional[int] = Field(foreign_key="blind_model.id")
     color_id: Optional[int] = Field(foreign_key="color.id")
-    classification_id: int = Field(
+    fabric_classification_id: int = Field(
          foreign_key="fabric_classification.id"
     )
     supplier_id: Optional[int] = Field(default=None, foreign_key="supplier.id")
