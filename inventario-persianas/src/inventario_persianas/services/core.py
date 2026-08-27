@@ -134,6 +134,72 @@ def add_fabrics(fabrics_to_add: list[dict]) -> tuple[None | Error,list[dict] | N
 
 
 
+def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dict]]]:
+    updated_fabrics = []
+
+    try:
+        with db.session.begin():
+            for index, item in enumerate(data):
+                if not isinstance(item, dict):
+                    raise ValueError(f"Item at index {index} must be a dictionary.")
+
+                fabric_id = item.get("id")
+                partial_data = item.get("partial_data")
+
+                if fabric_id is None:
+                    raise ValueError(f"Item at index {index}: missing required field 'id'.")
+
+                if not isinstance(fabric_id, int):
+                    raise ValueError(f"Item at index {index}: 'id' must be an integer, got {type(fabric_id).__name__}.")
+
+                if partial_data is None or not isinstance(partial_data, dict):
+                    raise ValueError(f"Item at index {index}: 'partial_data' must be a valid dictionary.")
+
+
+                fabric = db.session.get(Fabric, fabric_id)
+                if not fabric:
+                    raise ValueError(f"Fabric with id {fabric_id} not found.")
+
+                fabric_data_before_update = fabric.model_dump()
+                partial_update_payload = (FabricUpdate.model_validate(partial_data)
+                                  .model_dump(exclude_unset=True)
+                                  )
+
+                if not partial_update_payload or len(partial_update_payload) <= 0:
+                    raise ValueError(f"Fabric id {fabric_id}: 'partial_data' contains no valid update fields. {partial_data}")
+
+                fabric.sqlmodel_update(partial_update_payload)
+                db.session.add(fabric)
+
+                partial_fields_before_update = {}
+                for key,_ in partial_update_payload.items():
+                    partial_fields_before_update[key] = fabric_data_before_update[key]
+
+                
+
+                create_audit_log("Update","fabric",fabric_id,changes=Change(
+                    data=create_json_with_actual_values_auditlog(partial_fields_before_update,partial_update_payload)
+                ))
+
+                
+                updated_fabrics.append(fabric)
+
+            db.session.flush()
+
+        result_dicts = [fabric.model_dump() for fabric in updated_fabrics]
+        return None, result_dicts
+
+    except ValidationError as e:
+        return Error(f"Validation failed: {e.errors(include_url=False)}", 400), None
+
+    except ValueError as e:
+        return Error(str(e), 400), None
+
+    except Exception as e:
+        log.error(traceback.format_exc())
+        return Error(f"Database update failed: {str(e)}", 500), None
+
+
 
 
     
