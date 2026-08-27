@@ -6,6 +6,10 @@ from sqlmodel import Field, Relationship, SQLModel, Session, create_engine, sele
 from typing import ClassVar
 
 from inventario_persianas.app_types import Change
+import logging
+
+
+log = logging.getLogger()
 
 
 
@@ -218,6 +222,23 @@ def touch_parent_tube(mapper, connection, target: Fabric):
             .where(Tube.id == target.tube_id)
             .values(updated_at=datetime.now(timezone.utc))
     )
+
+
+catalago_models = [
+        FabricClassification,
+        BlindModel,
+        Supplier,
+        Color,
+        LocationImage,
+    ]
+
+
+fabric_column2catalago_models = {
+    "blind_model_id": BlindModel,
+    "color_id": Color,
+    "fabric_classification_id": FabricClassification,
+    "supplier_id": Supplier,
+}
 
 
 

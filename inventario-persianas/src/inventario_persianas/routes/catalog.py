@@ -88,13 +88,6 @@ def colors_bulk_remove():
 
 @catalago_bp.get('/all/')
 def get_all_catalago():
-    models = [
-        FabricClassification,
-        BlindModel,
-        Supplier,
-        Color,
-        LocationImage,
-    ]
 
     catalog_data = {
         model.__tablename__: 
@@ -103,7 +96,7 @@ def get_all_catalago():
             for obj in db.session.scalars(select(model))
         ]
         
-        for model in models
+        for model in mod.catalago_models
     }
 
     return catalog_data, 200
