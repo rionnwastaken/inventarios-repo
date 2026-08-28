@@ -17,6 +17,12 @@ import {
   render_plain2,
 } from "../renderUtils";
 import { Form } from "./form";
+import { TypedEventEmitter } from "../../emitter";
+
+
+export interface DeductionKardexEvents {
+  "deduction:modified": (fabric:Fabric) => void,
+}
 
 class DeductionKardex {
   columns: (ColumnsConfig & { data: keyof FabricDeduction })[];
@@ -29,6 +35,7 @@ class DeductionKardex {
 
   deductionForm: Form;
   wrapper: HTMLElement;
+  public events = new TypedEventEmitter<DeductionKardexEvents>();
 
   constructor() {
     this.deductionForm = new Form();
@@ -265,6 +272,8 @@ class DeductionKardex {
     this.update_display_remaining_measurements();
     console.log("result here in kardex:", result);
     this.table.draw();
+    this.events.emit("deduction:modified",this.fabric)
+
 
   }
 

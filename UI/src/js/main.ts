@@ -23,6 +23,7 @@ import { rowModal } from "./ui/tubo_view/tubo_overview.ts";
 import '../css/input.css';
 import { TableView } from "./typeObj.ts";
 import { state } from "./state.ts";
+import { deductionKardex } from "./ui/deduction_kardex/deduction_kardex.ts";
 
 
 
@@ -55,6 +56,9 @@ rowModal.events.on("catalog_item:added",(...args) => {
 })
 
 
+deductionKardex.events.on("deduction:modified",(...args) => {
+  tubeOverview.cb_update_fabric_data(...args)
+})
 
 document.addEventListener("DOMContentLoaded", () => {
 });

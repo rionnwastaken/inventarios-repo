@@ -433,6 +433,26 @@ class TubeOverview {
   }
 
   cb_open_modal_fabric(fabric_data: Fabric) {}
+
+  cb_update_fabric_data(fabric: Fabric) {
+    log.debug("cb_update_fabric_data(fabric: Fabric)")
+    let row = this.table.row((index,data,node) => {
+      if (data.original_fabric.id == fabric.id) {
+	return true
+      }
+    })
+
+    if (!row) {
+      log.debug(`Not able to find row with id ${fabric.id}`)
+      return
+    }
+    let data:FabricData = {
+      original_fabric:fabric,
+      mode:"normal",
+    }
+    row.data(data)
+    this.table.draw()
+  }
 }
 
 // type Mode
