@@ -66,16 +66,59 @@ class RowModal {
     this.bind_close_btn();
     this.bind_row_double_click();
     this.bind_inspect_row();
+    this.bind_dialog();
   }
 
   bind_close_btn() {
     close_btn.addEventListener("click", async () => {
-      const mods = get_type_modifications_arrays(this.table);
-      let display_message = "";
+      this.clean_before_closing();
+    });
+  }
 
-      if (mods.created_arr.length > 0) {
-        display_message += `Has creado ${mods.created_arr.length} telas`;
+  bind_dialog() {
+    row_view_modal.addEventListener("submit", (e) => {
+      e.preventDefault();
+    });
+
+    row_view_modal.addEventListener("close", (event) => {
+      this.clean_before_closing();
+    });
+  }
+
+  async clean_before_closing() {
+    const mods = get_type_modifications_arrays(this.table);
+    let display_message = "";
+
+    if (mods.created_arr.data().length > 0) {
+      display_message += `Has creado ${mods.created_arr.length} telas`;
+    }
+
+    if (mods.edited_arr.data().length > 0) {
+      display_message += `,has editado ${mods.edited_arr.length} telas`;
+    }
+
+    if (mods.deleted_arr.data().length > 0) {
+      display_message += `,has eliminado ${mods.deleted_arr.length} telas`;
+    }
+
+    if (display_message != "") {
+      const confirm = await showRecycleDialog({
+        header: display_message,
+        message: "Que desear hacer",
+        cancelText: "Volver",
+        confirmText: "No guardar los cambios",
+      });
+
+      if (!confirm) {
+        return;
       }
+    }
+
+    log.debug("closing");
+    row_view_modal.close();
+    this.table.data().clear();
+  }
+
   async handle_saving_created_fabrics(arr: ApiRowsMethods<FabricData>) {
     if (arr.data().length > 0) {
       log.info("handle_saving_created_fabrics()");
