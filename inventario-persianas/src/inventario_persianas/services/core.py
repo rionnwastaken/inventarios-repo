@@ -171,14 +171,11 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
                 fabric.sqlmodel_update(partial_update_payload)
                 db.session.add(fabric)
 
-                partial_fields_before_update = {}
-                for key,_ in partial_update_payload.items():
-                    partial_fields_before_update[key] = fabric_data_before_update[key]
 
                 
 
                 create_audit_log("Update","fabric",fabric_id,changes=Change(
-                    data=create_json_with_actual_values_auditlog(partial_fields_before_update,partial_update_payload)
+                    data=create_json_with_actual_values_auditlog(fabric_data_before_update,partial_update_payload)
                 ))
 
                 
@@ -200,6 +197,44 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
         return Error(f"Database update failed: {str(e)}", 500), None
 
 
+def validate_fabric_deduction_limits(
+    fabric: Fabric,
+    width: Optional[float] = None,
+    height: Optional[float] = None,
+    current_deduction_id: Optional[int] = None,
+) -> Tuple[bool, Optional[str]]:
+    """
+    Validates if proposed width/height deductions exceed the remaining dimensions of a fabric.
+    
+    Returns:
+        Tuple[bool, Optional[str]]: (is_valid, error_message)
+    """
+    remaining_width = fabric.original_width
+    remaining_height = fabric.original_height
+
+    for d in fabric.deductions:
+        if current_deduction_id is not None and d.id == current_deduction_id:
+            continue
+
+        if d.removed_width is not None:
+            remaining_width -= d.removed_width
+
+        if d.removed_height is not None:
+            remaining_height -= d.removed_height
+
+    if width is not None and width > remaining_width:
+        msg = f"No se puede quitar {width} mts del ancho restante {remaining_width} mts"
+        log.debug(f"Fabric ID {fabric.id}: {msg}")
+        return False, msg
+
+    if height is not None and height > remaining_height:
+        msg = f"No se puede quitar {height} mts del alto restante {remaining_height} mts"
+        log.debug(f"Fabric ID {fabric.id}: {msg}")
+        return False, msg
+
+    return True, None
+
+
 def deduction_new(deduction):
     try:
         fabricDeduction = FabricDeduction.model_validate(deduction,strict=True)
@@ -213,24 +248,10 @@ def deduction_new(deduction):
         log.error(f"Fabric was not found with id {fabricDeduction.fabric_id}")
         return Error(f"Fabric was not found with id {fabricDeduction.fabric_id}",400).returnIt()
 
-    remaining_width = fabric.original_width
-    remaining_height = fabric.original_height
+    measurement_valid,message = validate_fabric_deduction_limits(fabric,fabricDeduction.removed_width,fabricDeduction.removed_height)
 
-    for d in fabric.deductions:
-        if d.removed_width != None:
-            remaining_width -= d.removed_width
-
-        if d.removed_height != None:
-            remaining_height -= d.removed_height
-
-    
-    if fabricDeduction.removed_width != None and fabricDeduction.removed_width > remaining_width:
-        log.debug(f"Cannot remove  {fabricDeduction.removed_width} from remaining width {remaining_width}")
-        return Error(f"No se puede quitar {fabricDeduction.removed_width} mts  del ancho restante {remaining_width} mts",400).returnIt()
-
-    if fabricDeduction.removed_height != None and fabricDeduction.removed_height > remaining_height:
-        log.debug(f"Cannot remove  {fabricDeduction.removed_height} from remaining height {remaining_height}")
-        return Error(f"No se puede quitar {fabricDeduction.removed_height} mts del alto restante {remaining_height} mts",400).returnIt()
+    if not measurement_valid:
+        return Error(message,400).returnIt()
 
 
     fabric.deductions.append(fabricDeduction)
