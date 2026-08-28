@@ -1,7 +1,12 @@
 import { getLogger } from "loglevel";
 import { Fabric, Tube } from "../../schema.ts";
 import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
-import { fabricDataColumn, fcolumn, tcolumn } from "../utils.ts";
+import {
+  fabricDataColumn,
+  fcolumn,
+  get_partial_data,
+  tcolumn,
+} from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
 import { showRecycleDialog } from "../utils.ts";
@@ -207,11 +212,6 @@ class RowModal {
         log.info("Data of worked row ", data);
         row_obj.data(data);
         this.table.draw(false);
-
-        // if (!fabricData) {
-        //   log.debug("operation was canceled");
-        //   return;
-        // }
       }
     });
   }
@@ -281,18 +281,9 @@ class RowModal {
 
     log.debug(tube_data, fabrics);
 
-    // this.test()
     row_view_modal.showModal();
-  }
 
-  cb_open_modal_fabric(fabric_data: Fabric) {
-    // modal_title.textContent = `Tubo ${tube_data.id}`;
-    // this.tube = tube_data;
-    //
-    // const fabrics = tableData.get_fabrics_by_tube_id(this.tube.id)
-    //
-    // log.debug(tube_data, fabrics);
-    // row_view_modal.showModal();
+    // this.table.row(0).select()
   }
 }
 
