@@ -1,12 +1,7 @@
 import { getLogger } from "loglevel";
-import { Fabric, Tube } from "../../schema";
-import {
-  CatalogItem,
-  FabricData,
-  FabricExData,
-  TubeExtraD,
-} from "../../typeObj";
-import { fcolumn, tcolumn } from "../utils.ts";
+import { Tube } from "../../schema";
+import { CatalogItem, FabricData, Fabric, TubeExtraD } from "../../typeObj";
+import { fcolumn, ObjectChanged as ObjectChanged, tcolumn } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
 import { showRecycleDialog } from "../utils.ts";
@@ -26,11 +21,9 @@ import {
   viceversa_map,
 } from "./utils.ts";
 
-export type FabricState = "created" | "edited" | "normal" | "deleted";
+import { ModalState, ItemState } from "../../typeObj";
 
-export type ActionState = "creating" | "editing" | "editing_created";
-
-const fabric_action_map: Partial<Record<FabricState, ActionState>> = {
+const fabric_action_map: Partial<Record<ItemState, ModalState>> = {
   created: "creating",
   edited: "editing",
 };
@@ -50,7 +43,7 @@ const filling_data_form: HTMLFormElement =
   document.querySelector("#filling-data-form");
 
 
-function init_input(el_id, err_id) {
+function init_input(el_id, err_id,err_text_id) {
   const el: HTMLInputElement = document.querySelector(el_id);
 
   let data = {
@@ -61,7 +54,7 @@ function init_input(el_id, err_id) {
   el.addEventListener("focus", function (e) {
     if (data.active) {
       data.active = false;
-      let err_mess = document.querySelector(`#error_text_filling-data-width`);
+      let err_mess = document.querySelector(`#${err_text_id}`);
       err_mess.textContent = "";
     }
   });
@@ -71,17 +64,19 @@ function init_input(el_id, err_id) {
 let width_obj = init_input(
   "#filling-data-width",
   `#error_text_filling-data-width`,
+  "error_text_filling-data-width"
 );
 let height_obj = init_input(
   "#filling-data-height",
   `#error_text_filling-data-height`,
+  "error_text_filling-data-height"
 );
 
 
 export class FabricCraft {
   public events = new TypedEventEmitter<RowModalEvents>();
   tom_selects: Array<TomSelect>;
-  mode: ActionState;
+  mode: ModalState;
   tube_id: number;
   fabricData: FabricData;
   private resolvePromise?: (value: FabricExData) => void;
@@ -132,14 +127,17 @@ export class FabricCraft {
         log.debug("modified looks now like", this.fabricData.modified_fabric);
 
         if (
-          isFabricUnchanged(
+          ObjectChanged(
             this.fabricData.original_fabric,
             this.fabricData.modified_fabric,
+            new Set(
+              ["created_at", "updated_at", "deleted_at"],
+            ),
           )
         ) {
-          this.fabricData.mode = "normal";
-        } else {
           this.fabricData.mode = "edited";
+        } else {
+          this.fabricData.mode = "normal";
         }
 
         log.debug(
@@ -168,10 +166,6 @@ export class FabricCraft {
   }
 
   clean_dialog() {
-    if (this.resolvePromise) {
-      this.resolvePromise(null); // Resolves the awaiting Promise
-      this.resolvePromise = undefined; // Clean up reference
-    }
 
     for (let tom of this.tom_selects) {
       tom.clear();
@@ -179,6 +173,10 @@ export class FabricCraft {
     }
     modal_filling_data.close();
     filling_data_form.reset();
+    if (this.resolvePromise) {
+      this.resolvePromise(null); // Resolves the awaiting Promise
+      this.resolvePromise = undefined; // Clean up reference
+    }
   }
 
   bind_cancel() {
@@ -260,24 +258,21 @@ export class FabricCraft {
     };
   }
 
-  showCreating(fabricData: FabricData, tube_id: number): Promise<any> {
-    return new Promise((resolve) => {
-      this.resolvePromise = resolve;
-      this.fabricData = fabricData;
-      this.mode = "creating";
-      this.tube_id = tube_id;
-      modal_filling_data.showModal();
-    });
-  }
 
-  show(fabricData: FabricData, actionState: ActionState): Promise<any> {
+  /*
+    MOST DISGUSTING CODE EVER
+  TODO MAKE IT PRETTY
+    */
+
+  show(fabricData: FabricData, actionState: ModalState,extra?:{tube_id:number}): Promise<any> {
     return new Promise((resolve) => {
       this.resolvePromise = resolve;
       this.fabricData = fabricData;
       this.mode = actionState;
-      this.tube_id = fabricData.original_fabric.tube_id;
+      this.tube_id = fabricData?.original_fabric?.tube_id || extra?.tube_id;
       //Create editing copy just in case if the user decides to save
 
+      let fabric;
       if (actionState == "editing") {
         if (!fabricData.modified_fabric) {
           fabricData.modified_fabric = structuredClone(
@@ -285,9 +280,15 @@ export class FabricCraft {
           );
           log.debug("clone of this has ", fabricData.modified_fabric);
         }
-        this.insert_data_to_tom_selects(fabricData.modified_fabric);
-      } else {
-        this.insert_data_to_tom_selects(fabricData.original_fabric);
+        fabric = fabricData.modified_fabric;
+      } 
+
+      if (actionState == "editing_created") {
+        fabric = fabricData.original_fabric;
+      }
+
+      if (actionState !== "creating") {
+	this.insert_data_to_tom_selects(fabric);
       }
       modal_filling_data.showModal();
     });
