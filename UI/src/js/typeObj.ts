@@ -1,6 +1,5 @@
 
-import { Fabric, Tube } from "./schema";
-import { Context, CraftMode } from "./ui/tubo_view/fabricCraft";
+import { Fabric as SchemaFabric, FabricDeduction, Tube } from "./schema";
 
 export type ViewMode = "tube" | "fabric";
 
@@ -15,13 +14,17 @@ export interface TubeExtraD extends Tube {
 
 }
 
-export interface FabricExData extends Fabric, Context {}
+export interface FabricExData extends Fabric {}
+
+export interface Fabric extends SchemaFabric {
+  deductions:FabricDeduction[]
+}
 
 
 export interface FabricData {
   original_fabric:Fabric
   modified_fabric?:Fabric
-  mode: CraftMode;
+  mode: ItemState;
 }
 
 
@@ -30,3 +33,7 @@ export interface CatalogItem {
   id:number,
   table_name:string
 }
+
+
+export type ItemState = "created" | "edited" | "normal" | "deleted";
+export type ModalState = "creating" | "editing" | "editing_created";
