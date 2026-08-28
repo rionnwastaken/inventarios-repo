@@ -16,7 +16,6 @@ import { CoreAPI } from "../../api/core.ts";
 import { RowModalEvents } from "./tubo_overview.ts";
 import {
   fabric_column_name_from_tablename,
-  isFabricUnchanged,
   request_to_create_value_on_table,
   viceversa_map,
 } from "./utils.ts";
@@ -98,9 +97,24 @@ export class FabricCraft {
       e.preventDefault();
     });
 
+    modal_filling_data.addEventListener("cancel", (event) => {
+      log.debug("fucking prevent it")
+      event.preventDefault()
+    });
+
     modal_filling_data.addEventListener("close", (event) => {
+      log.debug("Closing?")
       this.clean_dialog();
     });
+
+modal_filling_data.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      log.debug("Escape key captured and blocked");
+    }
+  }, true);
+
   }
 
   bind_save() {
