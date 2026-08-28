@@ -33,6 +33,9 @@ export function render_plain2(obj: any, type, row, meta, column_id,cb_format?: (
 }
 
 export function format_measurement(value) {
+  if (!value) {
+    return ""
+  }
   return `${value} mts`
 }
 
