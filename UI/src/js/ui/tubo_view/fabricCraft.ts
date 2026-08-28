@@ -348,8 +348,16 @@ modal_filling_data.addEventListener("keydown", (event) => {
       selectOnTab: true,
       refreshThrottle: 0,
 
-      onOptionAdd: async (value, data) =>
-        request_to_create_value_on_table(tom, value, table_name),
+      onOptionAdd: async (value, data) => {
+        let res = await request_to_create_value_on_table(
+          tom,
+          value,
+          table_name,
+        );
+        if (res.created) {
+          this.events.emit("catalog_item:added", res.item);
+        }
+      },
     });
 
     tom.customData = {
