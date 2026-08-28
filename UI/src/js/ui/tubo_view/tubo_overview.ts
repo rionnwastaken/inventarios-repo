@@ -234,26 +234,7 @@ class RowModal {
   }
 
   cb_initModalDropdowns() {
-    const catalog = state.catalagoData;
-
-    const keyCount = Object.keys(catalog.data).length;
-    console.log(keyCount);
-
-    for (const [table_name, arr] of Object.entries(catalog.data)) {
-      console.log("here");
-      const id = this.get_tom_select_id(table_name);
-      const select = document.querySelector(id);
-
-      if (!select) {
-        log.debug(`select-${table_name} was not found`);
-        continue;
-      }
-
-      log.debug(id, arr, table_name);
-      this.fabricCraft.createToms(id, arr, "name", table_name);
-    }
-
-    log.info("Row Dropdowns initialized");
+    this.fabricCraft.cb_initModalDropdowns();
   }
 
   cb_open_modal_tube(tube_data: TubeExtraD) {

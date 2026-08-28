@@ -391,6 +391,28 @@ modal_filling_data.addEventListener("keydown", (event) => {
     tom.refreshOptions();
     tom.close();
   }
+
+  cb_initModalDropdowns() {
+    const catalog = state.catalagoData;
+
+    const keyCount = Object.keys(catalog.data).length;
+    console.log(keyCount);
+
+    for (const [table_name, arr] of Object.entries(catalog.data)) {
+      const id = this.get_tom_select_id(table_name);
+      const select = document.querySelector(id);
+
+      if (!select) {
+        log.debug(`select-${table_name} was not found`);
+        continue;
+      }
+
+      log.debug(id, arr, table_name);
+      this.createToms(id, arr, "name", table_name);
+    }
+
+    log.info("Row Dropdowns initialized");
+  }
 }
 
 const table2column = new Map();
