@@ -48,6 +48,9 @@ function init_input(el_id, err_id,err_text_id) {
   let data = {
     active: false,
     input: el,
+    disable: (should_disable) => {
+      el.disabled = should_disable
+    }
   };
 
   el.addEventListener("focus", function (e) {
@@ -288,6 +291,10 @@ modal_filling_data.addEventListener("keydown", (event) => {
 
       let fabric;
       if (actionState == "editing") {
+	let should_disable = fabricData.original_fabric.deductions.length > 0
+	log.debug("Should disable inputs ",should_disable)
+	width_obj.disable(should_disable)
+	height_obj.disable(should_disable)
         if (!fabricData.modified_fabric) {
           fabricData.modified_fabric = structuredClone(
             fabricData.original_fabric,
