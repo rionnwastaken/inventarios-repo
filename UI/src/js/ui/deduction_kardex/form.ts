@@ -98,6 +98,48 @@ export class Form {
   }
 
 
+  async update_deduction() {
+    log.debug("update_deduction()")
+    const values = this.getValues();
+
+    let modified_deduction:FabricDeduction = {
+      removed_width:values.width,
+      removed_height:values.height,
+      comment:values.comment
+    }
+
+    let changed = ObjectChanged(this.deduction,modified_deduction,new Set(["id","fabric_id","updated_at","created_at"]))
+    if (!changed) {
+      log.debug("Deduction unchanged")
+      return
+    }
+
+    let partial_data = get_partial_data(this.deduction,modified_deduction,{onlyKeys:["removed_width","removed_height","comment"]})
+
+
+    log.debug(this.deduction)
+    log.debug(modified_deduction)
+    log.debug("isModified is ",changed)
+    log.debug("partial data is ",partial_data)
+
+    
+    const res = await CoreAPI.update_deduction(this.fabric.id,this.deduction.id,partial_data);
+
+    if (res.status != 200) {
+      log.debug(res.data)
+      errorNotiTopRight("Error",createElementFromHTML(`<p>${res.data.error}</p>`))
+      return;
+    }
+
+    const data = res.data;
+    log.debug("data in update deduction",data);
+    return {
+      fabric: data["fabric"],
+      deduction: data["deduction"],
+    };
+  }
+
+
   async create_deduction() {
     log.debug("create_deduction()")
     const values = this.getValues();
@@ -177,9 +219,15 @@ export class Form {
   }
 
   start_editing_mode(deduction: FabricDeduction) {
+    let comment = ""
+    if (deduction.comment != null) {
+      comment = String(deduction.comment)
+    }
+
+
     this.widthInput.value = String(deduction.removed_width) || "";
     this.heightInput.value = String(deduction.removed_height) || "";
-    this.commentInput.value = String(deduction.comment) || "";
+    this.commentInput.value = comment
   }
 
   create_dialog() {
@@ -193,30 +241,30 @@ export class Form {
       confirmText: "Crear deduccion",
       confirmClass: "btn",
       onConfirm: async () => {
+        let data = null;
         if (this.modal_state == "creating") {
-          const data = await this.create_deduction();
-	  if (!data) {
-	    return
-	  }
-
+          data = await this.create_deduction();
+          if (!data) {
+            return;
+          }
           log.debug("Data here before resolving", data, this.modal_state);
-          this.resolve_promise({
-            deduction: data.deduction,
-            fabric: data.fabric,
-            mode: this.modal_state,
-          });
-          this.close();
         }
 
-	if (this.modal_state == "editing") {
-
-          const data = await this.update_deduction();
-	  if (!data) {
-	    return
-	  }
-
-
+        if (this.modal_state == "editing") {
+          data = await this.update_deduction();
+          if (!data) {
+            return;
+          }
+        }
+	if (!data) {
+	  return
 	}
+        this.resolve_promise({
+          deduction: data.deduction,
+          fabric: data.fabric,
+          mode: this.modal_state,
+        });
+        this.close();
       },
       onCancel: () => {
         this.close();

@@ -248,6 +248,103 @@ def deduction_new(deduction):
     return {"fabric":fabric_obj,"deduction":fabricDeduction_obj},200
 
 
+def update_deduction(fabric_id: int, deduction_id: int, deduction_payload: dict) -> Tuple[Optional[Error], Optional[dict]]:
+    log.debug("update_deduction(fabric_id, deduction)")
+    log.debug(fabric_id, deduction_payload)
+
+    fabric = db.session.get(Fabric, fabric_id)
+    fabricDeduction = db.session.get(FabricDeduction, deduction_id)
+
+    if not fabric:
+        return Error(f"Fabric with id {fabric_id} not found.", 400), None
+
+    if not fabricDeduction:
+        return Error(f"FabricDeduction with id {deduction_id} not found.", 400), None
+
+    # Validate into a separate validated_data object (do NOT overwrite fabricDeduction)
+    try:
+        validated_data = FabricDeductionUpdate.model_validate(deduction_payload)
+    except Exception as e:
+        log.error(traceback.format_exc())
+        log.error(e)
+        return Error(f"Validation error {e}", 400), None
+
+    partial_payload_update = validated_data.model_dump(exclude_unset=True)
+    if not partial_payload_update:
+        return Error(f"Fabric id {fabric_id}: 'partial_data' contains no valid update fields. {deduction_payload}", 400), None
+
+
+    measurement_valid, message = validate_fabric_deduction_limits(
+        fabric,
+        partial_payload_update.get("removed_width", fabricDeduction.removed_width),
+        partial_payload_update.get("removed_height", fabricDeduction.removed_height),
+        current_deduction_id=deduction_id, # Ignore old values of this deduction during calculation
+    )
+
+    if not measurement_valid:
+        log.debug(message)
+        return Error(message, 400), None
+
+
+
+    # Capture state before mutating the actual database model
+    before_fabricDeduction_obj = fabricDeduction.model_dump()
+
+    # Apply partial updates directly to the tracked DB entity
+    fabricDeduction.sqlmodel_update(partial_payload_update)
+    db.session.flush()
+
+    log.debug(f"d before refresh {fabricDeduction}")
+    # Refresh relationship state so fabric.deductions contains the newly updated deduction
+    # db.session.refresh(fabricDeduction)
+    # db.session.refresh(fabric)
+
+
+
+    after_fabricDeduction_obj = fabricDeduction.model_dump()
+    log.debug(f"d after refresh {fabricDeduction}")
+
+    fabric_obj = fabric.model_dump()
+    fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
+
+    create_audit_log(
+        "Update",
+        "fabric_deduction",
+        deduction_id,
+        changes=Change(
+            data=create_json_with_actual_values_auditlog(
+                before_fabricDeduction_obj,
+                partial_payload_update
+            )
+        )
+    )
+
+    db.session.commit()
+
+    return None, {
+        "fabric": fabric_obj,
+        "deduction": after_fabricDeduction_obj,
+    }
+
+
+
+if __name__ == "__main__":
+
+    
+    app = flaky()
+    with app.app_context():
+        stmt = (
+                select(mod.Fabric).options(selectinload(Fabric.deductions))
+                )
+
+
+        result = mod.db.session.scalar(stmt)
+        d =  result.deductions
+        print(result)
+        print(result.deductions)
+
+
+    print(result.deductions)
 
 
     

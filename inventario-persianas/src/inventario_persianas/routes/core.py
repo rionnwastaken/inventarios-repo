@@ -81,19 +81,26 @@ def update_fabrics():
             }
 
 
-@core_bp.post("/fabric/deductions/update/")
-def update_deductions():
+@core_bp.post("/fabric/deduction/update/")
+def update_deduction():
     log.debug("update_deductions():")
     data = request.get_json()
     if not data:
         return Error("Payload to update was not passed",400).returnIt()
-                
 
-    err,updated_fabrics =  core.update_deductions(data["data"])
+    fabric_id = data.get("fabric_id")
+    deduction_id = data.get("deduction_id")
+    deduction_partial_data = data.get("deduction_partial_data")
+
+    if fabric_id is None or deduction_id is None or deduction_partial_data is None:
+        log.debug("Missing required fields: fabric_id, deduction_id, and deduction_partial_data are required")
+        return Error("Missing required fields: fabric_id, deduction_id, and deduction_partial_data are required", 400).returnIt()
+                
+    err,data =  core.update_deduction(fabric_id,deduction_id,deduction_partial_data)
     if err:
         return err.returnIt()
 
-    return {
+    return data,200
             "updated_fabrics":data
             }
 

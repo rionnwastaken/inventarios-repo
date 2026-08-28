@@ -245,14 +245,27 @@ class DeductionKardex {
     }
 
     if (mode == "editing") {
-      // this.table.row.add(result.deduction)
+
+      let row = this.table.row((index,data,node) => {
+	if (data.id == result.deduction.id) {
+	  return true
+	}
+      })
+
+      if (!row) {
+	log.debug(`Row in datatable was not found with id ${result.deduction.id}`)
+	return
+      }
+      log.debug("result here ",result)
+      row.data(result.deduction)
     }
 
     this.fabric = result.fabric;
     state.tableData.update_fabric_by_id(result.fabric);
     this.update_display_remaining_measurements();
-    this.table.draw();
     console.log("result here in kardex:", result);
+    this.table.draw();
+
   }
 
   close() {

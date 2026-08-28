@@ -18,6 +18,14 @@ export const CoreAPI = {
 
   create_deduction: (deduction:FabricDeduction) =>
     sendRequest("/core/fabric/new/deduction/", "POST", {data:deduction}),
+update_deduction: async (fabric_id: number, deduction_id: number, partial_deduction_payload: Record<string, unknown>) => {
+  const res = await api.post("/fabric/deduction/update/", {
+    fabric_id: fabric_id,
+    deduction_id: deduction_id,
+    deduction_partial_data: partial_deduction_payload,
+  });
+  return res;
+}
 
 
   update_deductions: (deduction:FabricDeduction[]) =>
