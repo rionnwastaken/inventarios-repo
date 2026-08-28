@@ -261,66 +261,9 @@ fabric_column2catalago_models = {
 from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy(model_class=SQLModel)
 
-def print_all(tbl):
-    rows = db.session.scalars(select(tbl))
-    [print(r) for r in rows.all() ]
 
-def seed_data():
-    import inventario_persianas.constants as const
-    import os
-    from pathlib import Path
-    from flask import Flask
-
-
-    static_folder = Path(os.getcwd()).parent / "UI" / "static"
-    template = Path(os.getcwd()).parent / "UI" / "static" / "html"
-
-    app = Flask(__name__,static_folder=static_folder,template_folder=template,static_url_path="/static")
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///"+ str(const.DATABASE_PATH)
-    db.init_app(app)
-
-    with app.app_context():
-        db.create_all()
-
-        # Check if data already exists to prevent duplicate key errors on re-run
-        if db.session.execute(select(Color)).first():
-            print("Database already contains seed data. Skipping...")
-            print_all(Color)
-            print_all(BlindModel)
-            print_all(FabricClassification)
-            return
-
-        colors = [
-            Color(name="Pure White"),
-            Color(name="Charcoal Grey"),
-            Color(name="Beige Sand"),
-            Color(name="Midnight Black"),
-            Color(name="Off-White Cream"),
-        ]
-
-        blind_models = [
-            BlindModel(name="Roller Shade Standard"),
-            BlindModel(name="Dual Zebra Shade"),
-            BlindModel(name="Roman Soft Fold"),
-            BlindModel(name="Cassette Blackout 3000"),
-        ]
-
-        classifications = [
-            FabricClassification(name="Standard Light Filtering"),
-            FabricClassification(name="100% Blackout"),
-            FabricClassification(name="Solar Screen 5% Openness"),
-            FabricClassification(name="Solar Screen 1% Openness"),
-            FabricClassification(name="Translucent Decorative"),
-        ]
-
-        db.session.add_all(colors)
-        db.session.add_all(blind_models)
-        db.session.add_all(classifications)
-        db.session.commit()
-
-        print("Successfully created tables and inserted initial rows!")
 
 
 if __name__ == "__main__":
-    seed_data()
+    pass
 
