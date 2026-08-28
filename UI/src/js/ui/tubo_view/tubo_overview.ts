@@ -43,15 +43,12 @@ class RowModal {
 
   public events = new TypedEventEmitter<RowModalEvents>();
 
-  // public events = new TypedEventEmitter<TableControllerEvents>();
-
   constructor() {
-    this.init_columns();
-    this.init_table();
-    this.init_visible_group();
     this.init_bindings();
 
+    this.initTable = new InitTable();
     this.fabricCraft = new FabricCraft(this.events);
+    this.table = this.initTable.table;
   }
 
   init_bindings() {
@@ -94,10 +91,9 @@ class RowModal {
     modal_save_btn.addEventListener("click", async () => {
       const mods = get_type_modifications_arrays(this.table);
 
-      if (mods.created_arr.length > 0) {
-        log.info(`Adding  ${mods.created_arr.length} created rows`);
-        //TODO since we are adding a temporary  date stamp, maybe update the real datestamp that we get from the server
-        const rest = await CoreAPI.fabric_add_many(mods.created_arr);
+      log.debug(
+        `Count of the arrays. Created ${mods.created_arr.data().length}, edited ${mods.edited_arr.data().length}, deleted ${mods.deleted_arr.data().length}`,
+      );
 
         if (rest.success) {
           log.info("Creation of rows success");
@@ -142,241 +138,41 @@ class RowModal {
     });
   }
 
-  //Data is litterally the the value of a column, like an id
-  render_datecell(data, type, row, meta) {
-    if (type === "display") {
-      const date = new Date(data);
-      return date.toLocaleString("es-MX", { hour12: true });
-    }
+  bind_row_right_click() {
+    // Listen for clicks
+    tbody.addEventListener("contextmenu", async (event) => {
 
-    if (type == "sort") {
-      return new Date(data).getTime();
-    }
+      event.preventDefault(); 
+      log.debug("right clieck")
 
-    return data;
-  }
+      const row = event.target.closest("tr");
 
-  catalagoValue(table_name, data) {
-    if (!data) {
-      return "";
-    }
+      if (row && tbody.contains(row)) {
+        const row_obj = this.table.row(row);
+        const data = row_obj.data();
 
-    let obj = state.catalagoData.data[table_name].find((obj) => obj.id == data);
+        if (data == undefined) {
+          log.debug("Double click row undefined");
+          return;
+        }
 
-    if (obj) {
-      return obj.name;
-    }
-    return "";
-  }
+        //We are passing data by reference
+        if (data.mode == "created") {
+          await this.fabricCraft.show(data, "editing_created");
+        }
 
-  getFormattedCellValue(
-    original_value,
-    modified_value,
-    mode: FabricState,
-  ): string {
-    if (mode == "normal" || mode == "created") {
-      return original_value;
-    }
-
-    if (original_value === modified_value) {
-      log.debug(`Showing orignal value ${original_value}`);
-      return original_value;
-    }
-
-    log.debug(`Render comparison ${original_value} ${original_value}`);
-    return `
-        <div class="flex flex-col justify-center leading-tight py-0.5 text-xs font-mono">
-            <span class="text-red-600 dark:text-red-400 line-through decoration-red-500 decoration-1 opacity-80 select-none">
-                ${original_value}
-            </span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-semibold">
-                ${modified_value}
-            </span>
-        </div>
-    `;
-  }
-
-  render_plain(
-    fabricData: FabricData,
-    type,
-    row,
-    meta,
-    table_name,
-    column_id,
-    options?: { plain_value: Boolean },
-  ) {
-    // log.debug("fabricdata in redenr cell", fabricData);
-    if (type === "display") {
-        let original_value = fabricData?.original_fabric[column_id] ?? null;
-	let modified_value = fabricData?.modified_fabric?.[column_id] ?? null;
-
-	original_value = `${original_value} mts`
-
-	if (modified_value) {
-	  modified_value = `${modified_value} mts`
-	}
-
-
-      return this.getFormattedCellValue(
-        original_value,
-        modified_value,
-        fabricData.mode,
-      );
-    }
-  }
+        if (data.mode == "normal") {
 
 
 
-  //TODO I would like to display data for when data has been edited, to display original and modified, and the original criss cross
-  render_cell(
-    fabricData: FabricData,
-    type,
-    row,
-    meta,
-    table_name,
-    column_id,
-    options?: { plain_value: Boolean },
-  ) {
-    // log.debug("fabricdata in redenr cell", fabricData);
-    if (type === "display") {
-      let original_value = null;
-      let modified_value = null;
-
-      if (options && options.plain_value) {
-        log.debug("column id ", column_id, fabricData);
-        original_value = fabricData?.original_fabric[column_id] ?? null;
-	modified_value = fabricData?.modified_fabric?.[column_id] ?? null;
-      } else {
-        original_value = this.catalagoValue(
-          table_name,
-          fabricData.original_fabric?.[column_id] ?? null,
-        );
-        modified_value = this.catalagoValue(
-          table_name,
-          fabricData.modified_fabric?.[column_id] ?? null,
-        );
+        log.info("Redrawing table");
+        log.info("Data of worked row ", data);
+        row_obj.data(data);
+        this.table.draw(false);
       }
-
-      return this.getFormattedCellValue(
-        original_value,
-        modified_value,
-        fabricData.mode,
-      );
-    }
-  }
-
-
-  render_row(row: HTMLTableRowElement, data: FabricData, index: number) {
-    // Reset custom inline styles back to default DataTables values
-    row.style.removeProperty("background-color");
-    row.style.removeProperty("text-decoration");
-    row.style.removeProperty("color");
-
-    // Remove background styles on child cells in case DataTables set them directly
-    const cells = row.querySelectorAll<HTMLTableCellElement>("td, th");
-    cells.forEach((cell) => {
-      cell.style.removeProperty("background-color");
-      cell.style.removeProperty("color");
-    });
-
-    switch (data.mode) {
-      case "created":
-        row.style.setProperty("background-color", "#dfffbf", "important");
-        break;
-
-      case "edited":
-        row.style.setProperty("background-color", "#bfe2ff", "important");
-        break;
-
-      case "deleted":
-        row.style.setProperty("background-color", "#ffbfbf", "important");
-        row.style.setProperty("text-decoration", "line-through");
-        break;
-
-      case "normal":
-      default:
-        // Keeps DataTables standard zebra striping / theme
-        break;
-    }
-  }
-
-  //We pass null for data to get the whole object
-  init_columns() {
-    this.fabricColumns = [
-      fabricDataColumn(null, "Model", {
-        render: (data, type, row, meta) =>
-          this.render_cell(
-            data,
-            type,
-            row,
-            meta,
-            "blind_model",
-            "blind_model_id",
-          ),
-      }),
-      fabricDataColumn(null, "Color", {
-        render: (data, type, row, meta) =>
-          this.render_cell(data, type, row, meta, "color", "color_id"),
-      }),
-
-      fabricDataColumn(null, "Clasificacion", {
-        render: (data, type, row, meta) =>
-          this.render_cell(
-            data,
-            type,
-            row,
-            meta,
-            "fabric_classification",
-            "classification_id",
-          ),
-      }),
-
-      fabricDataColumn(null, "Suministrador", {
-        render: (data, type, row, meta) =>
-          this.render_cell(data, type, row, meta, "supplier", "supplier_id"),
-      }),
-
-      //TODO CHANGE THIS CAUSE ITS NOT GOING TO REFLECT EDIT VIEW
-      fabricDataColumn(null, "Ancho", {
-        render: (data, type, row, meta) =>
-          this.render_plain(data, type, row, meta, "", "original_width", {
-            plain_value: true,
-          }),
-      }),
-      fabricDataColumn(null, "Altura", {
-        render: (data, type, row, meta) =>
-          this.render_plain(data, type, row, meta, "", "original_height", {
-            plain_value: true,
-          }),
-      }),
-
-      fabricDataColumn("original_fabric.updated_at", "Fecha actualizado", {
-        render: (data, type, row, meta) =>
-          this.render_datecell(data, type, row, meta),
-      }),
-      fabricDataColumn("original_fabric.created_at", "Fecha Creacion", {
-        render: (data, type, row, meta) =>
-          this.render_datecell(data, type, row, meta),
-      }),
-    ];
-  }
-  init_table() {
-    this.table = new DataTable("#row-modal-table", {
-      columns: this.fabricColumns,
-      paging: false,
-      autoWidth: true,
-
-      searching: false,
-      order: { name: "original_fabric.updated_at", dir: "desc" },
-      rowCallback: this.render_row,
-      columnDefs: [
-        {
-          targets: "_all", // Zero-based index of the columns you want to left-align
-          className: "dt-left", // Applies left-alignment to both header and body cells
-        },
-      ],
     });
   }
+
 
   bind_row_double_click() {
     // Listen for clicks
@@ -399,8 +195,12 @@ class RowModal {
           await this.fabricCraft.show(data,"editing_created");
         }
 
-        if (data.mode == "normal" || data.mode == "edited") {
-          await this.fabricCraft.show(data,"editing");
+        if (data.mode == "normal") {
+	  this.events.emit("tubo_overview:dblclick_fabric",data.original_fabric)
+        }
+
+        if (data.mode == "edited") {
+          await this.fabricCraft.show(data, "editing");
         }
 
         log.info("Redrawing table");
@@ -427,31 +227,6 @@ class RowModal {
         log.debug("Inspecting row", data);
       }
     });
-  }
-
-  init_visible_group() {
-    this.table
-      .columns((idx) => {
-        const config = this.table.column(idx).init();
-        return true;
-      })
-      .visible(true); // Pass boolean state directly
-  }
-
-  test() {
-    // Loop through each row using the DataTables API
-    this.table.rows().every(function () {
-      const data = this.data();
-
-      // Modify the property
-      data.original_fabric.original_width = 293;
-
-      // Pass the updated data object back into the row instance
-      this.data(data);
-    });
-
-    // Redraw the table without resetting user pagination
-    this.table.draw(false);
   }
 
   get_tom_select_id(tablename) {
@@ -524,32 +299,11 @@ class RowModal {
 // type Mode
 //TODO add context to row
 
-function get_type_modifications_arrays(table: Api<FabricData>) {
-  const created_arr = [];
-  const edited_arr = [];
-  const deleted_arr = [];
-  let display_message = "";
-
-  for (let row of table.data().toArray()) {
-    if (row.mode == "created") {
-      created_arr.push(row);
-    }
-
-    if (row.mode == "edited") {
-      edited_arr.push(row);
-    }
-
-    if (row.mode == "deleted") {
-      deleted_arr.push(row);
-    }
-
-    console.log(row);
-  }
-
+function get_type_modifications_arrays(table: ApiRowsMethods<FabricData>) {
   return {
-    created_arr: created_arr,
-    edited_arr: edited_arr,
-    deleted_arr: deleted_arr,
+    created_arr: table.rows((idx, data) => data.mode === "created"),
+    edited_arr: table.rows((idx, data) => data.mode === "edited"),
+    deleted_arr: table.rows((idx, data) => data.mode === "deleted"),
   };
 }
 
