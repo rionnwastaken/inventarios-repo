@@ -1,6 +1,7 @@
 import { CatalogApi } from "../api/catalog.ts";
 import { CoreAPI } from "../api/core.ts";
-import { Fabric, Tube } from "../schema.ts";
+import { Tube } from "../schema.ts";
+import { Fabric } from "../typeObj.ts";
 
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { FabricData, TableView, TubeExtraD as TubeExtraD, ViewMode } from "../typeObj.ts";
@@ -109,3 +110,132 @@ export function showRecycleDialog(options: DialogOptions): Promise<boolean> {
     dialog.showModal();
   });
 }
+
+export function get_partial_data(
+  fabric_old: Record<string, any>,
+  fabric_new: Record<string, any>,
+  options?: {
+    omitKeys?: string[];
+    onlyKeys?: string[];
+  }
+) {
+  const omitKeys = options?.omitKeys;
+  const onlyKeys = options?.onlyKeys;
+
+  // Mutual exclusion check
+  if (omitKeys && onlyKeys) {
+    throw new Error("Cannot specify both 'omitKeys' and 'onlyKeys' simultaneously.");
+  }
+
+  const partial_data: Record<string, any> = {};
+
+  // Determine keys to evaluate
+  const keysToProcess = onlyKeys 
+    ? new Set(onlyKeys)
+    : new Set([...Object.keys(fabric_old), ...Object.keys(fabric_new)]);
+
+  for (const key of keysToProcess) {
+    if (omitKeys?.includes(key)) {
+      continue;
+    }
+
+    const oldValue = fabric_old[key];
+    const newValue = fabric_new[key];
+
+    if (newValue !== undefined && newValue !== oldValue) {
+      partial_data[key] = newValue;
+    }
+  }
+
+  log.debug("get partial data fabric old is ", fabric_old);
+  return partial_data;
+}
+
+
+export function createElementFromHTML<T extends HTMLElement = HTMLElement>(htmlString: string): T {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString.trim(), 'text/html');
+  const element = doc.body.firstElementChild;
+
+  if (!element) {
+    throw new Error('Failed to create element: Provided string did not contain a valid HTML element.');
+  }
+
+  return element as T;
+}
+
+
+export function calc_remaining_fabric_measurements(fabric:Fabric) {
+    if (!fabric) {
+      log.error("calc_remaining_fabric_measurements FABRIC is null")
+      return null
+    }
+
+    let width = fabric.original_width
+    let height = fabric.original_height
+
+    let deductions = fabric.deductions || []
+
+    deductions.forEach(deduction => {
+      width -= deduction.removed_width
+      height -= deduction.removed_height
+      log.debug(`Width and height ${width} ${height}`)
+    })
+
+    log.debug({
+      remaining_width:width.toFixed(3),
+      remaining_height:height.toFixed(3)
+    })
+
+    return {
+      remaining_width:width.toFixed(3),
+      remaining_height:height.toFixed(3)
+    }
+  }
+
+
+export function ObjectChanged(original: Object, modified: Object,ignoredKeys:Set<any>): boolean {
+  log.debug("Checking  isObjectUnchanged");
+  if (!original || !modified) return false;
+
+
+  const keys = new Set([
+    ...Object.keys(original),
+    ...Object.keys(modified),
+  ]) as Set<any>;
+
+  for (const key of keys) {
+    // Skip timestamp/date fields
+    if (ignoredKeys.has(key)) continue;
+
+    const origVal = original[key];
+    const modVal = modified[key];
+
+    
+    log.debug("Comparing ",origVal," and ",modVal, "and their types are ",typeof origVal, "and ",typeof modVal)
+
+    // Skip comparison if either value is a Date instance
+    if (origVal instanceof Date || modVal instanceof Date) continue;
+
+    // Handle nested relationship objects
+    if (
+      typeof origVal === "object" &&
+      origVal !== null &&
+      typeof modVal === "object" &&
+      modVal !== null
+    ) {
+      if (JSON.stringify(origVal) !== JSON.stringify(modVal)) {
+        return true;
+      }
+    } else if (origVal !== modVal) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
+
+
+
