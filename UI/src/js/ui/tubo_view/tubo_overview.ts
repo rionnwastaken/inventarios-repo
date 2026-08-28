@@ -366,7 +366,10 @@ class TubeOverview {
         }
 
         if (data.mode == "normal") {
-	  this.events.emit("tubo_overview:dblclick_fabric",data.original_fabric)
+          this.events.emit(
+            "tubo_overview:dblclick_fabric",
+            data.original_fabric,
+          );
         }
 
         if (data.mode == "edited") {

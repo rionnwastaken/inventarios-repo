@@ -8,9 +8,10 @@ import { CatalogApi } from "./api/catalog.ts";
 
 
 import { CoreAPI } from "./api/core.ts";
-import { Fabric, Tube } from "./schema.ts";
+import {  Tube } from "./schema.ts";
+import { Fabric } from "./typeObj.ts";
 
-import {ColumnsConfig} from 'datatables.net-dt';
+// import {ColumnsConfig} from 'datatables.net-dt';
 
 
 import TomSelect from "tom-select";
@@ -18,7 +19,7 @@ import TomSelect from "tom-select";
 
 import { controlPanel } from "./ui/control_panel.ts";
 import { tableController } from "./ui/table_controller.ts";
-import { rowModal } from "./ui/tubo_view/tubo_overview.ts";
+import { tubeOverview } from "./ui/tubo_view/tubo_overview.ts";
 
 import '../css/input.css';
 import { TableView } from "./typeObj.ts";
@@ -39,22 +40,27 @@ controlPanel.events.on("view:changed",(...args) => {
 
 
 tableController.events.on("tube:dblclick",(...args) => {
-  rowModal.cb_open_modal_tube(...args)
+  tubeOverview.cb_open_modal_tube(...args)
 })
 
 tableController.events.on("fabric:dblclick",(...args) => {
-  rowModal.cb_open_modal_fabric(...args)
+  tubeOverview.cb_open_modal_fabric(...args)
 })
 
 state.events.on("catalago:loaded",() => {
   console.log("fuck")
-  rowModal.cb_initModalDropdowns()
+  tubeOverview.cb_initModalDropdowns()
 })
 
-rowModal.events.on("catalog_item:added",(...args) => {
+tubeOverview.events.on("catalog_item:added",(...args) => {
   state.cb_catalog_item_added(...args)
 })
 
+
+tubeOverview.events.on("tubo_overview:dblclick_fabric",(...args) => {
+  deductionKardex.cb_show_kardex(...args)
+
+})
 
 deductionKardex.events.on("deduction:modified",(...args) => {
   tubeOverview.cb_update_fabric_data(...args)
