@@ -42,13 +42,31 @@ let log = getLogger("app");
 //TODO BIND modal_save_btn to sendrequest
 export interface RowModalEvents {
   "catalog_item:added": (catalogItem: CatalogItem) => void;
+  "tubo_overview:dblclick_fabric": (fabric: Fabric) => void;
 }
 
-class RowModal {
+class TemporalID {
+  id_incremental: number;
+
+  constructor() {
+    this.id_incremental = 0;
+  }
+
+  get() {
+    let id = this.id_incremental;
+    this.id_incremental += 1;
+    return id;
+  }
+}
+
+const temporalID = new TemporalID();
+
+class TubeOverview {
   table: Api<FabricData>;
   tube: Tube;
   fabricColumns: (ColumnsConfig & { data: keyof FabricData })[];
   fabricCraft: FabricCraft;
+  initTable: InitTable;
 
   public events = new TypedEventEmitter<RowModalEvents>();
 
@@ -67,6 +85,7 @@ class RowModal {
     this.bind_row_double_click();
     this.bind_inspect_row();
     this.bind_dialog();
+    this.bind_row_right_click()
   }
 
   bind_close_btn() {
@@ -265,9 +284,10 @@ class RowModal {
         mode: null,
       };
 
-      const fabric = await this.fabricCraft.showCreating(
+      const fabric = await this.fabricCraft.show(
         fabricData,
-        this.tube.id,
+	"creating",
+        {tube_id:this.tube.id},
       );
 
       if (!fabric) {
@@ -307,7 +327,13 @@ class RowModal {
 
         if (data.mode == "normal") {
 
+          await this.fabricCraft.show(data, "editing_created");
+	  // this.events.emit("tubo_overview:dblclick_fabric",data.original_fabric)
+        }
 
+        if (data.mode == "edited") {
+          await this.fabricCraft.show(data, "editing");
+        }
 
         log.info("Redrawing table");
         log.info("Data of worked row ", data);
@@ -405,6 +431,8 @@ class RowModal {
 
     // this.table.row(0).select()
   }
+
+  cb_open_modal_fabric(fabric_data: Fabric) {}
 }
 
 // type Mode
@@ -420,5 +448,5 @@ function get_type_modifications_arrays(table: ApiRowsMethods<FabricData>) {
 
 class Callbacks {}
 
-const rowModal = new RowModal();
-export { rowModal };
+const tubeOverview = new TubeOverview();
+export { tubeOverview };

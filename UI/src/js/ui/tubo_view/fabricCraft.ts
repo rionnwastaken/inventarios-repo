@@ -78,7 +78,7 @@ export class FabricCraft {
   mode: ModalState;
   tube_id: number;
   fabricData: FabricData;
-  private resolvePromise?: (value: FabricExData) => void;
+  private resolvePromise?: (value: Fabric) => void;
 
   constructor(events) {
     this.init_bindings();
@@ -420,7 +420,7 @@ const column2table = new Map();
 
 table2column["color"] = "color_id";
 table2column["blind_model"] = "blind_model_id";
-table2column["fabric_classification"] = "classification_id";
+table2column["fabric_classification"] = "fabric_classification_id";
 table2column["supplier"] = "supplier_id";
 
 viceversa_map(table2column, column2table);
