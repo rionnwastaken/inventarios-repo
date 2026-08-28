@@ -4,7 +4,7 @@ import { ModalState } from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog";
 import { createElementFromHTML, get_partial_data, ObjectChanged } from "../utils";
 import { CoreAPI } from "../../api/core";
-import { NotiDialog } from "../dialogs/notification";
+import { NotiDialog, errorNotiTopRight } from "../dialogs/notification";
 
 export class Form {
   public widthInput!: HTMLInputElement;
@@ -126,8 +126,11 @@ export class Form {
     const res = await CoreAPI.update_deduction(this.fabric.id,this.deduction.id,partial_data);
 
     if (res.status != 200) {
-      log.debug(res.data)
-      errorNotiTopRight("Error",createElementFromHTML(`<p>${res.data.error}</p>`))
+      log.debug(res.data);
+      errorNotiTopRight(
+        "Error",
+        createElementFromHTML(`<p>${res.data.error}</p>`),
+      );
       return;
     }
 
@@ -165,16 +168,12 @@ export class Form {
 
     const res = await CoreAPI.create_deduction(fabricDeduction);
 
-    if (!res.success) {
-      log.error("error here is ",res.error.error);
-      let body = createElementFromHTML(`<p>${res.error.error}</p>`)
-      const notiDialog = new NotiDialog({
-	title:"Error shit",
-	body: body,
-	tailwind_class:"top-6 right-6"
-	}
-      )
-      notiDialog.show()
+    log.debug("data here is ", res);
+    if (res.status != 200) {
+      errorNotiTopRight(
+        "Error",
+        createElementFromHTML(`<p>${res.data.error}</p>`),
+      );
       return null;
     }
 
