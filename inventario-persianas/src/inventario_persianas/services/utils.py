@@ -61,59 +61,40 @@ class Error:
 When its a foreign id, we need to retrieve the actual value
 This might belong to audit log cause thats where it is used
 """
-def create_json_with_actual_values_auditlog(old_values:dict,new_values:dict):
+def create_json_with_actual_values_auditlog(full_old_values: dict, new_values: dict) -> dict:
     data = {}
 
-    for column,_ in old_values.items():
-        
+    # Iterate strictly over the keys present in the partial payload
+    for column, new_value in new_values.items():
+        old_value = full_old_values.get(column)
+
         if column in mod.fabric_column2catalago_models:
             model = mod.fabric_column2catalago_models[column]
 
-            old_id = old_values[column]
-            new_id = new_values[column]
+            old_result = db.session.get(model, old_value) if old_value is not None else None
+            new_result = db.session.get(model, new_value) if new_value is not None else None
 
-            old_result = db.session.get(model,old_id) or None 
-            new_result = db.session.get(model,new_id) or None
-
-            data[column] = {}
-
-            if old_result:
-                data[column]["previous"] = {
-                        "id":old_id,
-                        "value":old_result.name,
-                        }
-            else:
-                data[column]["previous"] = {
-                        "id":old_id,
-                        "value":"Not found",
-                        }
-
-            if new_result:
-                data[column]["now"] = {
-                        "id":new_id,
-                        "value":new_result.name,
-                        }
-            else:
-                data[column]["now"] = {
-                        "id":new_id,
-                        "value":"Not found",
-                        }
-
-            continue
-
-        old_value = old_values[column]
-        new_value = new_values[column]
-        
-        data[column] = {}
-        data[column]["previous"] = {
-                "id":None,
-                "value":old_value
-                }
-
-        data[column]["now"] = {
-                "id":None,
-                "value":new_value
-                }
+            data[column] = {
+                "previous": {
+                    "id": old_value,
+                    "value": old_result.name if old_result else "Not found",
+                },
+                "now": {
+                    "id": new_value,
+                    "value": new_result.name if new_result else "Not found",
+                },
+            }
+        else:
+            data[column] = {
+                "previous": {
+                    "id": None,
+                    "value": old_value,
+                },
+                "now": {
+                    "id": None,
+                    "value": new_value,
+                },
+            }
 
     return data
 
