@@ -217,15 +217,18 @@ def deduction_new(deduction):
     remaining_height = fabric.original_height
 
     for d in fabric.deductions:
-        remaining_width -= d.removed_width
-        remaining_height -= d.removed_height
+        if d.removed_width != None:
+            remaining_width -= d.removed_width
+
+        if d.removed_height != None:
+            remaining_height -= d.removed_height
 
     
-    if fabricDeduction.removed_width > remaining_width:
+    if fabricDeduction.removed_width != None and fabricDeduction.removed_width > remaining_width:
         log.debug(f"Cannot remove  {fabricDeduction.removed_width} from remaining width {remaining_width}")
         return Error(f"No se puede quitar {fabricDeduction.removed_width} mts  del ancho restante {remaining_width} mts",400).returnIt()
 
-    if fabricDeduction.removed_height > remaining_height:
+    if fabricDeduction.removed_height != None and fabricDeduction.removed_height > remaining_height:
         log.debug(f"Cannot remove  {fabricDeduction.removed_height} from remaining height {remaining_height}")
         return Error(f"No se puede quitar {fabricDeduction.removed_height} mts del alto restante {remaining_height} mts",400).returnIt()
 
