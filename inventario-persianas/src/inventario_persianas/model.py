@@ -216,6 +216,13 @@ class FabricDeduction(TimestampMixin, table=True):
     fabric: Optional[Fabric] = Relationship(back_populates="deductions")
 
 
+class FabricDeductionUpdate(SQLModel):
+    fabric_id: Optional[int] = None
+    removed_height: Optional[float] = None
+    removed_width: Optional[float] = None
+    comment: Optional[str] = Field(default=None, max_length=500)
+
+
 class AuditLog(TimestampMixin, table=True):
     __tablename__ = "audit_log" #type: ignore #type:ignore
 
