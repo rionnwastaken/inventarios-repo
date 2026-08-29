@@ -177,7 +177,7 @@ export class Form {
     const res = await CoreAPI.create_deduction(fabricDeduction);
 
     log.debug("data here is ", res);
-    if (res.status != 200) {
+    if (!res.success) {
       errorNotiTopRight(
         "Error",
         createElementFromHTML(`<p>${res.data.error}</p>`),
