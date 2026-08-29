@@ -26,7 +26,7 @@ state.init();
 
 controlPanel.events.on("view:changed", (...args) => {
   console.log("hey?");
-  tableController.toggle_group_colums(...args);
+  tableController.cb_toggle_group_colums(...args);
 });
 
 controlPanel.events.on("tube:new", (...args) => {

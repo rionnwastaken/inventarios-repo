@@ -162,21 +162,13 @@ class TableController {
     });
   }
 
-  toggle_group_colums(view: TableView) {
+  cb_toggle_group_colums(view: TableView) {
     console.log("called?");
-    this.table
-      .columns((idx) => {
-        const config = this.table.column(idx).init();
-        return config && config.group === view.previous_view; // Check matching group name
-      })
-      .visible(false); // Pass boolean state directly
-
-    this.table
-      .columns((idx) => {
-        const config = this.table.column(idx).init();
-        return config && config.group === view.new_view; // Check matching group name
-      })
-      .visible(true); // Pass boolean state directly
+    this.table.columns().every(function () {
+      const config = this.init();
+      const v = config && config.group === view.new_view;
+      this.visible(v);
+    });
   }
 
   init_visible_group() {
