@@ -53,8 +53,6 @@ class CatalagoData {
     this.load_optional_table_values_fabric();
   }
 
-
-
   async load_catalago_data() {
     console.log("FUCKING SHIT");
     if (typeof log === "undefined" || !log) {
@@ -127,16 +125,23 @@ class TableData {
     return this.fabrics.filter((el) => el.tube_id == tube_id);
   }
 
-  update_fabric_by_id(fabric:Fabric) {
+  update_fabric_by_id(fabric: Fabric) {
     //TODO MAKE SURE WHEN YOU UPDATE, THAT IT ALSO REFLECTS IN THE TABLE VIEW XD
-    const index = this.fabrics.findIndex(item => item.id === fabric.id);
+    const index = this.fabrics.findIndex((item) => item.id === fabric.id);
     if (index == -1) {
-      log.error(`Not able to find fabric with id ${fabric.id}, obj is `,fabric)
-      return
+      log.error(
+        `Not able to find fabric with id ${fabric.id}, obj is `,
+        fabric,
+      );
+      return;
     }
-    log.debug("Updating fabric  in state with ",fabric)
-    this.fabrics[index] = fabric
+    log.debug("Updating fabric  in state with ", fabric);
+    this.fabrics[index] = fabric;
+  }
 
+  cb_insert_new_tube(tube: Tube) {
+    log.debug("cb_insert_new_tube(tube:Tube)");
+    this.tubes.push(tube);
   }
 }
 

@@ -14,9 +14,6 @@ import { state } from "../state.ts";
 //TODO ON TUBO ADD BUTTON, add tube to table and refresh it
 //TODO WHEN A NEW FABRIC IS ADDED, MAKE SURE IT IS REFLECTED IN THE VIEW, so it increments in tota lof the tube
 
-
-
-
 const tbody = document.querySelector("#myTable tbody");
 
 type TubeColumns = ColumnsConfig & { data: keyof Tube };
@@ -33,7 +30,7 @@ class TableController {
   public events = new TypedEventEmitter<TableControllerEvents>();
 
   constructor() {
-    this.init_columns()
+    this.init_columns();
     this.init_table();
     this.init_visible_group();
     this.init_bindings();
@@ -88,13 +85,11 @@ class TableController {
       let res = await CoreAPI.recentTubes();
 
       if (res.success) {
-
-
         state.tableData.tubes = res.data.tubes;
         state.tableData.fabrics = res.data.fabrics;
         state.tableData.size = res.data.size;
 
-        log.debug("Data loaded in main table ",res.data);
+        log.debug("Data loaded in main table ", res.data);
 
         cb({
           data: state.tableData.tubes,
@@ -134,25 +129,26 @@ class TableController {
         // Get row data via DataTables API
         const data = this.table.row(row).data();
 
-	if (data == undefined ) {
-	  log.debug("Double click row undefined")
-	  return
-	}
+        if (data == undefined) {
+          log.debug("Double click row undefined");
+          return;
+        }
 
-	log.debug(`Data of row `,data)
-	if (state.active_view == "tube") {
-	  log.info("Double click on tube")
-	  this.events.emit("tube:dblclick", data as TubeExtraD);
-	  return
-	}
+        log.debug(`Data of row `, data);
+        if (state.active_view == "tube") {
+          log.info("Double click on tube");
+          this.events.emit("tube:dblclick", data as TubeExtraD);
+          return;
+        }
 
-	if (state.active_view == "fabric") {
-	  log.info("Double click on Fabric")
-	  this.events.emit("fabric:dblclick", data as Fabric);
-	  return
-	}
-	log.error(`Active view is neither fabric nor tube, that should not have happened, data is ${data}`);
-        
+        if (state.active_view == "fabric") {
+          log.info("Double click on Fabric");
+          this.events.emit("fabric:dblclick", data as Fabric);
+          return;
+        }
+        log.error(
+          `Active view is neither fabric nor tube, that should not have happened, data is ${data}`,
+        );
       }
     });
   }
@@ -182,8 +178,17 @@ class TableController {
       })
       .visible(true); // Pass boolean state directly
   }
-}
 
+  cb_insert_tube_to_table(tube: Tube) {
+    log.debug("cb_insert_tube_to_table(fabric:Tube), data", tube);
+    if (!tube) {
+      log.error("Tube is undefined ");
+      return;
+    }
+    this.table.row.add(tube);
+    this.table.draw();
+  }
+}
 
 const tableController = new TableController();
 export { tableController };
