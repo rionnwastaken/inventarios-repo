@@ -5,30 +5,45 @@ export interface AutoDismissDialogOptions extends ModalDialogOptions {
   pauseOnHover?: boolean;
 }
 
+export interface AutoDismissDialogOptions extends ModalDialogOptions {
+  duration?: number;
+  pauseOnHover?: boolean;
+  /** Set to true to disable the auto-dismiss timer and require explicit user dismissal */
+  persistent?: boolean;
+}
+
 export class NotiDialog extends ModalDialog {
   private timer: number | null = null;
   private duration: number;
   private pauseOnHover: boolean;
+  private persistent: boolean;
 
   constructor(options: AutoDismissDialogOptions = {}) {
+    const isPersistent = options.persistent ?? options.duration === 0;
+
     super({
       showConfirm: false,
-      showCancel: false,
+      // Enable close/cancel button if persistent so the user has a trigger to close it
+      // showCancel: isPersistent,
+      cancelText: 'Cerrar',
       width: 'w-auto max-w-md',
       ...options,
     });
 
+    this.persistent = isPersistent;
     this.duration = options.duration ?? 3000;
     this.pauseOnHover = options.pauseOnHover ?? true;
 
-    if (this.pauseOnHover) {
+    if (!this.persistent && this.pauseOnHover) {
       this._bindHoverEvents();
     }
   }
 
   public override show(): void {
     super.show();
-    this.startTimer();
+    if (!this.persistent) {
+      this.startTimer();
+    }
   }
 
   public override close(): void {
@@ -38,6 +53,8 @@ export class NotiDialog extends ModalDialog {
 
   private startTimer(): void {
     this.clearTimer();
+    if (this.duration <= 0) return;
+
     this.timer = window.setTimeout(() => {
       this.close();
     }, this.duration);
@@ -55,7 +72,9 @@ export class NotiDialog extends ModalDialog {
     if (!box) return;
 
     box.addEventListener('mouseenter', () => this.clearTimer());
-    box.addEventListener('mouseleave', () => this.startTimer());
+    box.addEventListener('mouseleave', () => {
+      if (!this.persistent) this.startTimer();
+    });
   }
 }
 

@@ -1,5 +1,6 @@
 import { getLogger } from "loglevel";
-import { Fabric, Tube } from "../../schema.ts";
+import { Tube } from "../../schema.ts";
+import { Fabric } from "../../typeObj.ts";
 import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
 import {
   fabricDataColumn,
@@ -85,7 +86,7 @@ class TubeOverview {
     this.bind_row_double_click();
     this.bind_inspect_row();
     this.bind_dialog();
-    this.bind_row_right_click()
+    this.bind_row_right_click();
   }
 
   bind_close_btn() {
@@ -204,15 +205,15 @@ class TubeOverview {
         const p = get_partial_data(
           fabricData.original_fabric,
           fabricData.modified_fabric,
-	  {
-	    omitKeys: ['created_at', 'updated_at', 'id']
-	  }
+          {
+            omitKeys: ["created_at", "updated_at", "id"],
+          },
         );
 
         partial_data.push({
-	  partial_data:p,
-	  id:fabricData.original_fabric.id
-	});
+          partial_data: p,
+          id: fabricData.original_fabric.id,
+        });
       }
 
       console.debug("Sending partial data ", partial_data);
@@ -258,7 +259,6 @@ class TubeOverview {
   async handle_saving_deleted_fabrics(arr: Array<FabricData>) {
     if (arr.data().length > 0) {
       log.info(`Deleting  ${arr.length} rows`);
-
     }
   }
 
@@ -272,7 +272,6 @@ class TubeOverview {
 
       this.handle_saving_created_fabrics(mods.created_arr);
       this.handle_saving_edited_fabrics(mods.edited_arr);
-
     });
   }
 
@@ -284,11 +283,9 @@ class TubeOverview {
         mode: null,
       };
 
-      const fabric = await this.fabricCraft.show(
-        fabricData,
-	"creating",
-        {tube_id:this.tube.id},
-      );
+      const fabric = await this.fabricCraft.show(fabricData, "creating", {
+        tube_id: this.tube.id,
+      });
 
       if (!fabric) {
         log.debug("operation was canceled");
@@ -305,9 +302,8 @@ class TubeOverview {
   bind_row_right_click() {
     // Listen for clicks
     tbody.addEventListener("contextmenu", async (event) => {
-
-      event.preventDefault(); 
-      log.debug("right clieck")
+      event.preventDefault();
+      log.debug("right clieck");
 
       const row = event.target.closest("tr");
 
@@ -326,9 +322,8 @@ class TubeOverview {
         }
 
         if (data.mode == "normal") {
-
-          await this.fabricCraft.show(data, "editing_created");
-	  // this.events.emit("tubo_overview:dblclick_fabric",data.original_fabric)
+          await this.fabricCraft.show(data, "editing");
+          // this.events.emit("tubo_overview:dblclick_fabric",data.original_fabric)
         }
 
         if (data.mode == "edited") {
@@ -342,7 +337,6 @@ class TubeOverview {
       }
     });
   }
-
 
   bind_row_double_click() {
     // Listen for clicks
@@ -362,7 +356,7 @@ class TubeOverview {
 
         //We are passing data by reference
         if (data.mode == "created") {
-          await this.fabricCraft.show(data,"editing_created");
+          await this.fabricCraft.show(data, "editing_created");
         }
 
         if (data.mode == "normal") {

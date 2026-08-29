@@ -17,7 +17,7 @@ export interface ModalDialogOptions {
   onConfirm?: DialogCallback | null;
   onCancel?: DialogCallback | null;
   onClose?: DialogCallback | null;
-  tailwind_class?: string | null;
+  container_tailwind_class?: string | null;
   footerContainer_tailwind_class?: string | null;
 }
 
@@ -30,7 +30,7 @@ export class ModalDialog {
 
   constructor(options: ModalDialogOptions = {}) {
     this.options = {
-      tailwind_class: options.tailwind_class ?? "",
+      container_tailwind_class: options.container_tailwind_class ?? "",
       footerContainer_tailwind_class:
         options.footerContainer_tailwind_class ?? null,
 
@@ -65,7 +65,7 @@ export class ModalDialog {
     let footer_classes  = this.options.footerContainer_tailwind_class || "flex justify-end gap-2 mt-4"
 
     const containerClasses =
-      `modal-box absolute ${this.options.tailwind_class}  ${widthClass} ${heightClass} flex flex-col gap-4  overflow-visible`.trim();
+      `modal-box absolute ${this.options.container_tailwind_class}  ${widthClass} ${heightClass} flex flex-col gap-4  overflow-visible`.trim();
 
     // 3. Build layout template using DaisyUI structure
     this.dialogEl.innerHTML = `

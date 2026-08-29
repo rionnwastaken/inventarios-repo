@@ -15,7 +15,7 @@ import "tom-select/dist/css/tom-select.css";
 import { TypedEventEmitter } from "../../emitter.ts";
 import { FabricCraft, ItemState } from "./fabricCraft.ts";
 import { state } from "../../state.ts";
-import { getDiffValue, render_datecell } from "../renderUtils.ts";
+import { format_measurement, getDiffValue, render_datecell } from "../renderUtils.ts";
 
 let log = getLogger("app");
 
@@ -52,11 +52,11 @@ export class InitTable {
       //TODO MAKE SURE THIS DATA DISPLAYS  THE REMAINING 
       fabricDataColumn(null, "Ancho", {
         render: (data, type, row, meta) =>
-          this.render_remaining_measurement(data, type, row, meta, "original_width"),
+          this.render_remaining_measurement(data, type, row, meta, "original_width","width"),
       }),
       fabricDataColumn(null, "Altura", {
         render: (data, type, row, meta) =>
-          this.render_remaining_measurement(data, type, row, meta, "original_height"),
+          this.render_remaining_measurement(data, type, row, meta, "original_height","height"),
       }),
 
       fabricDataColumn("original_fabric.updated_at", "Fecha actualizado", {
@@ -126,25 +126,34 @@ if (typeof this.table.select === 'object') {
 
   //TODO FIGURE OUT HOW TO DISPLAY THIS SHIT WHEN CHANGING XD
   render_remaining_measurement(fabricData: FabricData, type, row, meta,column_id,which:"width" | "height") {
+
+    if (!which) {
+      throw Error("FUck you, which is null in render_remaining_measurement ")
+    }
+
     // log.debug("fabricdata in redenr cell", fabricData);
     if (type === "display") {
       let original_value = fabricData?.original_fabric[column_id] ?? null;
-      // let modified_value = fabricData?.modified_fabric?.[column_id] ?? null;
+      let modified_value = fabricData?.modified_fabric?.[column_id] ?? null;
 
       if (!original_value) {
 	return ""
       }
-      let measurements = calc_remaining_fabric_measurements(fabricData.original_fabric)
-      let measure
-      if (which == "width") {
-	measure =  measurements["remaining_width"]
-      }
-      else {
-      measure =  measurements["remaining_height"]
-      }
 
-      return `${measure} mts`
+      if (fabricData.original_fabric.deductions.length > 0 ) {
+	let measurements = calc_remaining_fabric_measurements(fabricData.original_fabric)
+	let measure
+	if (which == "width") {
+	  measure =  measurements["remaining_width"]
+	}
+	else {
+	measure =  measurements["remaining_height"]
+	}
 
+	return `${measure} mts`
+      }
+      
+      return getDiffValue(format_measurement(original_value),format_measurement(modified_value),fabricData.mode)
     }
   }
 

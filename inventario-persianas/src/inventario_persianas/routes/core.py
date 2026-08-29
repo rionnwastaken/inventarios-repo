@@ -101,21 +101,16 @@ def update_deduction():
         return err.returnIt()
 
     return data,200
-            "updated_fabrics":data
-            }
 
 
 @core_bp.post("/fabric/new/deduction/")
 def deduction_new():
     log.debug("deduction_new()")
-    jay = request.get_json()
+    deduction = request.get_json()
     
-    if jay is None:
+    if deduction is None:
         return Error("Didnt receive data",400).returnIt()
 
 
-    deduction = jay['data']
-    if deduction is None:
-        return Error("Deduction is None",400).returnIt()
 
     return core.deduction_new(deduction)

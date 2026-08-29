@@ -12,6 +12,7 @@ import "datatables.net-dt/css/dataTables.dataTables.css";
 import { fcolumn, tcolumn } from "./utils.ts";
 import { state } from "../state.ts";
 //TODO ON TUBO ADD BUTTON, add tube to table and refresh it
+//TODO WHEN A NEW FABRIC IS ADDED, MAKE SURE IT IS REFLECTED IN THE VIEW, so it increments in tota lof the tube
 
 
 
@@ -42,7 +43,7 @@ class TableController {
     this.fabricColumns = [
       tcolumn("id", "Tubo ID"),
       tcolumn("fabric_count", "Cantidad Telas"),
-      tcolumn("fabric_count", "Ubicacion ID", {
+      tcolumn("location_id", "Ubicacion ID", {
         render: (data, type, row, meta) => {
           if (type === "display") {
             let text = data ? data : -1;
@@ -50,7 +51,6 @@ class TableController {
           }
         },
       }),
-      // tcolumn("location_id","Ubicacion"),
       tcolumn("rectified", "Retificado"),
       tcolumn("updated_at", "Ultima actualizacion", {
         render: (data, type, row, meta) => {

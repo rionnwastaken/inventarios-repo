@@ -1,13 +1,15 @@
 from sqlmodel import desc, select
 
+from inventario_persianas.app_types import Change
 import inventario_persianas.model as mod
 
 
 from sqlalchemy.orm import Session,selectinload,joinedload
 from sqlalchemy import Delete
-from inventario_persianas.model import Color, Fabric, Supplier, Location, BlindModel, FabricClassification, Tube
+from inventario_persianas.model import Color, Fabric, FabricDeduction, FabricDeductionUpdate, FabricUpdate, Supplier, Location, BlindModel, FabricClassification, Tube
 from inventario_persianas.model import Color, db
-from inventario_persianas.services.utils import create_audit_log
+from inventario_persianas.model_test import flaky
+from inventario_persianas.services.utils import Error, create_audit_log, create_json_with_actual_values_auditlog
 import logging
 from pydantic import ValidationError
 from typing import Tuple, List, Dict, Optional, Any
@@ -24,7 +26,7 @@ def new_tube():
 
 
     tube_json = tube.model_dump()
-    log_json = create_audit_log("New Tube","tube",tube.id)
+    log_json = create_audit_log("Insert","tube",tube.id)
     db.session.commit()
 
 
@@ -57,7 +59,6 @@ def recent_tubes_and_fabrics():
 
         tube_dict = tube.model_dump()
         tube_dict["fabric_count"] = len(fabrics_list)
-        # tube_dict["location_id"] = tube.location_id
         tube_dict["rectified"] = True if tube.tube_rectified else False
 
         last_update = tube_dict["updated_at"]

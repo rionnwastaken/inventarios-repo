@@ -1,4 +1,4 @@
-import { getLogger } from "loglevel";
+import { disableAll, getLogger } from "loglevel";
 import { Tube } from "../../schema";
 import { CatalogItem, FabricData, Fabric, TubeExtraD } from "../../typeObj";
 import { fcolumn, ObjectChanged as ObjectChanged, tcolumn } from "../utils.ts";
@@ -42,6 +42,7 @@ const filling_data_form: HTMLFormElement =
   document.querySelector("#filling-data-form");
 
 
+
 function init_input(el_id, err_id,err_text_id) {
   const el: HTMLInputElement = document.querySelector(el_id);
 
@@ -73,6 +74,7 @@ let height_obj = init_input(
   `#error_text_filling-data-height`,
   "error_text_filling-data-height"
 );
+
 
 
 export class FabricCraft {

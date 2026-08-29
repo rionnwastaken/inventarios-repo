@@ -111,6 +111,9 @@ export function showRecycleDialog(options: DialogOptions): Promise<boolean> {
   });
 }
 
+/*
+Get only the data that is different from the old object
+*/
 export function get_partial_data(
   fabric_old: Record<string, any>,
   fabric_new: Record<string, any>,
