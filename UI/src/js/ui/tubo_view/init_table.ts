@@ -140,7 +140,7 @@ if (typeof this.table.select === 'object') {
 	return ""
       }
 
-      if (fabricData.original_fabric.deductions.length > 0 ) {
+      if (fabricData.original_fabric.deductions != null && fabricData.original_fabric.deductions.length > 0 ) {
 	let measurements = calc_remaining_fabric_measurements(fabricData.original_fabric)
 	let measure
 	if (which == "width") {
