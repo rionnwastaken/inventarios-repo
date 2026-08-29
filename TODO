@@ -1,0 +1,9 @@
+Features
+  mark/unmark tube as rectified
+  assign location to tube (opens dialog that displays locanio name with the image lay in a grid)
+  selection fo rows to be able to mark as  deleted
+  button to mark fabric as archived
+  button to show only archived fabrics in tube view
+  tab to be able to edit items in catalago, maybe rename and delete ( lets you know that all that have it will become null now)
+  implement filtering logic and UI
+  view to toggle fabric and tubes
