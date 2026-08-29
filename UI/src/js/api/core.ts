@@ -27,18 +27,6 @@ api.interceptors.response.use(
 
 // Exported API Module (Guarantees payload is wrapped in an object)
 export const CoreAPI = {
-  // newTube: () =>
-  //   sendRequest("/core/new/tube", "POST", {}),
-  //
-  // recentTubes: () =>
-  //   sendRequest("/core/recent_tubes", "GET", {}),
-  //
-  // fabric_add_many: (fabrics:Array<Fabric>) =>
-  //   sendRequest("/core/fabric/add_many", "POST", {fabrics:fabrics}),
-  //
-  //
-  // fabric_update_many: (fabrics:Array<Object>) =>
-  //   sendRequest("/core/fabric/edit/many/", "POST", {data:fabrics}),
 
 newTube: async () =>
     await api.post("/new/tube", {}),
@@ -65,27 +53,3 @@ update_deduction: async (fabric_id: number, deduction_id: number, partial_deduct
   });
   return res;
 }
-
-
-
-
-// 2. Refactored API object
-// export const CoreAPI = {
-//   newTube: () => 
-//     api.post('/new/tube', {}),
-//
-//   recentTubes: () => 
-//     api.get('/recent_tubes'),
-//
-//   fabric_add_many: (fabrics: Fabric[]) => 
-//     api.post('/fabric/add_many', { fabrics }),
-//
-//   fabric_update_many: (fabrics: Object[]) => 
-//     api.post('/fabric/edit/many/', { data: fabrics }),
-//
-//   create_deduction: (deduction: FabricDeduction) => 
-//     api.post('/fabric/new/deduction/', { data: deduction }),
-//
-//   update_deductions: (deductions: FabricDeduction[]) => 
-//     api.post('/fabric/deductions/update/', { data: deductions }),
-// };
