@@ -62,6 +62,7 @@ export function render_datecell(
   column_name: string,
 ) {
   let value = get(data, column_name);
+  log.debug("data in render data cell is ", value, data, column_name);
   if (type === "display") {
     const date = new Date(value);
     return date.toLocaleString("es-MX", { hour12: true });

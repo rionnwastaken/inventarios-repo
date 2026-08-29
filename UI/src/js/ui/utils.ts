@@ -16,7 +16,7 @@ import DataTable from "datatables.net-dt";
 
 import "datatables.net-dt/css/dataTables.dataTables.css";
 
-export function column(id: any, title, extra, group: ViewMode) {
+export function column(id: any, title, extra, group?: ViewMode) {
   console.log(`Name is ${group}_${title}`);
 
   let col: ColumnsConfig = {
@@ -24,7 +24,7 @@ export function column(id: any, title, extra, group: ViewMode) {
     name: `${group}_${id}` as string, // <--- Add this line!
     title: title,
     group: group,
-    visible: false,
+    // visible: false,
     defaultContent: "",
   };
   if (extra) {

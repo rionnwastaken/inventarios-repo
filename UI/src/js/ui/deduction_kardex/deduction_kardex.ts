@@ -18,6 +18,7 @@ import {
 } from "../renderUtils";
 import { Form } from "./form";
 import { TypedEventEmitter } from "../../emitter";
+import { column } from "../utils";
 
 export interface DeductionKardexEvents {
   "deduction:modified": (fabric: Fabric) => void;
@@ -118,7 +119,9 @@ class DeductionKardex {
 
   init_columns() {
     this.columns = [
+      //@ts-ignore
       column(null, "Ancho", {
+        // visible:true,
         render: (data, type, row, meta) =>
           render_plain2(
             data,
@@ -130,6 +133,7 @@ class DeductionKardex {
           ),
       }),
 
+      //@ts-ignore
       column(null, "Alto", {
         render: (data, type, row, meta) =>
           render_plain2(
@@ -142,16 +146,19 @@ class DeductionKardex {
           ),
       }),
 
+      //@ts-ignore
       column(null, "Comentario", {
         render: (data, type, row, meta) =>
           render_plain2(data, type, row, meta, "comment"),
       }),
 
+      //@ts-ignore
       column("updated_at", "Ultima actualizacion", {
         render: (data, type, row, meta) =>
           render_datecell(data, type, row, meta, "updated_at"),
       }),
 
+      //@ts-ignore
       column("created_at", "Creado", {
         render: (data, type, row, meta) =>
           render_datecell(data, type, row, meta, "created_at"),
@@ -323,19 +330,6 @@ class DeductionKardex {
     });
     this.table.draw();
   }
-}
-
-function column<T>(data: keyof T, title, extra) {
-  let col: ColumnsConfig & { data: keyof T } = {
-    data: data,
-    name: data as string, // <--- Add this line!
-    title: title,
-    defaultContent: "",
-  };
-  if (extra) {
-    col = { ...col, ...extra };
-  }
-  return col;
 }
 
 const deductionKardex = new DeductionKardex();
