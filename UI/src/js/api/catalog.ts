@@ -1,28 +1,25 @@
-import { sendRequest } from "./api.ts";
+import axios from "axios";
+import { createa_api } from "./axios_init.ts";
+
+
+const api = createa_api("catalago")
 
 // Exported API Module (Guarantees payload is wrapped in an object)
 export const CatalogApi = {
-  addColor: (colorName: string) =>
-    sendRequest("/catalago/colors/add", "POST", { color_name: colorName }),
+  addColor: async (colorName: string) => { 
+    return await api.post("/colors/add",{ color_name: colorName }) 
+  },
+  getCatalago: async() => {
+    return await api.get("all")
+  },
 
-  removeColor: (colorName: string) =>
-    sendRequest("/catalago/colors/remove", "POST", { color_name: colorName }),
-
-  removeBulkColors: (id_colors: Array<number>) =>
-    sendRequest("/catalago/colors/bulk-remove", "POST", {
-      id_colors: id_colors,
-    }),
-
-  getColors: (filters?: Record<string, unknown>) =>
-    sendRequest("/catalago/colors/list", "GET", filters),
-
-  getCatalago: () => sendRequest("/catalago/all/", "GET"),
-
-  get_optional_attributs_of_fabric: () => sendRequest("/catalago/fabric/optional_table_names_attributes", "GET"),
-
-  addItem: (table_name, value) =>
-    sendRequest("/catalago/add/", "POST", {
+  get_optional_attributs_of_fabric: async () =>{
+    return await api.get("/fabric/optional_table_names_attributes")
+  },
+  addItem: async (table_name, value) => {
+    return await api.post("/add/",{
       table_name: table_name,
       value: value,
-    }),
+    })
+  },
 };

@@ -1,5 +1,4 @@
 import { CatalogItem, ViewMode } from "./typeObj";
-import { sendRequest } from "./api/api";
 import { CatalogApi } from "./api/catalog";
 import {
   BlindModel,

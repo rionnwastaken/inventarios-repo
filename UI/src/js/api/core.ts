@@ -1,30 +1,9 @@
 import { Fabric, FabricDeduction } from "../schema.ts";
 import axios from "axios";
-import {sendRequest} from "./api.ts";
+import { createa_api } from "./axios_init.ts";
 
 
-const api = axios.create({
-  baseURL: '/core',
-  validateStatus: (status) => status >= 200 && status < 500, // Treats 400 as a resolved promise instead of an exception
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.response.use(
-  (response) => {
-    // Dynamically add a .success boolean flag (true for 2xx statuses)
-    response.success = response.status >= 200 && response.status < 300;
-    return response;
-  },
-  (error) => {
-    // Handles 500+ errors or total network failures
-    error.success = false;
-    return error;
-  }
-);
-
-
+const api = createa_api("core")
 // Exported API Module (Guarantees payload is wrapped in an object)
 export const CoreAPI = {
 
