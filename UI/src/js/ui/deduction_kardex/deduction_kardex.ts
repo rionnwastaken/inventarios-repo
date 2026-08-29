@@ -19,9 +19,8 @@ import {
 import { Form } from "./form";
 import { TypedEventEmitter } from "../../emitter";
 
-
 export interface DeductionKardexEvents {
-  "deduction:modified": (fabric:Fabric) => void,
+  "deduction:modified": (fabric: Fabric) => void;
 }
 
 class DeductionKardex {
@@ -150,12 +149,12 @@ class DeductionKardex {
 
       column("updated_at", "Ultima actualizacion", {
         render: (data, type, row, meta) =>
-          render_datecell(data, type, row, meta),
+          render_datecell(data, type, row, meta, "updated_at"),
       }),
 
       column("created_at", "Creado", {
         render: (data, type, row, meta) =>
-          render_datecell(data, type, row, meta),
+          render_datecell(data, type, row, meta, "created_at"),
       }),
     ];
   }
@@ -252,19 +251,20 @@ class DeductionKardex {
     }
 
     if (mode == "editing") {
-
-      let row = this.table.row((index,data,node) => {
-	if (data.id == result.deduction.id) {
-	  return true
-	}
-      })
+      let row = this.table.row((index, data, node) => {
+        if (data.id == result.deduction.id) {
+          return true;
+        }
+      });
 
       if (!row) {
-	log.debug(`Row in datatable was not found with id ${result.deduction.id}`)
-	return
+        log.debug(
+          `Row in datatable was not found with id ${result.deduction.id}`,
+        );
+        return;
       }
-      log.debug("result here ",result)
-      row.data(result.deduction)
+      log.debug("result here ", result);
+      row.data(result.deduction);
     }
 
     this.fabric = result.fabric;
@@ -272,9 +272,7 @@ class DeductionKardex {
     this.update_display_remaining_measurements();
     console.log("result here in kardex:", result);
     this.table.draw();
-    this.events.emit("deduction:modified",this.fabric)
-
-
+    this.events.emit("deduction:modified", this.fabric);
   }
 
   close() {

@@ -49,14 +49,15 @@ class TableController {
         },
       }),
       tcolumn("rectified", "Retificado"),
-      tcolumn("updated_at", "Ultima actualizacion", {
-        render: (data, type, row, meta) => {
-          if (type === "display") {
-            const date = new Date(data);
-            return date.toLocaleString("es-MX", { hour12: true });
-          }
+      tcolumn(
+        "updated_at",
+        "Ultima actualizacion",
+        {
+          render: (data, type, row, meta) =>
+            render_datecell(data, type, row, meta, "updated_at"),
         },
-      }),
+        "tube",
+      ),
 
       // Fabric columns
       fcolumn("id", "Fabric"),
@@ -70,7 +71,7 @@ class TableController {
       paging: false,
       autoWidth: true,
 
-      order: { name: "updated_at", dir: "desc" },
+      order: { name: "tube_updated_at", dir: "asc" },
       columnDefs: [
         {
           targets: "_all", // Zero-based index of the columns you want to left-align

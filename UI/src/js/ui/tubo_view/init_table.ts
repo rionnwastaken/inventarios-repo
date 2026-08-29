@@ -1,11 +1,17 @@
 import { getLogger } from "loglevel";
 import { Fabric, Tube } from "../../schema.ts";
 import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
-import { calc_remaining_fabric_measurements, fabricDataColumn, fcolumn, tcolumn } from "../utils.ts";
+import {
+  calc_remaining_fabric_measurements,
+  column,
+  fabricDataColumn,
+  fcolumn,
+  tcolumn,
+} from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 
 import DataTable from "datatables.net-dt";
-import 'datatables.net-dt/css/dataTables.dataTables.css';
+import "datatables.net-dt/css/dataTables.dataTables.css";
 
 // select(DataTable);
 
@@ -15,7 +21,11 @@ import "tom-select/dist/css/tom-select.css";
 import { TypedEventEmitter } from "../../emitter.ts";
 import { FabricCraft, ItemState } from "./fabricCraft.ts";
 import { state } from "../../state.ts";
-import { format_measurement, getDiffValue, render_datecell } from "../renderUtils.ts";
+import {
+  format_measurement,
+  getDiffValue,
+  render_datecell,
+} from "../renderUtils.ts";
 
 let log = getLogger("app");
 
@@ -32,7 +42,6 @@ export class InitTable {
   }
 
   init_columns() {
-
     const catalogConfigs: [string, string][] = [
       ["Modelo", "blind_model"],
       ["Color", "color"],
@@ -42,30 +51,44 @@ export class InitTable {
 
     this.fabricColumns = [
       ...catalogConfigs.map(([label, prop]) =>
-	  fabricDataColumn(null, label, {
-	    render: (data, type, row, meta) =>
-	      this.render_catalago(data, type, row, meta, prop, `${prop}_id`),
-	  })
-	),
+        fabricDataColumn(null, label, {
+          render: (data, type, row, meta) =>
+            this.render_catalago(data, type, row, meta, prop, `${prop}_id`),
+        }),
+      ),
 
       //TODO CHANGE THIS CAUSE ITS NOT GOING TO REFLECT EDIT VIEW
-      //TODO MAKE SURE THIS DATA DISPLAYS  THE REMAINING 
+      //TODO MAKE SURE THIS DATA DISPLAYS  THE REMAINING
       fabricDataColumn(null, "Ancho", {
         render: (data, type, row, meta) =>
-          this.render_remaining_measurement(data, type, row, meta, "original_width","width"),
+          this.render_remaining_measurement(
+            data,
+            type,
+            row,
+            meta,
+            "original_width",
+            "width",
+          ),
       }),
       fabricDataColumn(null, "Altura", {
         render: (data, type, row, meta) =>
-          this.render_remaining_measurement(data, type, row, meta, "original_height","height"),
+          this.render_remaining_measurement(
+            data,
+            type,
+            row,
+            meta,
+            "original_height",
+            "height",
+          ),
       }),
 
-      fabricDataColumn("original_fabric.updated_at", "Fecha actualizado", {
+      column("original_fabric.updated_at", "Fecha actualizado", {
         render: (data, type, row, meta) =>
-          render_datecell(data, type, row, meta),
+          render_datecell(data, type, row, meta, "original_fabric.updated_at"),
       }),
-      fabricDataColumn("original_fabric.created_at", "Fecha Creacion", {
+      column("original_fabric.created_at", "Fecha Creacion", {
         render: (data, type, row, meta) =>
-          render_datecell(data, type, row, meta),
+          render_datecell(data, type, row, meta, "original_fabric.created_at"),
       }),
     ];
   }
@@ -85,11 +108,11 @@ export class InitTable {
         },
       ],
     });
-if (typeof this.table.select === 'object') {
-  console.log('Select module is successfully loaded!');
-} else {
-  console.error('Select module is NOT loaded.');
-}
+    if (typeof this.table.select === "object") {
+      console.log("Select module is successfully loaded!");
+    } else {
+      console.error("Select module is NOT loaded.");
+    }
   }
 
   init_visible_group() {
@@ -103,7 +126,6 @@ if (typeof this.table.select === 'object') {
 
   //Data is litterally the the value of a column, like an id
 
-
   render_plain(fabricData: FabricData, type, row, meta, table_name, column_id) {
     // log.debug("fabricdata in redenr cell", fabricData);
     if (type === "display") {
@@ -116,19 +138,21 @@ if (typeof this.table.select === 'object') {
         modified_value = `${modified_value} mts`;
       }
 
-      return getDiffValue(
-        original_value,
-        modified_value,
-        fabricData.mode,
-      );
+      return getDiffValue(original_value, modified_value, fabricData.mode);
     }
   }
 
   //TODO FIGURE OUT HOW TO DISPLAY THIS SHIT WHEN CHANGING XD
-  render_remaining_measurement(fabricData: FabricData, type, row, meta,column_id,which:"width" | "height") {
-
+  render_remaining_measurement(
+    fabricData: FabricData,
+    type,
+    row,
+    meta,
+    column_id,
+    which: "width" | "height",
+  ) {
     if (!which) {
-      throw Error("FUck you, which is null in render_remaining_measurement ")
+      throw Error("FUck you, which is null in render_remaining_measurement ");
     }
 
     // log.debug("fabricdata in redenr cell", fabricData);
@@ -137,27 +161,33 @@ if (typeof this.table.select === 'object') {
       let modified_value = fabricData?.modified_fabric?.[column_id] ?? null;
 
       if (!original_value) {
-	return ""
+        return "";
       }
 
-      if (fabricData.original_fabric.deductions != null && fabricData.original_fabric.deductions.length > 0 ) {
-	let measurements = calc_remaining_fabric_measurements(fabricData.original_fabric)
-	let measure
-	if (which == "width") {
-	  measure =  measurements["remaining_width"]
-	}
-	else {
-	measure =  measurements["remaining_height"]
-	}
+      if (
+        fabricData.original_fabric.deductions != null &&
+        fabricData.original_fabric.deductions.length > 0
+      ) {
+        let measurements = calc_remaining_fabric_measurements(
+          fabricData.original_fabric,
+        );
+        let measure;
+        if (which == "width") {
+          measure = measurements["remaining_width"];
+        } else {
+          measure = measurements["remaining_height"];
+        }
 
-	return `${measure} mts`
+        return `${measure} mts`;
       }
-      
-      return getDiffValue(format_measurement(original_value),format_measurement(modified_value),fabricData.mode)
+
+      return getDiffValue(
+        format_measurement(original_value),
+        format_measurement(modified_value),
+        fabricData.mode,
+      );
     }
   }
-
-
 
   //TODO I would like to display data for when data has been edited, to display original and modified, and the original criss cross
   render_catalago(
@@ -167,7 +197,6 @@ if (typeof this.table.select === 'object') {
     meta,
     table_name,
     column_id,
-    
   ) {
     // log.debug("fabricdata in redenr cell", fabricData);
     if (type === "display") {
@@ -180,12 +209,8 @@ if (typeof this.table.select === 'object') {
         fabricData.modified_fabric?.[column_id] ?? null,
       );
 
-      log.debug(`Formatting value for column ${column_id}`)
-      return getDiffValue(
-        original_value,
-        modified_value,
-        fabricData.mode,
-      );
+      log.debug(`Formatting value for column ${column_id}`);
+      return getDiffValue(original_value, modified_value, fabricData.mode);
     }
   }
 
