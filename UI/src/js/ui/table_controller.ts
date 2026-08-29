@@ -79,7 +79,7 @@ class TableController {
       paging: false,
       autoWidth: true,
 
-      order: { name: "tube_updated_at", dir: "asc" },
+      order: { name: "tube_updated_at", dir: "desc" },
       columnDefs: [
         {
           targets: "_all", // Zero-based index of the columns you want to left-align
@@ -180,12 +180,11 @@ class TableController {
   }
 
   init_visible_group() {
-    this.table
-      .columns((idx) => {
-        const config = this.table.column(idx).init();
-        return config && config.group === "tube"; // Check matching group name
-      })
-      .visible(true); // Pass boolean state directly
+    this.table.columns().every(function () {
+      const config = this.init();
+      const isTubeGroup = config && config.group === "tube";
+      this.visible(isTubeGroup);
+    });
   }
 
   cb_insert_tube_to_table(tube: Tube) {
