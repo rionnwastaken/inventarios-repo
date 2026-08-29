@@ -9,8 +9,9 @@ import { TypedEventEmitter } from "../emitter.ts";
 import DataTable from "datatables.net-dt";
 
 import "datatables.net-dt/css/dataTables.dataTables.css";
-import { fcolumn, tcolumn } from "./utils.ts";
+import { column, fcolumn, tcolumn } from "./utils.ts";
 import { state } from "../state.ts";
+import { render_datecell, render_plain2 } from "./renderUtils.ts";
 //TODO ON TUBO ADD BUTTON, add tube to table and refresh it
 //TODO WHEN A NEW FABRIC IS ADDED, MAKE SURE IT IS REFLECTED IN THE VIEW, so it increments in tota lof the tube
 
@@ -37,19 +38,26 @@ class TableController {
   }
 
   init_columns() {
+    let tubeColumns = [
+      ["id", "Tubo ID"],
+      ["fabric_count", "Cantidad Telas"],
+      ["location_id", "Ubicacion ID"],
+      ["rectified", "Retificado"],
+    ];
+
     this.fabricColumns = [
-      tcolumn("id", "Tubo ID"),
-      tcolumn("fabric_count", "Cantidad Telas"),
-      tcolumn("location_id", "Ubicacion ID", {
-        render: (data, type, row, meta) => {
-          if (type === "display") {
-            let text = data ? data : -1;
-            return `${text}`;
-          }
-        },
-      }),
-      tcolumn("rectified", "Retificado"),
-      tcolumn(
+      ...tubeColumns.map(([id, title]) =>
+        column(
+          id,
+          title,
+          {
+            render: (data, type, row, meta) =>
+              render_plain2(data, type, row, meta, id),
+          },
+          "tube",
+        ),
+      ),
+      column(
         "updated_at",
         "Ultima actualizacion",
         {

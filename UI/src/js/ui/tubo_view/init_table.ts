@@ -50,46 +50,94 @@ export class InitTable {
     ];
 
     this.fabricColumns = [
-      ...catalogConfigs.map(([label, prop]) =>
-        fabricDataColumn(null, label, {
-          render: (data, type, row, meta) =>
-            this.render_catalago(data, type, row, meta, prop, `${prop}_id`),
-        }),
+      // @ts-ignore
+      ...catalogConfigs.map(([title, column_name]) =>
+        column(
+          column_name,
+          title,
+          {
+            render: (data, type, row, meta) =>
+              this.render_catalago(
+                data,
+                type,
+                row,
+                meta,
+                column_name,
+                `${column_name}_id`,
+              ),
+          },
+          "tube",
+        ),
       ),
 
-      //TODO CHANGE THIS CAUSE ITS NOT GOING TO REFLECT EDIT VIEW
-      //TODO MAKE SURE THIS DATA DISPLAYS  THE REMAINING
-      fabricDataColumn(null, "Ancho", {
-        render: (data, type, row, meta) =>
-          this.render_remaining_measurement(
-            data,
-            type,
-            row,
-            meta,
-            "original_width",
-            "width",
-          ),
-      }),
-      fabricDataColumn(null, "Altura", {
-        render: (data, type, row, meta) =>
-          this.render_remaining_measurement(
-            data,
-            type,
-            row,
-            meta,
-            "original_height",
-            "height",
-          ),
-      }),
+      // @ts-ignore
+      column(
+        "original_width",
+        "Ancho",
+        {
+          render: (data, type, row, meta) =>
+            this.render_remaining_measurement(
+              data,
+              type,
+              row,
+              meta,
+              "original_width",
+              "width",
+            ),
+        },
+        "tube",
+      ), // @ts-ignore
 
-      column("original_fabric.updated_at", "Fecha actualizado", {
-        render: (data, type, row, meta) =>
-          render_datecell(data, type, row, meta, "original_fabric.updated_at"),
-      }),
-      column("original_fabric.created_at", "Fecha Creacion", {
-        render: (data, type, row, meta) =>
-          render_datecell(data, type, row, meta, "original_fabric.created_at"),
-      }),
+      column(
+        "original_height",
+        "Altura",
+        {
+          render: (data, type, row, meta) =>
+            this.render_remaining_measurement(
+              data,
+              type,
+              row,
+              meta,
+              "original_height",
+              "height",
+            ),
+        },
+        "tube",
+      ),
+
+      // @ts-ignore
+      column(
+        "original_fabric.updated_at",
+        "Fecha actualizado",
+        {
+          render: (data, type, row, meta) =>
+            render_datecell(
+              data,
+              type,
+              row,
+              meta,
+              "original_fabric.updated_at",
+            ),
+        },
+        "fabric",
+      ),
+
+      // @ts-ignore
+      column(
+        "original_fabric.created_at",
+        "Fecha Creacion",
+        {
+          render: (data, type, row, meta) =>
+            render_datecell(
+              data,
+              type,
+              row,
+              meta,
+              "original_fabric.created_at",
+            ),
+        },
+        "fabric",
+      ),
     ];
   }
 
@@ -99,7 +147,7 @@ export class InitTable {
       paging: false,
       autoWidth: true,
       searching: false,
-      order: { name: "original_fabric.updated_at", dir: "desc" },
+      order: { name: "original_fabric.updated_at", dir: "asc" },
       rowCallback: this.render_row,
       columnDefs: [
         {

@@ -1,9 +1,9 @@
 {
+
   "UI/**/*.{js,jsx,ts,tsx,json,css}": [
-    "prettier --write"
+    "prettier --check"
   ],
   "inventario-persianas/**/*.py": [
-    "ruff check --fix",
-    "ruff format"
+    "ruff check"
   ]
 }

@@ -4,18 +4,24 @@ import { Tube } from "../schema.ts";
 import { Fabric } from "../typeObj.ts";
 
 import { Api, ColumnsConfig } from "datatables.net-dt";
-import { FabricData, TableView, TubeExtraD as TubeExtraD, ViewMode } from "../typeObj.ts";
+import {
+  FabricData,
+  TableView,
+  TubeExtraD as TubeExtraD,
+  ViewMode,
+} from "../typeObj.ts";
 import { TypedEventEmitter } from "../emitter.ts";
 
 import DataTable from "datatables.net-dt";
 
 import "datatables.net-dt/css/dataTables.dataTables.css";
 
+export function column(id: any, title, extra, group: ViewMode) {
+  console.log(`Name is ${group}_${title}`);
 
-export function column<T>(data:keyof T, title, extra, group:ViewMode) {
-  let col: ColumnsConfig & { data: keyof T } = {
-    data: data,
-    name: data as string, // <--- Add this line!
+  let col: ColumnsConfig = {
+    data: null,
+    name: `${group}_${id}` as string, // <--- Add this line!
     title: title,
     group: group,
     visible: false,
@@ -28,17 +34,16 @@ export function column<T>(data:keyof T, title, extra, group:ViewMode) {
 }
 
 export function tcolumn(data, title, extra?) {
-  return column<Tube>(data, title, extra, "tube");
+  return column(data, title, extra, "tube");
 }
 
 export function fcolumn(data, title, extra?) {
-  return column<Fabric>(data, title, extra, "fabric");
+  return column(data, title, extra, "fabric");
 }
 
 export function fabricDataColumn(data, title, extra?) {
-  return column<FabricData>(data, title, extra, "fabric");
+  return column(data, title, extra, "fabric");
 }
-
 
 interface DialogOptions {
   header: string;
@@ -53,7 +58,9 @@ interface DialogOptions {
 export function showRecycleDialog(options: DialogOptions): Promise<boolean> {
   return new Promise((resolve) => {
     // 1. Get element references
-    const dialog = document.getElementById("dialog-recycle") as HTMLDialogElement | null;
+    const dialog = document.getElementById(
+      "dialog-recycle",
+    ) as HTMLDialogElement | null;
     const headerEl = document.getElementById("dialog-header");
     const messageEl = document.getElementById("dialog-recycle-message");
     const cancelBtn = document.getElementById("dialog-recycle-cancel-btn");
@@ -120,20 +127,22 @@ export function get_partial_data(
   options?: {
     omitKeys?: string[];
     onlyKeys?: string[];
-  }
+  },
 ) {
   const omitKeys = options?.omitKeys;
   const onlyKeys = options?.onlyKeys;
 
   // Mutual exclusion check
   if (omitKeys && onlyKeys) {
-    throw new Error("Cannot specify both 'omitKeys' and 'onlyKeys' simultaneously.");
+    throw new Error(
+      "Cannot specify both 'omitKeys' and 'onlyKeys' simultaneously.",
+    );
   }
 
   const partial_data: Record<string, any> = {};
 
   // Determine keys to evaluate
-  const keysToProcess = onlyKeys 
+  const keysToProcess = onlyKeys
     ? new Set(onlyKeys)
     : new Set([...Object.keys(fabric_old), ...Object.keys(fabric_new)]);
 
@@ -154,53 +163,57 @@ export function get_partial_data(
   return partial_data;
 }
 
-
-export function createElementFromHTML<T extends HTMLElement = HTMLElement>(htmlString: string): T {
+export function createElementFromHTML<T extends HTMLElement = HTMLElement>(
+  htmlString: string,
+): T {
   const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlString.trim(), 'text/html');
+  const doc = parser.parseFromString(htmlString.trim(), "text/html");
   const element = doc.body.firstElementChild;
 
   if (!element) {
-    throw new Error('Failed to create element: Provided string did not contain a valid HTML element.');
+    throw new Error(
+      "Failed to create element: Provided string did not contain a valid HTML element.",
+    );
   }
 
   return element as T;
 }
 
-
-export function calc_remaining_fabric_measurements(fabric:Fabric) {
-    if (!fabric) {
-      log.error("calc_remaining_fabric_measurements FABRIC is null")
-      return null
-    }
-
-    let width = fabric.original_width
-    let height = fabric.original_height
-
-    let deductions = fabric.deductions || []
-
-    deductions.forEach(deduction => {
-      width -= deduction.removed_width
-      height -= deduction.removed_height
-      log.debug(`Width and height ${width} ${height}`)
-    })
-
-    log.debug({
-      remaining_width:width.toFixed(3),
-      remaining_height:height.toFixed(3)
-    })
-
-    return {
-      remaining_width:width.toFixed(3),
-      remaining_height:height.toFixed(3)
-    }
+export function calc_remaining_fabric_measurements(fabric: Fabric) {
+  if (!fabric) {
+    log.error("calc_remaining_fabric_measurements FABRIC is null");
+    return null;
   }
 
+  let width = fabric.original_width;
+  let height = fabric.original_height;
 
-export function ObjectChanged(original: Object, modified: Object,ignoredKeys:Set<any>): boolean {
+  let deductions = fabric.deductions || [];
+
+  deductions.forEach((deduction) => {
+    width -= deduction.removed_width;
+    height -= deduction.removed_height;
+    log.debug(`Width and height ${width} ${height}`);
+  });
+
+  log.debug({
+    remaining_width: width.toFixed(3),
+    remaining_height: height.toFixed(3),
+  });
+
+  return {
+    remaining_width: width.toFixed(3),
+    remaining_height: height.toFixed(3),
+  };
+}
+
+export function ObjectChanged(
+  original: Object,
+  modified: Object,
+  ignoredKeys: Set<any>,
+): boolean {
   log.debug("Checking  isObjectUnchanged");
   if (!original || !modified) return false;
-
 
   const keys = new Set([
     ...Object.keys(original),
@@ -214,8 +227,16 @@ export function ObjectChanged(original: Object, modified: Object,ignoredKeys:Set
     const origVal = original[key];
     const modVal = modified[key];
 
-    
-    log.debug("Comparing ",origVal," and ",modVal, "and their types are ",typeof origVal, "and ",typeof modVal)
+    log.debug(
+      "Comparing ",
+      origVal,
+      " and ",
+      modVal,
+      "and their types are ",
+      typeof origVal,
+      "and ",
+      typeof modVal,
+    );
 
     // Skip comparison if either value is a Date instance
     if (origVal instanceof Date || modVal instanceof Date) continue;
@@ -237,8 +258,3 @@ export function ObjectChanged(original: Object, modified: Object,ignoredKeys:Set
 
   return false;
 }
-
-
-
-
-

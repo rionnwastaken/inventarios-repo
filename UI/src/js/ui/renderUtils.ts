@@ -51,6 +51,9 @@ export function format_measurement(value) {
   return `${value} mts`;
 }
 
+const get = (obj, path) =>
+  path.split(".").reduce((acc, key) => acc?.[key], obj);
+
 export function render_datecell(
   data: Object,
   type,
@@ -58,7 +61,7 @@ export function render_datecell(
   meta,
   column_name: string,
 ) {
-  let value = data[column_name];
+  let value = get(data, column_name);
   if (type === "display") {
     const date = new Date(value);
     return date.toLocaleString("es-MX", { hour12: true });
