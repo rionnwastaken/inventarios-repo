@@ -292,7 +292,8 @@ export class FabricCraft {
 
       let fabric;
       if (actionState == "editing") {
-        let should_disable = fabricData.original_fabric.deductions.length > 0;
+        let should_disable =
+          (fabricData?.original_fabric?.deductions?.length ?? 0) > 0;
         log.debug("Should disable inputs ", should_disable);
         width_obj.disable(should_disable);
         height_obj.disable(should_disable);
