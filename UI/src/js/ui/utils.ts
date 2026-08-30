@@ -19,9 +19,14 @@ import "datatables.net-dt/css/dataTables.dataTables.css";
 export function column(id: any, title, extra, group?: ViewMode) {
   console.log(`Name is ${group}_${title}`);
 
+  let group_string = "";
+  if (group) {
+    group_string = `${group}_`;
+  }
+
   let col: ColumnsConfig = {
     data: null,
-    name: `${group}_${id}` as string, // <--- Add this line!
+    name: `${group_string}${id}` as string, // <--- Add this line!
     title: title,
     group: group,
     // visible: false,
@@ -198,7 +203,7 @@ export function calc_remaining_fabric_measurements(fabric: Fabric) {
 
   if (width == null || height == null) {
     log.error("WTF", fabric);
-    return "";
+    return null;
   }
 
   log.debug({

@@ -39,6 +39,7 @@ export function render_plain2(
     let value = obj?.[column_id] ?? "";
     if (cb_format) {
       value = cb_format(value, obj);
+      log.debug("value here is ", value);
     }
     return value;
   }

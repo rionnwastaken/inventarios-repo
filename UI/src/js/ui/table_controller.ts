@@ -109,7 +109,7 @@ class TableController {
               return;
             }
 
-            render_plain2(
+            return render_plain2(
               data,
               type,
               row,
@@ -134,9 +134,9 @@ class TableController {
         {
           render: (data, type, row, meta) => {
             if (state.active_view != "fabric") {
-              return;
+              return "";
             }
-            render_plain2(
+            return render_plain2(
               data,
               type,
               row,
@@ -147,7 +147,7 @@ class TableController {
                 if (!measurements) {
                   return "";
                 }
-                return measurements.remaining_width;
+                return String(measurements.remaining_height);
               },
             );
           },
@@ -157,34 +157,22 @@ class TableController {
 
       // @ts-ignore
       column(
-        "original_fabric.updated_at",
+        "updated_at",
         "Fecha actualizado",
         {
           render: (data, type, row, meta) =>
-            render_datecell(
-              data,
-              type,
-              row,
-              meta,
-              "original_fabric.updated_at",
-            ),
+            render_datecell(data, type, row, meta, "updated_at"),
         },
         "fabric",
       ),
 
       // @ts-ignore
       column(
-        "original_fabric.created_at",
+        "created_at",
         "Fecha Creacion",
         {
           render: (data, type, row, meta) =>
-            render_datecell(
-              data,
-              type,
-              row,
-              meta,
-              "original_fabric.created_at",
-            ),
+            render_datecell(data, type, row, meta, "created_at"),
         },
         "fabric",
       ),
