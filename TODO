@@ -7,3 +7,13 @@ Features
   tab to be able to edit items in catalago, maybe rename and delete ( lets you know that all that have it will become null now)
   implement filtering logic and UI
   view to toggle fabric and tubes
+  Last update should update the fabric last update when a deduction is created or updated
+
+  Fix deduction
+    the width input defaults in the input to the original width
+    Cannot be empty
+    if width is less than origianl width, special "spareFabric" case happens
+    spare fabric measurements  original_width - width_used * height taken
+    A deduction can only logically create one spare fabric.
+    if the deduction is edited, the spare fabric measurements should be aswell update
+
