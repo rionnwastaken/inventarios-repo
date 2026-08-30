@@ -1,79 +1,85 @@
-from flask import Blueprint,request
-from sqlalchemy import Delete, Select, delete
-from sqlmodel import SQLModel, select
-import inventario_persianas.services.catalogs as catalago
-from inventario_persianas.model import BlindModel, Color, FabricClassification, LocationImage, Supplier, db
-import inventario_persianas.model as mod
 import logging
+
+import inventario_persianas.model as mod
+from flask import Blueprint, request
+from inventario_persianas.model import (
+    BlindModel,
+    Color,
+    FabricClassification,
+    Supplier,
+    db,
+)
+from sqlalchemy import Select, delete
+from sqlmodel import SQLModel, select
 
 log = logging.getLogger(__name__)
 
 
-catalago_bp = Blueprint("catalago",__name__)
+catalago_bp = Blueprint("catalago", __name__)
 
 
-
-@catalago_bp.get('/colors/list')
+@catalago_bp.get("/colors/list")
 def colors():
     colors = db.session.scalars(Select(mod.Color))
-    return {"data":([ color.model_dump() for color in list(colors)]),}
+    return {
+        "data": ([color.model_dump() for color in list(colors)]),
+    }
 
 
-@catalago_bp.post('/colors/add')
+@catalago_bp.post("/colors/add")
 def colors_add():
     log.info("colors_add()")
 
     data = request.get_json()
-    color_name:str = data.get("color_name")
+    color_name: str = data.get("color_name")
 
     if not color_name:
-        return {"error":"color_name must be in the body"},400
+        return {"error": "color_name must be in the body"}, 400
 
     color_name = color_name.capitalize()
-    color_exists = db.session.scalar(Select(mod.Color).where(mod.Color.name == color_name))
+    color_exists = db.session.scalar(
+        Select(mod.Color).where(mod.Color.name == color_name)
+    )
 
     if color_exists is not None:
-        return {"error":f"Color {color_name} already exists"},422
-
+        return {"error": f"Color {color_name} already exists"}, 422
 
     c = mod.Color(name=color_name)
 
     db.session.add(c)
     db.session.commit()
-    return {"color":c.model_dump_json()},201
+    return {"color": c.model_dump_json()}, 201
 
 
-@catalago_bp.post('/colors/remove')
+@catalago_bp.post("/colors/remove")
 def colors_remove():
     log.info("colors_remove():")
 
     data = request.get_json()
-    color_name:str = data.get("color_name")
+    color_name: str = data.get("color_name")
 
     if not color_name:
-        return {"error":"color_name must be in the body"},400
+        return {"error": "color_name must be in the body"}, 400
 
     color_name = color_name.capitalize()
     colorObj = db.session.scalar(Select(mod.Color).filter_by(name=color_name))
 
-    if colorObj ==  None:
-        return {"error":f"Color {color_name} was not found"},422
+    if colorObj == None:
+        return {"error": f"Color {color_name} was not found"}, 422
 
     db.session.delete(colorObj)
     db.session.commit()
-    return {"color_name":color_name},200
+    return {"color_name": color_name}, 200
 
 
-@catalago_bp.post('/colors/bulk-remove')
+@catalago_bp.post("/colors/bulk-remove")
 def colors_bulk_remove():
 
-
     data = request.get_json()
-    id_colors:list[int] = data.get("id_colors")
+    id_colors: list[int] = data.get("id_colors")
 
     if not id_colors:
-        return {"error":"'id_colors' list[int] not passed"},400
-
+        return {"error": "'id_colors' list[int] not passed"}, 400
 
     stmt = delete(Color).where(Color.id.in_(id_colors))
     try:
@@ -81,70 +87,60 @@ def colors_bulk_remove():
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        return {"error":str(e)},400
+        return {"error": str(e)}, 400
 
-    return {"count_deleted":len(id_colors)}, 200
+    return {"count_deleted": len(id_colors)}, 200
 
 
-@catalago_bp.get('/all/')
+@catalago_bp.get("/all/")
 def get_all_catalago():
 
     catalog_data = {
-        model.__tablename__: 
-            [
-            obj.model_dump()
-            for obj in db.session.scalars(select(model))
+        model.__tablename__: [
+            obj.model_dump() for obj in db.session.scalars(select(model))
         ]
-        
         for model in mod.catalago_models
     }
 
     return catalog_data, 200
 
 
-@catalago_bp.get('/fabric/optional_table_names_attributes')
+@catalago_bp.get("/fabric/optional_table_names_attributes")
 def get_optional_attributs_of_fabric():
 
     models = [
-        ( FabricClassification ,False),
-        (BlindModel,True),
-        (Supplier,True),
-        (Color,True),
+        (FabricClassification, False),
+        (BlindModel, True),
+        (Supplier, True),
+        (Color, True),
     ]
 
     catalog_data = {
-        model.__tablename__: {
-            "optional" :optional
-        }
-        for model,optional in models
+        model.__tablename__: {"optional": optional} for model, optional in models
     }
-
 
     return catalog_data, 200
 
 
-
-
-@catalago_bp.post('/add/')
+@catalago_bp.post("/add/")
 def add_to_catalago():
 
     data = request.get_json()
 
     if not data:
-        return {"error":"Data was not passed"},400
+        return {"error": "Data was not passed"}, 400
 
     table_name = data.get("table_name")
-    value:str = data.get("value")
+    value: str = data.get("value")
 
-    cat_arr:list[type[SQLModel]] = [Color,Supplier,FabricClassification,BlindModel]
-    cat_map = {c.__tablename__:c for c in cat_arr}
+    cat_arr: list[type[SQLModel]] = [Color, Supplier, FabricClassification, BlindModel]
+    cat_map = {c.__tablename__: c for c in cat_arr}
 
     if not value:
-        return {"error":"value key is None"},400
-
+        return {"error": "value key is None"}, 400
 
     if table_name not in cat_map:
-        return {"error":f"table_name {table_name} does not exist"},400
+        return {"error": f"table_name {table_name} does not exist"}, 400
 
     cleaned_value = value.lower()
 
@@ -157,4 +153,4 @@ def add_to_catalago():
 
     db.session.commit()
 
-    return {"success":"Catalago item has been created","item":obj_json},200
+    return {"success": "Catalago item has been created", "item": obj_json}, 200

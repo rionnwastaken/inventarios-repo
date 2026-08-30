@@ -1,4 +1,6 @@
-export class TypedEventEmitter<Events extends Record<string, (...args: any[]) => any>> {
+export class TypedEventEmitter<
+  Events extends Record<string, (...args: any[]) => any>,
+> {
   private listeners: { [K in keyof Events]?: Array<Events[K]> } = {};
 
   // Subscribe to an event (Autocomplete on event string & callback params)
@@ -6,7 +8,7 @@ export class TypedEventEmitter<Events extends Record<string, (...args: any[]) =>
     if (!this.listeners[event]) {
       this.listeners[event] = [];
     }
-    console.log("addind pep", event)
+    console.log("addind pep", event);
     this.listeners[event]!.push(callback);
 
     // Return an unsubscribe function
@@ -21,6 +23,8 @@ export class TypedEventEmitter<Events extends Record<string, (...args: any[]) =>
   // Remove listener
   off<K extends keyof Events>(event: K, callback: Events[K]): void {
     if (!this.listeners[event]) return;
-    this.listeners[event] = this.listeners[event]!.filter((cb) => cb !== callback);
+    this.listeners[event] = this.listeners[event]!.filter(
+      (cb) => cb !== callback,
+    );
   }
 }

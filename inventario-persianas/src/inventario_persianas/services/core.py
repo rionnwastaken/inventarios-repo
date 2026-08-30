@@ -1,30 +1,27 @@
-from sqlmodel import desc, select
+import logging
+import traceback
+from typing import List, Optional, Tuple
 
-from inventario_persianas.app_types import Change
 import inventario_persianas.model as mod
-
-
-from sqlalchemy.orm import selectinload, joinedload
+from inventario_persianas.app_types import Change
 from inventario_persianas.model import (
     Fabric,
     FabricDeduction,
     FabricDeductionUpdate,
     FabricUpdate,
     Tube,
+    db,
 )
-from inventario_persianas.model import db
 from inventario_persianas.model_test import flaky
 from inventario_persianas.services.utils import (
     Error,
     create_audit_log,
     create_json_with_actual_values_auditlog,
 )
-import logging
 from pydantic import ValidationError
-from typing import Tuple, List, Optional
-import traceback
 from sqlalchemy.exc import SQLAlchemyError
-
+from sqlalchemy.orm import joinedload, selectinload
+from sqlmodel import desc, select
 
 log = logging.getLogger(__name__)
 

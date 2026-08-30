@@ -76,12 +76,10 @@
           </table>
         </div>
 
-	<div class="flex">
-		
-        <button id="guardar-btn" class="btn w-fit">Guardar</button>
-        <button id="close-btn" class="btn w-fit">Cerrar</button>
-	</div>
-
+        <div class="flex">
+          <button id="guardar-btn" class="btn w-fit">Guardar</button>
+          <button id="close-btn" class="btn w-fit">Cerrar</button>
+        </div>
       </div>
     </dialog>
 
@@ -113,9 +111,12 @@
             <label class="form-control w-full">
               <div class="label flex">
                 <span class="label-text font-semibold">{{ field_label }}</span>
-		<span id="error_text_{{ field_id}}" class="text-error"></span>
+                <span id="error_text_{{ field_id }}" class="text-error"></span>
               </div>
-              <select id="select-{{ field_id }}" class="w-full input-lowercase"></select>
+              <select
+                id="select-{{ field_id }}"
+                class="w-full input-lowercase"
+              ></select>
             </label>
           {% endfor %}
 
@@ -123,7 +124,10 @@
           <label class="form-control w-full">
             <div class="label">
               <span class="label-text font-semibold">Ancho (mts)</span>
-	      <span id="error_text_filling-data-width" class="text-error"></span>
+              <span
+                id="error_text_filling-data-width"
+                class="text-error"
+              ></span>
             </div>
             <input
               type="number"
@@ -139,7 +143,10 @@
           <label class="form-control w-full">
             <div class="label">
               <span class="label-text font-semibold">Alto (mts)</span>
-	      <span id="error_text_filling-data-height" class="text-error"></span>
+              <span
+                id="error_text_filling-data-height"
+                class="text-error"
+              ></span>
             </div>
             <input
               type="number"
@@ -193,6 +200,5 @@
     </dialog>
 
     <script type="module" src="/static/bundle.js"></script>
-
   </body>
 </html>

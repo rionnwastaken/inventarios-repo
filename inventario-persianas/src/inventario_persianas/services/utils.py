@@ -1,27 +1,19 @@
-from dataclasses import field
-
-from flask import session
+import logging
+from typing import Literal, Optional
 
 import inventario_persianas.model as mod
-
-from sqlalchemy.orm import Session
-from sqlalchemy import Delete
-from inventario_persianas.model import AuditLog, Color, Supplier, Location, BlindModel, FabricClassification
-from inventario_persianas.model import Color, db
-from typing import Literal
-
-
-
-from typing import Optional, Dict, Any
-
 from inventario_persianas.app_types import Change
-import logging
+from inventario_persianas.model import (
+    AuditLog,
+    db,
+)
 
 log = logging.getLogger()
 
 
+type Action = Literal["Insert", "Edit", "Delete", "Update"]
 
-type Action = Literal["Insert", "Edit", "Delete","Update"]
+
 def create_audit_log(
     action: Action,
     target_table: str,
@@ -44,24 +36,26 @@ def create_audit_log(
 
 
 class Error:
-    message:str
-    status:int
+    message: str
+    status: int
 
-    def __init__(self,message,status) -> None:
+    def __init__(self, message, status) -> None:
         self.message = message
         self.status = status
 
     def returnIt(self):
-        return {"error":self.message},self.status
-
-
+        return {"error": self.message}, self.status
 
 
 """
 When its a foreign id, we need to retrieve the actual value
 This might belong to audit log cause thats where it is used
 """
-def create_json_with_actual_values_auditlog(full_old_values: dict, new_values: dict) -> dict:
+
+
+def create_json_with_actual_values_auditlog(
+    full_old_values: dict, new_values: dict
+) -> dict:
     data = {}
 
     # Iterate strictly over the keys present in the partial payload
@@ -71,8 +65,12 @@ def create_json_with_actual_values_auditlog(full_old_values: dict, new_values: d
         if column in mod.fabric_column2catalago_models:
             model = mod.fabric_column2catalago_models[column]
 
-            old_result = db.session.get(model, old_value) if old_value is not None else None
-            new_result = db.session.get(model, new_value) if new_value is not None else None
+            old_result = (
+                db.session.get(model, old_value) if old_value is not None else None
+            )
+            new_result = (
+                db.session.get(model, new_value) if new_value is not None else None
+            )
 
             data[column] = {
                 "previous": {
@@ -97,8 +95,3 @@ def create_json_with_actual_values_auditlog(full_old_values: dict, new_values: d
             }
 
     return data
-
-
-
-
-

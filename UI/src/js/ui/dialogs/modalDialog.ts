@@ -62,7 +62,9 @@ export class ModalDialog {
     const widthClass = this.options.width ? this.options.width : "";
     const heightClass = this.options.height ? this.options.height : "";
 
-    let footer_classes  = this.options.footerContainer_tailwind_class || "flex justify-end gap-2 mt-4"
+    let footer_classes =
+      this.options.footerContainer_tailwind_class ||
+      "flex justify-end gap-2 mt-4";
 
     const containerClasses =
       `modal-box absolute ${this.options.container_tailwind_class}  ${widthClass} ${heightClass} flex flex-col gap-4  overflow-visible`.trim();

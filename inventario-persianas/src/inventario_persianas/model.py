@@ -1,17 +1,14 @@
-from datetime import date, datetime, timezone
+import logging
+from datetime import datetime, timezone
 from typing import List, Optional
 
-from pydantic import PositiveFloat
-from sqlalchemy import JSON, Column, DateTime, event, func, update
-from sqlmodel import Field, Relationship, SQLModel, Session, create_engine, select
-from typing import ClassVar
-
 from inventario_persianas.app_types import Change
-import logging
-
+from pydantic import PositiveFloat
+from sqlalchemy import JSON, Column, DateTime, event, update
+from sqlmodel import Field, Relationship, SQLModel
+from flask_sqlalchemy import SQLAlchemy
 
 log = logging.getLogger()
-
 
 
 def now_utc() -> datetime:
@@ -32,7 +29,7 @@ class TimestampMixin(SQLModel):
 
 
 class Color(SQLModel, table=True):
-    __tablename__ = "color" #type:ignore
+    __tablename__ = "color"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(max_length=100, sa_column_kwargs={"unique": True})
@@ -41,7 +38,7 @@ class Color(SQLModel, table=True):
 
 
 class BlindModel(SQLModel, table=True):
-    __tablename__ = "blind_model" #type:ignore
+    __tablename__ = "blind_model"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(max_length=100)
@@ -50,7 +47,7 @@ class BlindModel(SQLModel, table=True):
 
 
 class Location(SQLModel, table=True):
-    __tablename__ = "location" #type:ignore
+    __tablename__ = "location"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     description: Optional[str] = Field(default=None, max_length=100)
@@ -60,7 +57,7 @@ class Location(SQLModel, table=True):
 
 
 class LocationImage(SQLModel, table=True):
-    __tablename__ = "location_image" #type:ignore
+    __tablename__ = "location_image"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     image_path: str = Field(max_length=100)
@@ -70,7 +67,7 @@ class LocationImage(SQLModel, table=True):
 
 
 class Supplier(SQLModel, table=True):
-    __tablename__ = "supplier" #type:ignore
+    __tablename__ = "supplier"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(max_length=100)
@@ -79,7 +76,7 @@ class Supplier(SQLModel, table=True):
 
 
 class FabricClassification(SQLModel, table=True):
-    __tablename__ = "fabric_classification" #type:ignore
+    __tablename__ = "fabric_classification"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(max_length=100)
@@ -90,8 +87,10 @@ class FabricClassification(SQLModel, table=True):
 """
 updated_at should happen when a modification to a fabric occurs
 """
+
+
 class Tube(TimestampMixin, table=True):
-    __tablename__ = "tube" #type:ignore
+    __tablename__ = "tube"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     location_id: Optional[int] = Field(default=None, foreign_key="location.id")
@@ -102,7 +101,6 @@ class Tube(TimestampMixin, table=True):
     location: Optional[Location] = Relationship(back_populates="tubes")
     fabrics: List["Fabric"] = Relationship(back_populates="tube")
     tube_rectified: Optional["TubeRectified"] = Relationship(back_populates="tube")
-
 
 
 """
@@ -116,8 +114,10 @@ When a fabric was not in the rectification it should be deleted
 In this step of the process, the person in the software must be wise to determine
 where the discrenpacies occur in the fabrics and do the corresponding modifications
 """
+
+
 class TubeRectified(TimestampMixin, table=True):
-    __tablename__ = "tube_verified" #type:ignore
+    __tablename__ = "tube_verified"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     tube_id: int = Field(foreign_key="tube.id", sa_column_kwargs={"unique": True})
@@ -125,23 +125,22 @@ class TubeRectified(TimestampMixin, table=True):
 
 
 """So many attributes are optional, but thats what it is currently """
+
+
 class Fabric(TimestampMixin, table=True):
-    __tablename__ = "fabric" #type:ignore #type:ignore
+    __tablename__ = "fabric"  # type:ignore #type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     tube_id: int = Field(foreign_key="tube.id")
     blind_model_id: Optional[int] = Field(foreign_key="blind_model.id")
     color_id: Optional[int] = Field(foreign_key="color.id")
-    fabric_classification_id: int = Field(
-         foreign_key="fabric_classification.id"
-    )
+    fabric_classification_id: int = Field(foreign_key="fabric_classification.id")
     supplier_id: Optional[int] = Field(default=None, foreign_key="supplier.id")
 
-    #meters
-    original_width: float 
+    # meters
+    original_width: float
     original_height: float
-    is_archived: bool = Field(default=False) # Fabrics runs out of fabric to be used
-
+    is_archived: bool = Field(default=False)  # Fabrics runs out of fabric to be used
 
     # Relationships
     tube: Optional[Tube] = Relationship(back_populates="fabrics")
@@ -157,11 +156,14 @@ class Fabric(TimestampMixin, table=True):
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
 
+
 class FabricUpdate(SQLModel):
     tube_id: Optional[int] = Field(default=None, foreign_key="tube.id")
     blind_model_id: Optional[int] = Field(default=None, foreign_key="blind_model.id")
     color_id: Optional[int] = Field(default=None, foreign_key="color.id")
-    fabric_classification_id: Optional[int] = Field(default=None, foreign_key="fabric_classification.id")
+    fabric_classification_id: Optional[int] = Field(
+        default=None, foreign_key="fabric_classification.id"
+    )
     supplier_id: Optional[int] = Field(default=None, foreign_key="supplier.id")
 
     original_width: Optional[PositiveFloat] = None
@@ -169,24 +171,21 @@ class FabricUpdate(SQLModel):
     is_archived: Optional[bool] = None
 
 
-
-
 class FabricMarkForDeletion(TimestampMixin):
-    __tablename__ = "fabric_mark_for_deletion" #type:ignore #type:ignore
+    __tablename__ = "fabric_mark_for_deletion"  # type:ignore #type:ignore
     comment: str = Field()
     tube_id: int = Field(foreign_key="tube.id")
     tube: Optional[Fabric] = Relationship(back_populates="fabric_mark_for_deletion")
 
 
 class FabricComment(TimestampMixin, table=True):
-    __tablename__ = "fabric_comment" #type:ignore
+    __tablename__ = "fabric_comment"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     comment: Optional[str] = Field(default=None, max_length=500)
     fabric_id: int = Field(foreign_key="fabric.id")
 
     fabric: Optional[Fabric] = Relationship(back_populates="comments")
-
 
 
 """
@@ -203,8 +202,10 @@ Example
 Current value 2.0 m | original 3.0 m
         - 1.0 m
 """
+
+
 class FabricDeduction(TimestampMixin, table=True):
-    __tablename__ = "fabric_deduction" #type:ignore
+    __tablename__ = "fabric_deduction"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     fabric_id: int = Field(foreign_key="fabric.id")
@@ -224,7 +225,7 @@ class FabricDeductionUpdate(SQLModel):
 
 
 class AuditLog(TimestampMixin, table=True):
-    __tablename__ = "audit_log" #type: ignore #type:ignore
+    __tablename__ = "audit_log"  # type: ignore #type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     action: str = Field(max_length=50)
@@ -234,25 +235,24 @@ class AuditLog(TimestampMixin, table=True):
     changes: Optional[Change] = Field(default=None, sa_column=Column(JSON))
 
 
-
 @event.listens_for(Fabric, "after_insert")
 @event.listens_for(Fabric, "after_update")
 @event.listens_for(Fabric, "after_delete")
 def touch_parent_tube(mapper, connection, target: Fabric):
     connection.execute(
-            update(Tube) 
-            .where(Tube.id == target.tube_id)
-            .values(updated_at=datetime.now(timezone.utc))
+        update(Tube)
+        .where(Tube.id == target.tube_id)
+        .values(updated_at=datetime.now(timezone.utc))
     )
 
 
 catalago_models = [
-        FabricClassification,
-        BlindModel,
-        Supplier,
-        Color,
-        LocationImage,
-    ]
+    FabricClassification,
+    BlindModel,
+    Supplier,
+    Color,
+    LocationImage,
+]
 
 
 fabric_column2catalago_models = {
@@ -264,13 +264,8 @@ fabric_column2catalago_models = {
 
 
 
-
-from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy(model_class=SQLModel)
-
-
 
 
 if __name__ == "__main__":
     pass
-

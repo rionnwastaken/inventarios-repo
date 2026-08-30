@@ -25,8 +25,8 @@ export class NotiDialog extends ModalDialog {
       showConfirm: false,
       // Enable close/cancel button if persistent so the user has a trigger to close it
       // showCancel: isPersistent,
-      cancelText: 'Cerrar',
-      width: 'w-auto max-w-md',
+      cancelText: "Cerrar",
+      width: "w-auto max-w-md",
       ...options,
     });
 
@@ -68,24 +68,22 @@ export class NotiDialog extends ModalDialog {
   }
 
   private _bindHoverEvents(): void {
-    const box = this.dialogEl.querySelector('.modal-box');
+    const box = this.dialogEl.querySelector(".modal-box");
     if (!box) return;
 
-    box.addEventListener('mouseenter', () => this.clearTimer());
-    box.addEventListener('mouseleave', () => {
+    box.addEventListener("mouseenter", () => this.clearTimer());
+    box.addEventListener("mouseleave", () => {
       if (!this.persistent) this.startTimer();
     });
   }
 }
 
-export function errorNotiTopRight(title,body) {
+export function errorNotiTopRight(title, body) {
   const notiDialog = new NotiDialog({
-    title:title,
-    persistent:true,
+    title: title,
+    persistent: true,
     body: body,
-    container_tailwind_class:"top-6 right-6 bg-red-500 text-white",
-
-
-    })
-    notiDialog.show()
+    container_tailwind_class: "top-6 right-6 bg-red-500 text-white",
+  });
+  notiDialog.show();
 }

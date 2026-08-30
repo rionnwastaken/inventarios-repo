@@ -41,17 +41,15 @@ const close_btn: HTMLHeadingElement = document.querySelector(
 const filling_data_form: HTMLFormElement =
   document.querySelector("#filling-data-form");
 
-
-
-function init_input(el_id, err_id,err_text_id) {
+function init_input(el_id, err_id, err_text_id) {
   const el: HTMLInputElement = document.querySelector(el_id);
 
   let data = {
     active: false,
     input: el,
     disable: (should_disable) => {
-      el.disabled = should_disable
-    }
+      el.disabled = should_disable;
+    },
   };
 
   el.addEventListener("focus", function (e) {
@@ -67,15 +65,13 @@ function init_input(el_id, err_id,err_text_id) {
 let width_obj = init_input(
   "#filling-data-width",
   `#error_text_filling-data-width`,
-  "error_text_filling-data-width"
+  "error_text_filling-data-width",
 );
 let height_obj = init_input(
   "#filling-data-height",
   `#error_text_filling-data-height`,
-  "error_text_filling-data-height"
+  "error_text_filling-data-height",
 );
-
-
 
 export class FabricCraft {
   public events = new TypedEventEmitter<RowModalEvents>();
@@ -103,23 +99,26 @@ export class FabricCraft {
     });
 
     modal_filling_data.addEventListener("cancel", (event) => {
-      log.debug("fucking prevent it")
-      event.preventDefault()
+      log.debug("fucking prevent it");
+      event.preventDefault();
     });
 
     modal_filling_data.addEventListener("close", (event) => {
-      log.debug("Closing?")
+      log.debug("Closing?");
       this.clean_dialog();
     });
 
-modal_filling_data.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      log.debug("Escape key captured and blocked");
-    }
-  }, true);
-
+    modal_filling_data.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          log.debug("Escape key captured and blocked");
+        }
+      },
+      true,
+    );
   }
 
   bind_save() {
@@ -149,9 +148,7 @@ modal_filling_data.addEventListener("keydown", (event) => {
           ObjectChanged(
             this.fabricData.original_fabric,
             this.fabricData.modified_fabric,
-            new Set(
-              ["created_at", "updated_at", "deleted_at"],
-            ),
+            new Set(["created_at", "updated_at", "deleted_at"]),
           )
         ) {
           this.fabricData.mode = "edited";
@@ -185,7 +182,6 @@ modal_filling_data.addEventListener("keydown", (event) => {
   }
 
   clean_dialog() {
-
     for (let tom of this.tom_selects) {
       tom.clear();
       tom.refreshItems();
@@ -277,13 +273,16 @@ modal_filling_data.addEventListener("keydown", (event) => {
     };
   }
 
-
   /*
     MOST DISGUSTING CODE EVER
   TODO MAKE IT PRETTY
     */
 
-  show(fabricData: FabricData, actionState: ModalState,extra?:{tube_id:number}): Promise<any> {
+  show(
+    fabricData: FabricData,
+    actionState: ModalState,
+    extra?: { tube_id: number },
+  ): Promise<any> {
     return new Promise((resolve) => {
       this.resolvePromise = resolve;
       this.fabricData = fabricData;
@@ -293,10 +292,10 @@ modal_filling_data.addEventListener("keydown", (event) => {
 
       let fabric;
       if (actionState == "editing") {
-	let should_disable = fabricData.original_fabric.deductions.length > 0
-	log.debug("Should disable inputs ",should_disable)
-	width_obj.disable(should_disable)
-	height_obj.disable(should_disable)
+        let should_disable = fabricData.original_fabric.deductions.length > 0;
+        log.debug("Should disable inputs ", should_disable);
+        width_obj.disable(should_disable);
+        height_obj.disable(should_disable);
         if (!fabricData.modified_fabric) {
           fabricData.modified_fabric = structuredClone(
             fabricData.original_fabric,
@@ -304,14 +303,14 @@ modal_filling_data.addEventListener("keydown", (event) => {
           log.debug("clone of this has ", fabricData.modified_fabric);
         }
         fabric = fabricData.modified_fabric;
-      } 
+      }
 
       if (actionState == "editing_created") {
         fabric = fabricData.original_fabric;
       }
 
       if (actionState !== "creating") {
-	this.insert_data_to_tom_selects(fabric);
+        this.insert_data_to_tom_selects(fabric);
       }
       modal_filling_data.showModal();
     });

@@ -43,7 +43,7 @@ export async function request_to_create_value_on_table(
   tom: TomSelect,
   value,
   table_name,
-): Promise<{created:Boolean,item:CatalogItem}> {
+): Promise<{ created: Boolean; item: CatalogItem }> {
   const userConfirmed = await showRecycleDialog({
     header: `El elemento ${value} no existe en la tabla ${table_name}`,
     message: "Desea crearlo?",
@@ -51,16 +51,15 @@ export async function request_to_create_value_on_table(
     confirmText: "Si",
   });
 
-  let created = false
-  let item = null
+  let created = false;
+  let item = null;
   if (userConfirmed) {
     console.log("User clicked confirm action");
     const res = await CatalogApi.addItem(table_name, value);
 
     if (res.success) {
       item = res.data["item"];
-      created = true
-      
+      created = true;
 
       tom.removeOption(value);
       tom.addOption({
@@ -70,8 +69,6 @@ export async function request_to_create_value_on_table(
       tom.setValue(item.id);
       tom.refreshItems();
       log.debug(item);
-
-      
     }
   } else {
     tom.removeOption(value);
@@ -80,9 +77,7 @@ export async function request_to_create_value_on_table(
   }
 
   return {
-    created:created,
-    item:item
-  }
+    created: created,
+    item: item,
+  };
 }
-
-

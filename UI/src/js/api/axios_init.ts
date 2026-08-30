@@ -21,5 +21,5 @@ export function createa_api(baseURL) {
       return error;
     },
   );
-  return api
+  return api;
 }

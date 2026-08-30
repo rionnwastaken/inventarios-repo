@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-
-  themes: winter --default, winter --prefersdark, cupcake, dracula;
+  themes:
+    winter --default,
+    winter --prefersdark,
+    cupcake,
+    dracula;
 }
-
 
 @source "../src/**/*";
 
@@ -12,12 +14,9 @@
   color-scheme: light;
 }
 
-
-
-
-table.dataTable th.dt-left, 
+table.dataTable th.dt-left,
 table.dataTable td.dt-left {
-    text-align: left !important;
+  text-align: left !important;
 }
 
 /* Add to your global CSS stylesheet */
@@ -25,7 +24,6 @@ table.dataTable td.dt-left {
   z-index: 9999 !important;
 }
 
-
 .input-lowercase {
-    text-transform: lowercase;
+  text-transform: lowercase;
 }
