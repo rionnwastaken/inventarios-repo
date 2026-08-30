@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
+
 from inventario_persianas.app_types import Change
 from pydantic import PositiveFloat
 from sqlalchemy import JSON, Column, DateTime, event, update
@@ -246,6 +247,37 @@ def touch_parent_tube(mapper, connection, target: Fabric):
     )
 
 
+from datetime import datetime
+from sqlalchemy import event, select
+
+
+@event.listens_for(FabricDeduction, "after_insert")
+@event.listens_for(FabricDeduction, "after_update")
+@event.listens_for(FabricDeduction, "after_delete")
+def update_fabric_and_tube_on_deduction_change(
+    mapper, connection, target: FabricDeduction
+):
+    log.debug("update_fabric_and_tube_on_deduction_change()")
+    now = datetime.now(timezone.utc)
+
+    # 1. Update parent Fabric
+    connection.execute(
+        update(Fabric).where(Fabric.id == target.fabric_id).values(updated_at=now)
+    )
+
+    # 2. Query tube_id directly using the Core connection
+    tube_id = connection.scalar(
+        select(Fabric.tube_id).where(Fabric.id == target.fabric_id)
+    )
+
+    if tube_id is None:
+        log.error("Fabric or Tube ID not found for fabric_id %s", target.fabric_id)
+        return
+
+    # 3. Update grandparent Tube
+    connection.execute(update(Tube).where(Tube.id == tube_id).values(updated_at=now))
+
+
 catalago_models = [
     FabricClassification,
     BlindModel,
@@ -261,7 +293,6 @@ fabric_column2catalago_models = {
     "fabric_classification_id": FabricClassification,
     "supplier_id": Supplier,
 }
-
 
 
 db = SQLAlchemy(model_class=SQLModel)
