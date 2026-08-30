@@ -263,3 +263,14 @@ export function ObjectChanged(
 
   return false;
 }
+
+export function inspect_row(tbody, tbl) {
+  tbody.addEventListener("click", (event) => {
+    const row = event.target.closest("tr");
+
+    if (row && tbody.contains(row)) {
+      const rowData = tbl.row(row).data();
+      log.debug(rowData);
+    }
+  });
+}

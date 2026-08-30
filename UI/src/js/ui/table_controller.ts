@@ -14,6 +14,7 @@ import {
   calc_remaining_fabric_measurements,
   column,
   fcolumn,
+  inspect_row,
   tcolumn,
 } from "./utils.ts";
 import { state } from "../state.ts";
@@ -229,22 +230,8 @@ class TableController {
   }
 
   init_bindings() {
-    this.bind_row_click();
+    inspect_row(tbody, this.table);
     this.bind_row_double_click();
-  }
-
-  bind_row_click() {
-    // Listen for clicks
-    tbody.addEventListener("click", (event) => {
-      const row = event.target.closest("tr");
-
-      // Ensure click is inside a valid row
-      if (row && tbody.contains(row)) {
-        // Get row data via DataTables API
-        const rowData = this.table.row(row).data();
-        // console.log("Clicked row data:", rowData);
-      }
-    });
   }
 
   bind_row_double_click() {
