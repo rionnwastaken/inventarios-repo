@@ -2,12 +2,7 @@ import { getLogger } from "loglevel";
 import { Tube } from "../../schema.ts";
 import { Fabric } from "../../typeObj.ts";
 import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
-import {
-  fabricDataColumn,
-  fcolumn,
-  get_partial_data,
-  tcolumn,
-} from "../utils.ts";
+import { fabricDataColumn, get_partial_data } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
 import { showRecycleDialog } from "../utils.ts";

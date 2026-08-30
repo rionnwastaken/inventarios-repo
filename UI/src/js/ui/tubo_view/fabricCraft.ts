@@ -1,7 +1,7 @@
 import { disableAll, getLogger } from "loglevel";
 import { Tube } from "../../schema";
 import { CatalogItem, FabricData, Fabric, TubeExtraD } from "../../typeObj";
-import { fcolumn, ObjectChanged as ObjectChanged, tcolumn } from "../utils.ts";
+import { ObjectChanged as ObjectChanged } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
 import { showRecycleDialog } from "../utils.ts";

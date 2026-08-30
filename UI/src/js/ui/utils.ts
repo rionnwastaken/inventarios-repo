@@ -38,14 +38,6 @@ export function column(id: any, title, extra, group?: ViewMode) {
   return col;
 }
 
-export function tcolumn(data, title, extra?) {
-  return column(data, title, extra, "tube");
-}
-
-export function fcolumn(data, title, extra?) {
-  return column(data, title, extra, "fabric");
-}
-
 export function fabricDataColumn(data, title, extra?) {
   return column(data, title, extra, "fabric");
 }

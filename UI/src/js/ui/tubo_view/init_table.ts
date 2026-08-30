@@ -5,8 +5,6 @@ import {
   calc_remaining_fabric_measurements,
   column,
   fabricDataColumn,
-  fcolumn,
-  tcolumn,
 } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 
