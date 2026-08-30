@@ -26,7 +26,7 @@ export function column(id: any, title, extra, group?: ViewMode) {
 
   let col: ColumnsConfig = {
     data: null,
-    name: `${group_string}${id}` as string, // <--- Add this line!
+    name: `${id}` as string, // <--- Add this line!
     title: title,
     group: group,
     // visible: false,

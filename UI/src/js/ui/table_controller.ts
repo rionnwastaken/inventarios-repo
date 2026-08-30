@@ -187,7 +187,7 @@ class TableController {
       paging: false,
       autoWidth: true,
 
-      order: { name: "tube_updated_at", dir: "desc" },
+      order: { name: "updated_at", dir: "desc" },
       columnDefs: [
         {
           targets: "_all", // Zero-based index of the columns you want to left-align
