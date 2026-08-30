@@ -38,6 +38,48 @@ export function column(id: any, title, extra, group?: ViewMode) {
   return col;
 }
 
+export interface RenderingInfo<TData = any, TRow = any> {
+  data: any;
+  type: string;
+  row: any;
+  meta: any;
+  column_id: string;
+  column_name: string;
+  format_func?: (value: any, data: any) => string;
+}
+
+export function column2(
+  id: string,
+  column_name: string,
+  rendering_func: (info: RenderingInfo) => string,
+  extra?: Object,
+  group?: ViewMode,
+  format_func?: (value: any, data: any) => string,
+) {
+  let col: ColumnsConfig = {
+    data: null,
+    name: `${id}` as string, // <--- Add this line!
+    title: column_name,
+    group: group,
+    defaultContent: "",
+    render(data, type, row, meta) {
+      return rendering_func({
+        data: data,
+        type: type,
+        row: row,
+        meta: meta,
+        column_id: id,
+        column_name: column_name,
+        format_func: format_func,
+      });
+    },
+  };
+  if (extra) {
+    col = { ...col, ...extra };
+  }
+  return col;
+}
+
 export function fabricDataColumn(data, title, extra?) {
   return column(data, title, extra, "fabric");
 }

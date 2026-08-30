@@ -1,4 +1,5 @@
 import { ItemState } from "../typeObj";
+import { RenderingInfo } from "./utils";
 
 export function render_plain(
   obj: any,
@@ -26,19 +27,12 @@ export function render_plain(
   }
 }
 
-export function render_plain2(
-  obj: any,
-  type,
-  row,
-  meta,
-  column_id,
-  cb_format?: (value: string, obj: any) => string,
-) {
+export function render_plain2(info: RenderingInfo) {
   // log.debug("fabricdata in redenr cell", fabricData);
-  if (type === "display") {
-    let value = obj?.[column_id] ?? "";
-    if (cb_format) {
-      value = cb_format(value, obj);
+  if (info.type === "display") {
+    let value = info.data?.[info.column_id] ?? "";
+    if (info.format_func) {
+      value = info.format_func(value, info.data);
       log.debug("value here is ", value);
     }
     return value;
@@ -52,28 +46,26 @@ export function format_measurement(value) {
   return `${value} mts`;
 }
 
-const get = (obj, path) =>
+const get = (obj: Object, path: string): string =>
   path.split(".").reduce((acc, key) => acc?.[key], obj);
 
-export function render_datecell(
-  data: Object,
-  type,
-  row,
-  meta,
-  column_name: string,
-) {
-  let value = get(data, column_name);
-  log.debug("data in render data cell is ", value, data, column_name);
-  if (type === "display") {
+export function render_datecell(info: RenderingInfo) {
+  let value = get(info.data, info.column_id);
+  log.debug("data in render data cell is ", value, info.data, info.column_name);
+
+  log.debug("display is ", info.type);
+  // return "h"
+  if (info.type === "display") {
     const date = new Date(value);
+    log.debug("data here is ", date);
     return date.toLocaleString("es-MX", { hour12: true });
   }
 
-  if (type == "sort") {
+  if (info.type == "sort") {
     return new Date(value).getTime();
   }
 
-  return data;
+  return info.data;
 }
 
 export function getDiffValue(

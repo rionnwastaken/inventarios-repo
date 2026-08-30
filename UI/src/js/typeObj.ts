@@ -1,6 +1,6 @@
 import { Fabric as SchemaFabric, FabricDeduction, Tube } from "./schema";
 
-export type ViewMode = "tube" | "fabric";
+export type ViewMode = "tube" | "fabric" | "both";
 
 export interface TableView {
   previous_view: ViewMode;

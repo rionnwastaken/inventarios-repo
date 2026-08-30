@@ -13,6 +13,7 @@ import "datatables.net-dt/css/dataTables.dataTables.css";
 import {
   calc_remaining_fabric_measurements,
   column,
+  column2,
   fcolumn,
   inspect_row,
   tcolumn,
@@ -47,137 +48,73 @@ class TableController {
 
   init_columns() {
     const tube_columns = [
-      ...tube_title_id.map(([title, id]) =>
-        column(
-          id,
-          title,
-          {
-            render: (data, type, row, meta) =>
-              render_plain2(data, type, row, meta, id),
-          },
-          "tube",
-        ),
-      ),
-      column(
-        "updated_at",
-        "Ultima actualizacion",
-        {
-          render: (data, type, row, meta) =>
-            render_datecell(data, type, row, meta, "updated_at"),
-        },
-        "tube",
+      ...tube_title_id.map(([column_name, id]) =>
+        column2(id, column_name, render_plain2, null, "tube"),
       ),
     ];
 
     const fabric_columns = [
-      column(
-        "id",
-        "Tela ID",
-        {
-          render: (data, type, row, meta) =>
-            render_plain2(data, type, row, meta, "id"),
-        },
-        "fabric",
-      ),
-      ...fabric_catalago_title_id.map(([title, column_name]) =>
-        column(
+      ...fabric_catalago_title_id.map(([column_name, schema_column_name]) =>
+        column2(
+          `${schema_column_name}_id`,
           column_name,
-          title,
-          {
-            render: (data, type, row, meta) =>
-              render_plain2(
-                data,
-                type,
-                row,
-                meta,
-                `${column_name}_id`,
-                function (id) {
-                  let value = state.catalagoData.catalagoValue(column_name, id);
-                  return value;
-                },
-              ),
-          },
+          render_plain2,
+          null,
           "fabric",
+          function (id) {
+            let value = state.catalagoData.catalagoValue(
+              schema_column_name,
+              id,
+            );
+            return value;
+          },
         ),
       ),
-      column(
+
+      column2(
         "original_width",
         "Ancho",
-        {
-          render: (data, type, row, meta) => {
-            if (state.active_view != "fabric") {
-              return;
-            }
-
-            return render_plain2(
-              data,
-              type,
-              row,
-              meta,
-              "original_width",
-              (value, data: Fabric) => {
-                let measurements = calc_remaining_fabric_measurements(data);
-                if (!measurements) {
-                  return "";
-                }
-                return measurements.remaining_width;
-              },
-            );
-          },
-        },
+        render_plain2,
+        {},
         "fabric",
-      ), // @ts-ignore
-
-      column(
+        (value, data: Fabric) => {
+          // 👈 Fixed: added missing ')' after data: Fabric
+          let measurements = calc_remaining_fabric_measurements(data);
+          if (!measurements) {
+            return "";
+          }
+          return measurements.remaining_width;
+        },
+      ),
+      column2(
         "original_height",
         "Altura",
-        {
-          render: (data, type, row, meta) => {
-            if (state.active_view != "fabric") {
-              return "";
-            }
-            return render_plain2(
-              data,
-              type,
-              row,
-              meta,
-              "original_height",
-              (value, data: Fabric) => {
-                let measurements = calc_remaining_fabric_measurements(data);
-                if (!measurements) {
-                  return "";
-                }
-                return String(measurements.remaining_height);
-              },
-            );
-          },
-        },
+        render_plain2,
+        {},
         "fabric",
-      ),
-
-      // @ts-ignore
-      column(
-        "updated_at",
-        "Fecha actualizado",
-        {
-          render: (data, type, row, meta) =>
-            render_datecell(data, type, row, meta, "updated_at"),
+        (value, data: Fabric) => {
+          // 👈 Fixed: added missing ')' after data: Fabric
+          let measurements = calc_remaining_fabric_measurements(data);
+          if (!measurements) {
+            return "";
+          }
+          return measurements.remaining_height;
         },
-        "fabric",
-      ),
-
-      // @ts-ignore
-      column(
-        "created_at",
-        "Fecha Creacion",
-        {
-          render: (data, type, row, meta) =>
-            render_datecell(data, type, row, meta, "created_at"),
-        },
-        "fabric",
       ),
     ];
-    this.columns = [...tube_columns, ...fabric_columns];
+
+    const shared_columns = [
+      column2(
+        "updated_at",
+        "Ultima actualizacion",
+        render_datecell,
+        {},
+        "both",
+      ),
+      column2("created_at", "Creado en", render_datecell, {}, "both"),
+    ];
+
+    this.columns = [...tube_columns, ...fabric_columns, ...shared_columns];
   }
 
   init_table() {
@@ -260,7 +197,8 @@ class TableController {
     console.log("called?");
     this.table.columns().every(function () {
       const config = this.init();
-      const v = config && config.group === view.new_view;
+      const v =
+        config && (config.group === view.new_view || config.group === "both");
       this.visible(v);
     });
 
@@ -282,7 +220,8 @@ class TableController {
   init_visible_group() {
     this.table.columns().every(function () {
       const config = this.init();
-      const isTubeGroup = config && config.group === "tube";
+      const isTubeGroup =
+        config && (config.group === "tube" || config.group === "both");
       this.visible(isTubeGroup);
     });
   }
