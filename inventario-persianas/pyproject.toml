@@ -30,3 +30,11 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+
+[tool.ruff.lint]
+ignore = [
+    "E711",
+    "E712",
+    "E402",
+    "F841"
+  ]
