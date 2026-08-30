@@ -28,7 +28,6 @@ export function render_plain(
 }
 
 export function render_plain2(info: RenderingInfo) {
-  // log.debug("fabricdata in redenr cell", fabricData);
   if (info.type === "display") {
     let value = info.data?.[info.column_id] ?? "";
     if (info.format_func) {
@@ -46,8 +45,13 @@ export function format_measurement(value) {
   return `${value} mts`;
 }
 
-const get = (obj: Object, path: string): string =>
-  path.split(".").reduce((acc, key) => acc?.[key], obj);
+const get = (obj: Object, path: string): string => {
+  if (!path) {
+    log.debug(`Path is undefined and data passes id `, obj, path);
+    return "";
+  }
+  return path.split(".").reduce((acc, key) => acc?.[key], obj);
+};
 
 export function render_datecell(info: RenderingInfo) {
   let value = get(info.data, info.column_id);

@@ -47,37 +47,56 @@ export interface RenderingInfo<TData = any, TRow = any> {
   column_name: string;
   format_func?: (value: any, data: any) => string;
 }
+export interface ColumnOptions<TData = any> {
+  id: string;
+  column_name: string;
+  rendering_func: (info: RenderingInfo) => string;
+  extra?: Record<string, any>;
+  group?: ViewMode;
+  format_func?: (value: any, data: TData) => string;
+}
 
-export function column2(
-  id: string,
-  column_name: string,
-  rendering_func: (info: RenderingInfo) => string,
-  extra?: Object,
-  group?: ViewMode,
-  format_func?: (value: any, data: any) => string,
-) {
+export function column2(opts: ColumnOptions, block_rendering?: () => boolean) {
   let col: ColumnsConfig = {
     data: null,
-    name: `${id}` as string, // <--- Add this line!
-    title: column_name,
-    group: group,
+    name: `${opts.id}` as string, // <--- Add this line!
+    title: opts.column_name,
+    group: opts.group,
     defaultContent: "",
     render(data, type, row, meta) {
-      return rendering_func({
+      if (block_rendering?.()) {
+        return;
+      }
+
+      return opts.rendering_func({
         data: data,
         type: type,
         row: row,
         meta: meta,
-        column_id: id,
-        column_name: column_name,
-        format_func: format_func,
+        column_id: opts.id,
+        column_name: opts.column_name,
+        format_func: opts.format_func,
       });
     },
   };
-  if (extra) {
-    col = { ...col, ...extra };
+  if (opts.extra) {
+    col = { ...col, ...opts.extra };
   }
   return col;
+}
+import { state } from "../state.ts";
+
+export function tubeColumn(opts: ColumnOptions) {
+  opts.group = "tube";
+  return column2(opts, () => {
+    return state.active_view != "tube";
+  });
+}
+export function fabricColumn(opts: ColumnOptions) {
+  opts.group = "fabric";
+  return column2(opts, () => {
+    return state.active_view != "fabric";
+  });
 }
 
 export function fabricDataColumn(data, title, extra?) {

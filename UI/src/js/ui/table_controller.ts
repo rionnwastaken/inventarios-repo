@@ -14,9 +14,11 @@ import {
   calc_remaining_fabric_measurements,
   column,
   column2,
+  fabricColumn,
   fcolumn,
   inspect_row,
   tcolumn,
+  tubeColumn,
 } from "./utils.ts";
 import { state } from "../state.ts";
 import { render_datecell, render_plain2 } from "./renderUtils.ts";
@@ -49,69 +51,70 @@ class TableController {
   init_columns() {
     const tube_columns = [
       ...tube_title_id.map(([column_name, id]) =>
-        column2(id, column_name, render_plain2, null, "tube"),
+        tubeColumn({
+          id: id,
+          column_name: column_name,
+          rendering_func: render_plain2,
+        }),
       ),
     ];
 
     const fabric_columns = [
       ...fabric_catalago_title_id.map(([column_name, schema_column_name]) =>
-        column2(
-          `${schema_column_name}_id`,
-          column_name,
-          render_plain2,
-          null,
-          "fabric",
-          function (id) {
+        fabricColumn({
+          id: `${schema_column_name}_id`,
+          column_name: column_name,
+          rendering_func: render_plain2,
+          format_func: (id) => {
             let value = state.catalagoData.catalagoValue(
               schema_column_name,
               id,
             );
             return value;
           },
-        ),
+        }),
       ),
 
-      column2(
-        "original_width",
-        "Ancho",
-        render_plain2,
-        {},
-        "fabric",
-        (value, data: Fabric) => {
-          // 👈 Fixed: added missing ')' after data: Fabric
+      fabricColumn({
+        id: "original_width",
+        column_name: "Ancho",
+        rendering_func: render_plain2,
+        format_func: (value, data: Fabric) => {
           let measurements = calc_remaining_fabric_measurements(data);
           if (!measurements) {
             return "";
           }
           return measurements.remaining_width;
         },
-      ),
-      column2(
-        "original_height",
-        "Altura",
-        render_plain2,
-        {},
-        "fabric",
-        (value, data: Fabric) => {
-          // 👈 Fixed: added missing ')' after data: Fabric
+      }),
+
+      fabricColumn({
+        id: "original_height",
+        column_name: "Alto",
+        rendering_func: render_plain2,
+        format_func: (value, data: Fabric) => {
           let measurements = calc_remaining_fabric_measurements(data);
           if (!measurements) {
             return "";
           }
           return measurements.remaining_height;
         },
-      ),
+      }),
     ];
 
     const shared_columns = [
-      column2(
-        "updated_at",
-        "Ultima actualizacion",
-        render_datecell,
-        {},
-        "both",
-      ),
-      column2("created_at", "Creado en", render_datecell, {}, "both"),
+      column2({
+        id: "updated_at",
+        column_name: "Ultima actualizacion",
+        rendering_func: render_datecell,
+        group: "both",
+      }),
+      column2({
+        id: "created_at",
+        column_name: "Creado en",
+        rendering_func: render_datecell,
+        group: "both",
+      }),
     ];
 
     this.columns = [...tube_columns, ...fabric_columns, ...shared_columns];
