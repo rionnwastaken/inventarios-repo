@@ -196,6 +196,11 @@ export function calc_remaining_fabric_measurements(fabric: Fabric) {
     log.debug(`Width and height ${width} ${height}`);
   });
 
+  if (width == null || height == null) {
+    log.error("WTF", fabric);
+    return "";
+  }
+
   log.debug({
     remaining_width: width.toFixed(3),
     remaining_height: height.toFixed(3),

@@ -32,13 +32,13 @@ export function render_plain2(
   row,
   meta,
   column_id,
-  cb_format?: (string) => string,
+  cb_format?: (value: string, obj: any) => string,
 ) {
   // log.debug("fabricdata in redenr cell", fabricData);
   if (type === "display") {
     let value = obj?.[column_id] ?? "";
     if (cb_format) {
-      value = cb_format(value);
+      value = cb_format(value, obj);
     }
     return value;
   }

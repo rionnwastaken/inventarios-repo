@@ -1,6 +1,7 @@
 import { CatalogApi } from "../api/catalog.ts";
 import { CoreAPI } from "../api/core.ts";
-import { Fabric, Tube } from "../schema.ts";
+import { Tube } from "../schema.ts";
+import { Fabric } from "../typeObj.ts";
 
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { TableView, TubeExtraD as TubeExtraD, ViewMode } from "../typeObj.ts";
@@ -9,9 +10,15 @@ import { TypedEventEmitter } from "../emitter.ts";
 import DataTable from "datatables.net-dt";
 
 import "datatables.net-dt/css/dataTables.dataTables.css";
-import { column, fcolumn, tcolumn } from "./utils.ts";
+import {
+  calc_remaining_fabric_measurements,
+  column,
+  fcolumn,
+  tcolumn,
+} from "./utils.ts";
 import { state } from "../state.ts";
 import { render_datecell, render_plain2 } from "./renderUtils.ts";
+import { fabric_catalago_title_id, tube_title_id } from "./misc.ts";
 //TODO ON TUBO ADD BUTTON, add tube to table and refresh it
 //TODO WHEN A NEW FABRIC IS ADDED, MAKE SURE IT IS REFLECTED IN THE VIEW, so it increments in tota lof the tube
 
@@ -27,7 +34,7 @@ export interface TableControllerEvents {
 
 class TableController {
   table: Api<TubeExtraD | Fabric>;
-  fabricColumns: (ColumnsConfig & { data: keyof Tube })[];
+  columns: (ColumnsConfig & { data: keyof Tube })[];
   public events = new TypedEventEmitter<TableControllerEvents>();
 
   constructor() {
@@ -38,15 +45,8 @@ class TableController {
   }
 
   init_columns() {
-    let tubeColumns = [
-      ["id", "Tubo ID"],
-      ["fabric_count", "Cantidad Telas"],
-      ["location_id", "Ubicacion ID"],
-      ["rectified", "Retificado"],
-    ];
-
-    this.fabricColumns = [
-      ...tubeColumns.map(([id, title]) =>
+    const tube_columns = [
+      ...tube_title_id.map(([title, id]) =>
         column(
           id,
           title,
@@ -66,15 +66,134 @@ class TableController {
         },
         "tube",
       ),
-
-      // Fabric columns
-      fcolumn("id", "Fabric"),
     ];
+
+    const fabric_columns = [
+      column(
+        "id",
+        "Tela ID",
+        {
+          render: (data, type, row, meta) =>
+            render_plain2(data, type, row, meta, "id"),
+        },
+        "fabric",
+      ),
+      ...fabric_catalago_title_id.map(([title, column_name]) =>
+        column(
+          column_name,
+          title,
+          {
+            render: (data, type, row, meta) =>
+              render_plain2(
+                data,
+                type,
+                row,
+                meta,
+                `${column_name}_id`,
+                function (id) {
+                  let value = state.catalagoData.catalagoValue(column_name, id);
+                  return value;
+                },
+              ),
+          },
+          "fabric",
+        ),
+      ),
+      column(
+        "original_width",
+        "Ancho",
+        {
+          render: (data, type, row, meta) => {
+            if (state.active_view != "fabric") {
+              return;
+            }
+
+            render_plain2(
+              data,
+              type,
+              row,
+              meta,
+              "original_width",
+              (value, data: Fabric) => {
+                let measurements = calc_remaining_fabric_measurements(data);
+                if (!measurements) {
+                  return "";
+                }
+                return measurements.remaining_width;
+              },
+            );
+          },
+        },
+        "fabric",
+      ), // @ts-ignore
+
+      column(
+        "original_height",
+        "Altura",
+        {
+          render: (data, type, row, meta) => {
+            if (state.active_view != "fabric") {
+              return;
+            }
+            render_plain2(
+              data,
+              type,
+              row,
+              meta,
+              "original_height",
+              (value, data: Fabric) => {
+                let measurements = calc_remaining_fabric_measurements(data);
+                if (!measurements) {
+                  return "";
+                }
+                return measurements.remaining_width;
+              },
+            );
+          },
+        },
+        "fabric",
+      ),
+
+      // @ts-ignore
+      column(
+        "original_fabric.updated_at",
+        "Fecha actualizado",
+        {
+          render: (data, type, row, meta) =>
+            render_datecell(
+              data,
+              type,
+              row,
+              meta,
+              "original_fabric.updated_at",
+            ),
+        },
+        "fabric",
+      ),
+
+      // @ts-ignore
+      column(
+        "original_fabric.created_at",
+        "Fecha Creacion",
+        {
+          render: (data, type, row, meta) =>
+            render_datecell(
+              data,
+              type,
+              row,
+              meta,
+              "original_fabric.created_at",
+            ),
+        },
+        "fabric",
+      ),
+    ];
+    this.columns = [...tube_columns, ...fabric_columns];
   }
 
   init_table() {
     this.table = new DataTable("#myTable", {
-      columns: this.fabricColumns,
+      columns: this.columns,
       ajax: this.load_data,
       paging: false,
       autoWidth: true,
@@ -169,6 +288,20 @@ class TableController {
       const v = config && config.group === view.new_view;
       this.visible(v);
     });
+
+    this.table.data().clear();
+    this.insert_data_to_table(view.new_view);
+    this.table.draw();
+  }
+
+  insert_data_to_table(mode: ViewMode) {
+    if (mode == "tube") {
+      this.table.rows.add(state.tableData.tubes);
+    }
+
+    if (mode == "fabric") {
+      this.table.rows.add(state.tableData.fabrics);
+    }
   }
 
   init_visible_group() {

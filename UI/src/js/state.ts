@@ -1,4 +1,4 @@
-import { CatalogItem, ViewMode } from "./typeObj";
+import { CatalogItem, TubeExtraD, ViewMode } from "./typeObj";
 import { CatalogApi } from "./api/catalog";
 import {
   BlindModel,
@@ -104,7 +104,7 @@ class CatalagoData {
 }
 
 class TableData {
-  tubes: Array<Tube>;
+  tubes: Array<TubeExtraD>;
   fabrics: Array<Fabric>;
   size: number;
   public events = new TypedEventEmitter<StateEvents>();
@@ -139,7 +139,7 @@ class TableData {
     this.fabrics[index] = fabric;
   }
 
-  cb_insert_new_tube(tube: Tube) {
+  cb_insert_new_tube(tube: TubeExtraD) {
     log.debug("cb_insert_new_tube(tube:Tube)");
     this.tubes.push(tube);
   }

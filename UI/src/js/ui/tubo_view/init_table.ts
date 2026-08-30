@@ -26,6 +26,7 @@ import {
   getDiffValue,
   render_datecell,
 } from "../renderUtils.ts";
+import { fabric_catalago_title_id } from "../misc.ts";
 
 let log = getLogger("app");
 
@@ -42,16 +43,9 @@ export class InitTable {
   }
 
   init_columns() {
-    const catalogConfigs: [string, string][] = [
-      ["Modelo", "blind_model"],
-      ["Color", "color"],
-      ["Clasificacion", "fabric_classification"],
-      ["Suministrador", "supplier"],
-    ];
-
     this.fabricColumns = [
       // @ts-ignore
-      ...catalogConfigs.map(([title, column_name]) =>
+      ...fabric_catalago_title_id.map(([title, column_name]) =>
         column(
           column_name,
           title,
