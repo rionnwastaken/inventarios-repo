@@ -4,7 +4,9 @@ import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
 import {
   calc_remaining_fabric_measurements,
   column,
+  column2,
   fabricDataColumn,
+  RenderingInfo,
 } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 
@@ -25,6 +27,7 @@ import {
   render_datecell,
 } from "../renderUtils.ts";
 import { fabric_catalago_title_id } from "../misc.ts";
+import { fabric_column_name_from_tablename } from "./utils.ts";
 
 let log = getLogger("app");
 
@@ -43,93 +46,45 @@ export class InitTable {
   init_columns() {
     this.fabricColumns = [
       // @ts-ignore
-      ...fabric_catalago_title_id.map(([title, column_name]) =>
-        column(
-          column_name,
-          title,
-          {
-            render: (data, type, row, meta) =>
-              this.render_catalago(
-                data,
-                type,
-                row,
-                meta,
-                column_name,
-                `${column_name}_id`,
-              ),
+      ...fabric_catalago_title_id.map(([column_name, schema_column_name]) =>
+        column2({
+          id: `${schema_column_name}_id`,
+          column_name: column_name,
+          rendering_func: function (info: RenderingInfo) {
+            return render_catalago(info, schema_column_name);
           },
-          "tube",
-        ),
+        }),
       ),
 
       // @ts-ignore
-      column(
-        "original_width",
-        "Ancho",
-        {
-          render: (data, type, row, meta) =>
-            this.render_remaining_measurement(
-              data,
-              type,
-              row,
-              meta,
-              "original_width",
-              "width",
-            ),
+      column2({
+        id: "original_width",
+        column_name: "Ancho",
+        rendering_func: (info: RenderingInfo) => {
+          return render_remaining_measurement(info, "width");
         },
-        "tube",
-      ), // @ts-ignore
+      }), // @ts-ignore
 
-      column(
-        "original_height",
-        "Altura",
-        {
-          render: (data, type, row, meta) =>
-            this.render_remaining_measurement(
-              data,
-              type,
-              row,
-              meta,
-              "original_height",
-              "height",
-            ),
+      column2({
+        id: "original_height",
+        column_name: "Altura",
+        rendering_func: (info: RenderingInfo) => {
+          return render_remaining_measurement(info, "height");
         },
-        "tube",
-      ),
+      }), // @ts-ignore
 
       // @ts-ignore
-      column(
-        "original_fabric.updated_at",
-        "Fecha actualizado",
-        {
-          render: (data, type, row, meta) =>
-            render_datecell(
-              data,
-              type,
-              row,
-              meta,
-              "original_fabric.updated_at",
-            ),
-        },
-        "fabric",
-      ),
-
+      column2({
+        id: "original_fabric.updated_at",
+        column_name: "Fecha actualizado",
+        rendering_func: render_datecell,
+      }),
       // @ts-ignore
-      column(
-        "original_fabric.created_at",
-        "Fecha Creacion",
-        {
-          render: (data, type, row, meta) =>
-            render_datecell(
-              data,
-              type,
-              row,
-              meta,
-              "original_fabric.created_at",
-            ),
-        },
-        "fabric",
-      ),
+      column2({
+        id: "original_fabric.created_at",
+        column_name: "Creado en ",
+        rendering_func: render_datecell,
+      }),
     ];
   }
 
@@ -140,7 +95,7 @@ export class InitTable {
       autoWidth: true,
       searching: false,
       order: { name: "original_fabric.updated_at", dir: "asc" },
-      rowCallback: this.render_row,
+      rowCallback: render_row,
       columnDefs: [
         {
           targets: "_all", // Zero-based index of the columns you want to left-align
@@ -181,35 +136,35 @@ export class InitTable {
       return getDiffValue(original_value, modified_value, fabricData.mode);
     }
   }
+}
 
-  //TODO FIGURE OUT HOW TO DISPLAY THIS SHIT WHEN CHANGING XD
-  render_remaining_measurement(
-    fabricData: FabricData,
-    type,
-    row,
-    meta,
-    column_id,
-    which: "width" | "height",
-  ) {
+//TODO FIGURE OUT HOW TO DISPLAY THIS SHIT WHEN CHANGING XD
+function render_remaining_measurement(
+  info: RenderingInfo,
+  which: "width" | "height",
+) {
+  {
     if (!which) {
       throw Error("FUck you, which is null in render_remaining_measurement ");
     }
 
-    // log.debug("fabricdata in redenr cell", fabricData);
-    if (type === "display") {
-      let original_value = fabricData?.original_fabric[column_id] ?? null;
-      let modified_value = fabricData?.modified_fabric?.[column_id] ?? null;
+    const data = info.data as FabricData;
+
+    // log.debug("fabricdata in redenr cell", data);
+    if (info.type === "display") {
+      let original_value = data?.original_fabric[info.column_id] ?? null;
+      let modified_value = data?.modified_fabric?.[info.column_id] ?? null;
 
       if (!original_value) {
         return "";
       }
 
       if (
-        fabricData.original_fabric.deductions != null &&
-        fabricData.original_fabric.deductions.length > 0
+        data.original_fabric.deductions != null &&
+        data.original_fabric.deductions.length > 0
       ) {
         let measurements = calc_remaining_fabric_measurements(
-          fabricData.original_fabric,
+          data.original_fabric,
         );
         let measure;
         if (which == "width") {
@@ -224,65 +179,60 @@ export class InitTable {
       return getDiffValue(
         format_measurement(original_value),
         format_measurement(modified_value),
-        fabricData.mode,
+        data.mode,
       );
     }
   }
 
   //TODO I would like to display data for when data has been edited, to display original and modified, and the original criss cross
-  render_catalago(
-    fabricData: FabricData,
-    type,
-    row,
-    meta,
-    table_name,
-    column_id,
-  ) {
-    // log.debug("fabricdata in redenr cell", fabricData);
-    if (type === "display") {
-      let original_value = state.catalagoData.catalagoValue(
-        table_name,
-        fabricData.original_fabric?.[column_id] ?? null,
-      );
-      let modified_value = state.catalagoData.catalagoValue(
-        table_name,
-        fabricData.modified_fabric?.[column_id] ?? null,
-      );
+}
 
-      log.debug(`Formatting value for column ${column_id}`);
-      return getDiffValue(original_value, modified_value, fabricData.mode);
-    }
+function render_row(row: HTMLTableRowElement, data: FabricData, index: number) {
+  // Reset custom inline styles back to default DataTables values
+  row.style.removeProperty("background-color");
+  row.style.removeProperty("text-decoration");
+  row.style.removeProperty("color");
+
+  // Remove background styles on child cells in case DataTables set them directly
+  const cells = row.querySelectorAll<HTMLTableCellElement>("td, th");
+  cells.forEach((cell) => {
+    cell.style.removeProperty("background-color");
+    cell.style.removeProperty("color");
+  });
+
+  switch (data.mode) {
+    case "created":
+      row.style.setProperty("background-color", "#dfffbf", "important");
+      break;
+
+    case "edited":
+      row.style.setProperty("background-color", "#bfe2ff", "important");
+      break;
+
+    case "deleted":
+      row.style.setProperty("background-color", "#ffbfbf", "important");
+      row.style.setProperty("text-decoration", "line-through");
+      break;
+
+    case "normal":
+    default:
   }
+}
 
-  render_row(row: HTMLTableRowElement, data: FabricData, index: number) {
-    // Reset custom inline styles back to default DataTables values
-    row.style.removeProperty("background-color");
-    row.style.removeProperty("text-decoration");
-    row.style.removeProperty("color");
+function render_catalago(info: RenderingInfo, catalago_tablename) {
+  // log.debug("fabricdata in redenr cell", data);
+  let data = info.data as FabricData;
+  if (info.type === "display") {
+    let original_value = state.catalagoData.catalagoValue(
+      catalago_tablename,
+      data.original_fabric?.[info.column_id] ?? null,
+    );
+    let modified_value = state.catalagoData.catalagoValue(
+      catalago_tablename,
+      data.modified_fabric?.[info.column_id] ?? null,
+    );
 
-    // Remove background styles on child cells in case DataTables set them directly
-    const cells = row.querySelectorAll<HTMLTableCellElement>("td, th");
-    cells.forEach((cell) => {
-      cell.style.removeProperty("background-color");
-      cell.style.removeProperty("color");
-    });
-
-    switch (data.mode) {
-      case "created":
-        row.style.setProperty("background-color", "#dfffbf", "important");
-        break;
-
-      case "edited":
-        row.style.setProperty("background-color", "#bfe2ff", "important");
-        break;
-
-      case "deleted":
-        row.style.setProperty("background-color", "#ffbfbf", "important");
-        row.style.setProperty("text-decoration", "line-through");
-        break;
-
-      case "normal":
-      default:
-    }
+    log.debug(`Formatting value for column ${info.column_id}`);
+    return getDiffValue(original_value, modified_value, data.mode);
   }
 }

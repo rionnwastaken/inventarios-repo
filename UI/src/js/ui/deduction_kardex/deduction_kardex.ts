@@ -3,6 +3,7 @@ import { FabricData, Fabric, ModalState } from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog";
 import {
   calc_remaining_fabric_measurements,
+  column2,
   createElementFromHTML,
 } from "../utils";
 import { state } from "../../state";
@@ -118,50 +119,43 @@ class DeductionKardex {
   }
 
   init_columns() {
+    //@ts-ignore
     this.columns = [
       //@ts-ignore
-      column(null, "Ancho", {
-        // visible:true,
-        render: (data, type, row, meta) =>
-          render_plain2(
-            data,
-            type,
-            row,
-            meta,
-            "removed_width",
-            format_measurement,
-          ),
+      column2({
+        id: "removed_width",
+        column_name: "Ancho",
+        rendering_func: render_plain2,
+        format_func: format_measurement,
       }),
 
       //@ts-ignore
-      column(null, "Alto", {
-        render: (data, type, row, meta) =>
-          render_plain2(
-            data,
-            type,
-            row,
-            meta,
-            "removed_height",
-            format_measurement,
-          ),
+      column2({
+        id: "removed_height",
+        column_name: "Alto",
+        rendering_func: render_plain2,
+        format_func: format_measurement,
       }),
 
       //@ts-ignore
-      column(null, "Comentario", {
-        render: (data, type, row, meta) =>
-          render_plain2(data, type, row, meta, "comment"),
+      column2({
+        id: "comment",
+        column_name: "Comentario",
+        rendering_func: render_plain2,
       }),
 
       //@ts-ignore
-      column("updated_at", "Ultima actualizacion", {
-        render: (data, type, row, meta) =>
-          render_datecell(data, type, row, meta, "updated_at"),
+      column2({
+        id: "updated_at",
+        column_name: "Ultima actualizacion",
+        rendering_func: render_datecell,
       }),
 
       //@ts-ignore
-      column("created_at", "Creado", {
-        render: (data, type, row, meta) =>
-          render_datecell(data, type, row, meta, "created_at"),
+      column2({
+        id: "created_at",
+        column_name: "Creado",
+        rendering_func: render_datecell,
       }),
     ];
   }
