@@ -243,6 +243,7 @@ class SpareFabric(SQLModel, table=True):
     deduction_id: int = Field(foreign_key="fabric_deduction.id")
     width: float
     height: float
+    archive: bool = Field(default=False)
 
     deduction: Optional[FabricDeduction] = Relationship(back_populates="spare_fabric")
 
