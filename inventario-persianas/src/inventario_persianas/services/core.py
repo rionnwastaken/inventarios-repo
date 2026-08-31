@@ -216,8 +216,8 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
 
 def validate_fabric_deduction_limits(
     fabric: Fabric,
-    width: Optional[float] = None,
-    height: Optional[float] = None,
+    width: float,
+    height: float,
     current_deduction_id: Optional[int] = None,
 ) -> Tuple[bool, Optional[str]]:
     """
@@ -226,25 +226,28 @@ def validate_fabric_deduction_limits(
     Returns:
         Tuple[bool, Optional[str]]: (is_valid, error_message)
     """
-    remaining_width = fabric.original_width
+
+    if width == None:
+        return False, "El ancho esta vacio"
+
+    if height == None:
+        return False, "El alt esta vacio"
+
     remaining_height = fabric.original_height
 
     for d in fabric.deductions:
-        if current_deduction_id is not None and d.id == current_deduction_id:
+        if current_deduction_id != None and d.id == current_deduction_id:
             continue
-
-        if d.removed_width is not None:
-            remaining_width -= d.removed_width
 
         if d.removed_height is not None:
             remaining_height -= d.removed_height
 
-    if width is not None and width > remaining_width:
-        msg = f"No se puede quitar {width} mts del ancho restante {remaining_width} mts"
+    if width > fabric.original_width:
+        msg = f"No se puede quitar {width} mts del ancho  {fabric.original_width} mts"
         log.debug(f"Fabric ID {fabric.id}: {msg}")
         return False, msg
 
-    if height is not None and height > remaining_height:
+    if height > remaining_height:
         msg = (
             f"No se puede quitar {height} mts del alto restante {remaining_height} mts"
         )

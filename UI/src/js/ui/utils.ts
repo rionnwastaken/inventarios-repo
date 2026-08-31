@@ -243,29 +243,21 @@ export function calc_remaining_fabric_measurements(fabric: Fabric) {
     return null;
   }
 
-  let width = fabric.original_width;
   let height = fabric.original_height;
-
   let deductions = fabric.deductions || [];
 
   deductions.forEach((deduction) => {
-    width -= deduction.removed_width;
     height -= deduction.removed_height;
-    log.debug(`Width and height ${width} ${height}`);
+    log.debug(`Width and height ${fabric.original_width} ${height}`);
   });
 
-  if (width == null || height == null) {
-    log.error("WTF", fabric);
-    return null;
-  }
-
   log.debug({
-    remaining_width: width.toFixed(2),
+    remaining_width: fabric.original_width.toFixed(2),
     remaining_height: height.toFixed(2),
   });
 
   return {
-    remaining_width: width.toFixed(2),
+    remaining_width: fabric.original_width.toFixed(2),
     remaining_height: height.toFixed(2),
   };
 }

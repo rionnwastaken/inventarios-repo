@@ -89,8 +89,7 @@ class DeductionKardex {
       Medidas Iniciales
     </span>
     <div class="flex flex-col justify-start font-mono text-zinc-300">
-      <p class="ancho">Ancho: <span class="font-bold text-white">${original_width}</span> m</p>
-      <p class="alto">Alto: <span class="font-bold text-white">${original_height}</span> m</p>
+      <p class="ancho">Ancho: <span class="font-bold text-white">${original_width.toFixed(2)} x ${original_height.toFixed(2)} </span> m</p>
     </div>
   </div>
 
@@ -105,8 +104,9 @@ class DeductionKardex {
       Medidas Restantes
     </span>
     <div class="flex flex-col justify-start  font-mono text-red-900">
-      <p>Ancho: <span class="ancho-restante font-bold text-red-600"></span> m</p>
-      <p>Alto: <span class="alto-restante font-bold text-red-600"></span> m</p>
+      <p class="font-bold text-red-600">
+  <span class="ancho-restante"></span> X <span class="alto-restante"></span>m
+</p>
     </div>
   </div>
 </div>

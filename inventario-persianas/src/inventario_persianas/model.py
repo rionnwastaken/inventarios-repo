@@ -211,8 +211,8 @@ class FabricDeduction(TimestampMixin, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     fabric_id: int = Field(foreign_key="fabric.id")
 
-    removed_height: Optional[float]
-    removed_width: Optional[float]
+    removed_height: float
+    removed_width: float
 
     comment: Optional[str] = Field(default=None, max_length=500)
     fabric: Optional[Fabric] = Relationship(back_populates="deductions")
