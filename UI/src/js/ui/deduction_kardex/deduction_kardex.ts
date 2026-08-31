@@ -84,22 +84,22 @@ class DeductionKardex {
 <div class="flex items-center gap-3"> 
 
   <!-- Medidas Iniciales Card (Black/Dark Slate Theme) -->
-  <div class="flex flex-col p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs"> 
-    <span class="font-semibold uppercase tracking-wider text-zinc-400 mb-1 flex items-center gap-1">
+  <div class="flex flex-col p-2.5 rounded-lg bg-white border  text-xs"> 
+    <span class="font-semibold uppercase tracking-wider text-zinc-800 mb-1 flex items-center gap-1">
       Medidas Iniciales
     </span>
-    <div class="flex flex-col justify-start font-mono text-zinc-300">
-      <p class="ancho">Ancho: <span class="font-bold text-white">${original_width.toFixed(2)} x ${original_height.toFixed(2)} </span> m</p>
+    <div class="flex flex-col justify-start font-mono text-zinc-800">
+      <p class="ancho">Ancho: <span class="font-bold text-black">${original_width.toFixed(2)} x ${original_height.toFixed(2)} </span> m</p>
     </div>
   </div>
 
   <!-- Arrow Indicator -->
-  <div class="text-zinc-400">
+  <div class="text-zinc-800">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
   </div>
 
   <!-- Medidas Restantes Card (Soft Reddish Theme) -->
-  <div class="flex flex-col p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs"> 
+  <div class="flex flex-col p-2.5 rounded-lg bg-white border border-red-200 text-xs"> 
     <span class="font-semibold uppercase tracking-wider text-red-700 mb-1 flex items-center gap-1">
       Medidas Restantes
     </span>
