@@ -3,6 +3,7 @@ import { Fabric, ItemState } from "../../typeObj";
 import { ModalState } from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog";
 import {
+  calc_remaining_fabric_measurements,
   createElementFromHTML,
   get_partial_data,
   ObjectChanged,
@@ -10,10 +11,22 @@ import {
 import { CoreAPI } from "../../api/core";
 import { NotiDialog, errorNotiTopRight } from "../dialogs/notification";
 
+interface InputComponent {
+  input: HTMLInputElement;
+  error: HTMLParagraphElement;
+}
+
+interface ComponentValues {
+  width: number | null;
+  height: number | null;
+  comment: string | null;
+}
+
 export class Form {
-  public widthInput!: HTMLInputElement;
-  public heightInput!: HTMLInputElement;
-  public commentInput!: HTMLInputElement;
+  public width_obj!: InputComponent;
+  public height_obj!: InputComponent;
+  public comment_obj!: InputComponent;
+  public global_error!: HTMLParagraphElement;
 
   component: HTMLElement;
   modalDialog: ModalDialog;
@@ -31,44 +44,69 @@ export class Form {
   }
 
   private init_elements(): void {
-    // Parse strings into direct HTMLInputElement references
-    this.widthInput = createElementFromHTML<HTMLInputElement>(`
-      <input type="number" step="0.01" name="width" placeholder="0.00" class="input input-bordered w-full" required />
-    `);
+    function createComp(label_name, measure: boolean, id) {
+      let input = "";
+      if (measure) {
+        input = `<input type="number" step="0.01" pattern="[0-9.]" name="height" placeholder="0.00" class="input input-bordered w-full" required />`;
+      } else {
+        input = `<input type="text" name="comment" placeholder="Comentario o nota..." class="input input-bordered w-full" />`;
+      }
+      return `
 
-    this.heightInput = createElementFromHTML<HTMLInputElement>(`
-      <input type="number" step="0.01" name="height" placeholder="0.00" class="input input-bordered w-full" required />
-    `);
+	<label class="form-control">
+	  <span class="label label-text font-semibold">${label_name}</span>
+	  <div id="${id}"> 
+	    ${input}
+	    <p class="text-red-500"></p>
+	  </div>
+	</label>
 
-    this.commentInput = createElementFromHTML<HTMLInputElement>(`
-      <input type="text" name="comment" placeholder="Comentario o nota..." class="input input-bordered w-full" />
-    `);
+      `;
+    }
+
+    function getFieldElements(
+      root: HTMLElement,
+      containerId: string,
+    ): { input: HTMLInputElement; error: HTMLParagraphElement } | null {
+      const container = root.querySelector(`#${containerId}`);
+      if (!container) return null;
+
+      const input = container.querySelector<HTMLInputElement>("input");
+      const error = container.querySelector<HTMLParagraphElement>("p");
+
+      input.addEventListener("focus", (e) => {
+        error.textContent = "";
+        // this.global_error.textContent = ""
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (["e", "E", "+", "-"].includes(e.key)) {
+          e.preventDefault();
+        }
+      });
+
+      if (!input || !error) return null;
+
+      return { input, error };
+    }
 
     this.component = createElementFromHTML(`
+
   <div class="flex flex-col gap-4">
+    <p id="global-error" class="text-red-500"></p>
     <div class="grid grid-cols-2 gap-4">
-      <label class="form-control">
-        <span class="label label-text font-semibold">Ancho (m)</span>
-        <slot id="width"></slot>
-      </label>
-
-      <label class="form-control">
-        <span class="label label-text font-semibold">Alto (m)</span>
-        <slot id="height"></slot>
-      </label>
+      ${createComp("Ancho (m)", true, "ancho_component")}
+      ${createComp("Alto (m)", true, "alto_component")}
     </div>
-
-    <label class="form-control w-full">
-      <span class="label label-text font-semibold">Comentario</span>
-      <slot id="comment"></slot>
-    </label>
+    ${createComp("Comentario", false, "comentario_component")}
   </div>
 `);
 
     // Directly swap slot placeholders with actual input instances
-    this.component.querySelector("#width")?.replaceWith(this.widthInput);
-    this.component.querySelector("#height")?.replaceWith(this.heightInput);
-    this.component.querySelector("#comment")?.replaceWith(this.commentInput);
+    this.width_obj = getFieldElements(this.component, "ancho_component");
+    this.height_obj = getFieldElements(this.component, "alto_component");
+    this.comment_obj = getFieldElements(this.component, "comentario_component");
+    this.global_error = this.component.querySelector("#global-error");
   }
 
   public body(): HTMLElement {
@@ -76,33 +114,42 @@ export class Form {
   }
 
   /**
-   * Helper method to extract typed form values
-   */
-  public getValues() {
-    let comment = null;
-    if (this.commentInput.value.trim() !== "") {
-      comment = this.commentInput.value.trim();
-    }
-
-    return {
-      width: parseFloat(this.widthInput.value) || null,
-      height: parseFloat(this.heightInput.value) || null,
-      comment: comment,
-    };
-  }
-
-  /**
    * Helper method to reset form inputs
    */
   public reset(): void {
-    this.widthInput.value = "";
-    this.heightInput.value = "";
-    this.commentInput.value = null;
+    this.width_obj.input.value = "";
+    this.height_obj.input.value = "";
+    this.comment_obj.input.value = null;
+  }
+
+  data_change_in_update(data: ComponentValues) {
+    let changed = false;
+
+    if (this.deduction.removed_width != data.width) {
+      return true;
+    }
+
+    if (this.deduction.removed_height != data.height) {
+      return true;
+    }
+
+    if (this.deduction.comment != data.comment) {
+      return true;
+    }
+    return false;
   }
 
   async update_deduction() {
     log.debug("update_deduction()");
-    const values = this.getValues();
+    const values = this.validate_fileds();
+    if (values == null) {
+      this.global_error.textContent = "No se han realizado modificaciones";
+      return;
+    }
+
+    if (!this.data_change_in_update(values)) {
+      return;
+    }
 
     let modified_deduction: FabricDeduction = {
       removed_width: values.width,
@@ -151,19 +198,50 @@ export class Form {
       deduction: data["deduction"],
     };
   }
+  validate_fileds() {
+    let comment = null;
+    if (this.comment_obj.input.value.trim() !== "") {
+      comment = this.comment_obj.input.value.trim();
+    }
+
+    const values: ComponentValues = {
+      width: parseFloat(this.width_obj.input.value) || null,
+      height: parseFloat(this.height_obj.input.value) || null,
+      comment: comment,
+    };
+
+    const mss_campo_vacio = "El campo no puede estar vacio";
+    if (values.width == null) {
+      this.width_obj.error.textContent = mss_campo_vacio;
+      return null;
+    }
+
+    if (values.height == null) {
+      this.height_obj.error.textContent = mss_campo_vacio;
+      return null;
+    }
+
+    if (values.width > this.fabric.original_width) {
+      this.width_obj.error.textContent = `El ancho no puede ser mayor a ${this.fabric.original_width}`;
+      return null;
+    }
+
+    const deductions = this.fabric?.deductions || [];
+    const measurement = calc_remaining_fabric_measurements(this.fabric);
+    if (values.height > parseFloat(measurement.remaining_height)) {
+      this.height_obj.error.textContent = `La altura no puede excederse de ${measurement.remaining_height} m`;
+      return null;
+    }
+
+    return values;
+  }
 
   async create_deduction() {
     log.debug("create_deduction()");
-    const values = this.getValues();
-    log.debug(values);
+    let values = this.validate_fileds();
 
-    let changed = false;
-    for (const [key, value] of Object.entries(values)) {
-      if (value != null) {
-        changed = true;
-      }
-    }
-    if (!changed) {
+    log.debug(values);
+    if (values == null) {
       return;
     }
 
@@ -218,10 +296,11 @@ export class Form {
           log.error("Deduction must be passed in editing mode");
           return;
         }
-
         this.modalDialog.confirmBtn.innerText = "Actualizar deduccion";
         this.start_editing_mode(deduction);
       }
+
+      this.width_obj.input.value = String(this.fabric.original_width);
     });
   }
 
@@ -231,9 +310,9 @@ export class Form {
       comment = String(deduction.comment);
     }
 
-    this.widthInput.value = String(deduction.removed_width) || "";
-    this.heightInput.value = String(deduction.removed_height) || "";
-    this.commentInput.value = comment;
+    this.width_obj.input.value = String(deduction.removed_width) || "";
+    this.height_obj.input.value = String(deduction.removed_height) || "";
+    this.comment_obj.input.value = comment;
   }
 
   create_dialog() {
