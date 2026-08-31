@@ -294,12 +294,12 @@ export class Form {
       if (this.modal_state == "editing") {
         if (!deduction) {
           log.error("Deduction must be passed in editing mode");
-          return;
+          throw Error("Deduction must be passed in editing mode");
         }
         this.modalDialog.confirmBtn.innerText = "Actualizar deduccion";
         this.start_editing_mode(deduction);
+        return;
       }
-
       this.width_obj.input.value = String(this.fabric.original_width);
     });
   }
