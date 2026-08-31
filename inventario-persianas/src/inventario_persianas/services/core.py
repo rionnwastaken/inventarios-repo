@@ -134,7 +134,7 @@ def add_fabrics(fabrics_to_add: list[dict]) -> tuple[None | Error, list[dict] | 
 
 
 def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dict]]]:
-    updated_fabrics = []
+    updated_fabrics: list[Fabric] = []
 
     try:
         with db.session.begin():
@@ -160,7 +160,9 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
                         f"Item at index {index}: 'partial_data' must be a valid dictionary."
                     )
 
-                fabric = db.session.get(Fabric, fabric_id)
+                fabric = db.session.get(
+                    Fabric, fabric_id, options=[selectinload(Fabric.deductions)]
+                )
                 if not fabric:
                     raise ValueError(f"Fabric with id {fabric_id} not found.")
 
@@ -191,9 +193,15 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
                 updated_fabrics.append(fabric)
 
             db.session.flush()
+            data = []
+            for fabric in updated_fabrics:
+                fabric_obj = fabric.model_dump()
+                fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
+                data.append(fabric_obj)
 
-        result_dicts = [fabric.model_dump() for fabric in updated_fabrics]
-        return None, result_dicts
+            # result_dicts = [fabric.model_dump() for fabric in updated_fabrics]
+            log.debug("results dict here are  %s", data)
+            return None, data
 
     except ValidationError as e:
         return Error(f"Validation failed: {e.errors(include_url=False)}", 400), None

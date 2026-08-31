@@ -50,6 +50,9 @@ state.events.on("catalago:loaded", () => {
 tubeOverview.events.on("catalog_item:added", (...args) => {
   state.cb_catalog_item_added(...args);
 });
+tubeOverview.events.on("fabric:edited", (...args) => {
+  state.tableData.update_fabric_by_id(...args);
+});
 
 tubeOverview.events.on("tubo_overview:dblclick_fabric", (...args) => {
   deductionKardex.cb_show_kardex(...args);

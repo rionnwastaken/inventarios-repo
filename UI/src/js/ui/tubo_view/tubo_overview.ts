@@ -39,6 +39,7 @@ let log = getLogger("app");
 export interface RowModalEvents {
   "catalog_item:added": (catalogItem: CatalogItem) => void;
   "tubo_overview:dblclick_fabric": (fabric: Fabric) => void;
+  "fabric:edited": (fabrics: Fabric) => void;
 }
 
 class TemporalID {
@@ -189,12 +190,12 @@ class TubeOverview {
   /*
     GIVE ME BLEACH PLEASE, MY EYES GOTTA UNSEE IT
     */
-  async handle_saving_edited_fabrics(arr: ApiRowsMethods<FabricData>) {
-    if (arr.data().length > 0) {
+  async handle_saving_edited_fabrics(rows: ApiRowsMethods<FabricData>) {
+    if (rows.data().length > 0) {
       log.info("handle_saving_edited_fabrics()");
-      log.info(`Updating  ${arr.length} rows`);
+      log.info(`Updating  ${rows.length} rows`);
 
-      const data: FabricData[] = arr.data().toArray();
+      const data: FabricData[] = rows.data().toArray();
       const partial_data = [];
       for (let fabricData of data) {
         const p = get_partial_data(
@@ -217,30 +218,20 @@ class TubeOverview {
         log.info("Update of rows success ", res);
 
         log.debug("data right now here after editing is ", data);
-        const updated_fabrics = res.data.updated_fabrics.data;
-        for (const obj of updated_fabrics) {
-          const id = obj["id"];
-          const partial_data = obj["partial_data"];
-          const d = data.find((row) => row.original_fabric.id == id);
+        const updated_fabrics = res.data;
+        for (const updated_obj of updated_fabrics) {
+          const id = updated_obj["id"];
+          const obj = data.find((obj) => obj.original_fabric.id == id);
 
-          // state.tableData.fabrics.push(fabric_data_response)
-          for (const [key, value] of Object.entries(partial_data)) {
-            d.original_fabric[key] = value;
-          }
-          d.modified_fabric = null;
-
-          const index = state.tableData.fabrics.findIndex(
-            (fabric) => fabric.id == id,
-          );
-          if (index !== -1) {
-            state.tableData.fabrics[index] = d.original_fabric;
-          }
+          obj.original_fabric = updated_obj;
+          obj.modified_fabric = null;
+          this.events.emit("fabric:edited", updated_obj);
         }
 
-        arr.every(function () {
-          const rowData = this.data();
-          rowData.mode = "normal";
-          this.data(rowData); // Re-syncs the data and invalidates the row's cache
+        rows.every(function () {
+          const fabricData = this.data();
+          fabricData.mode = "normal";
+          this.data(fabricData); // Re-syncs the data and invalidates the row's cache
         });
         this.table.draw(false);
 

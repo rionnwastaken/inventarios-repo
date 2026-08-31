@@ -67,7 +67,13 @@ def update_fabrics():
     if err:
         return err.returnIt()
 
-    return {"updated_fabrics": data}
+    import json
+
+    log.debug(
+        "Returing the following data %s",
+        json.dumps(updated_fabrics, indent=4, default=str),
+    )
+    return updated_fabrics, 200
 
 
 @core_bp.post("/fabric/deduction/update/")
