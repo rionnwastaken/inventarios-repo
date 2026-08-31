@@ -1,5 +1,5 @@
-import { FabricDeduction } from "../../schema";
-import { FabricData, Fabric, ModalState } from "../../typeObj";
+// import { FabricDeduction } from "../../schema";
+import { FabricData, Fabric, ModalState, FabricDeduction } from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog";
 import {
   calc_remaining_fabric_measurements,
@@ -20,6 +20,7 @@ import {
 import { Form } from "./form";
 import { TypedEventEmitter } from "../../emitter";
 import { column } from "../utils";
+import icon from "../../../assets/icons/spare_fabric_symbol.svg";
 
 export interface DeductionKardexEvents {
   "deduction:modified": (fabric: Fabric) => void;
@@ -187,6 +188,7 @@ class DeductionKardex {
       .querySelector(".table-container")
       ?.appendChild(this.table_element);
     this.update_display_remaining_measurements();
+
     return this.wrapper;
   }
 
@@ -209,6 +211,7 @@ class DeductionKardex {
       searching: false,
       // order: { name: "original_fabric.updated_at", dir: "desc" },
       // rowCallback: this.render_row,
+      rowCallback: render_row,
       columnDefs: [
         {
           targets: "_all", // Zero-based index of the columns you want to left-align
@@ -268,6 +271,7 @@ class DeductionKardex {
       row.data(result.deduction);
     }
 
+    log.info("Fabric dat after updating deduction ", result.fabric);
     this.fabric = result.fabric;
     state.tableData.update_fabric_by_id(result.fabric);
     this.update_display_remaining_measurements();
@@ -326,5 +330,48 @@ class DeductionKardex {
   }
 }
 
+function render_row(
+  row: HTMLTableRowElement,
+  data: FabricDeduction,
+  index: number,
+) {
+  if (data.spare_fabric == null) {
+    return;
+  }
+
+  const firstCell = row.cells[0];
+  if (!firstCell) return;
+
+  // 1. If already rendered, extract the existing label text or use data directly
+  const existingLabel = firstCell.querySelector(".cell-content");
+  const cellValue = existingLabel
+    ? existingLabel.innerHTML
+    : firstCell.innerHTML;
+
+  // 2. Overwrite cell with fresh container structure (using class instead of duplicate IDs)
+  firstCell.innerHTML = `
+    <div class="flex items-center gap-2">
+      <div class="image-container w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-3xl text-black border-black p-2 border"></div>
+      <span class="cell-content">${cellValue}</span>
+    </div>
+  `;
+
+  // 3. Inject and style the SVG
+  const imageContainer =
+    firstCell.querySelector<HTMLElement>(".image-container");
+  if (!imageContainer) return;
+
+  imageContainer.innerHTML = icon;
+
+  const svg = imageContainer.querySelector("svg");
+  if (svg) {
+    svg.classList.add("w-full", "h-full", "text-black");
+
+    svg.querySelectorAll("path, rect, circle, polygon").forEach((el) => {
+      el.setAttribute("fill", "currentColor");
+      el.setAttribute("stroke", "black");
+    });
+  }
+}
 const deductionKardex = new DeductionKardex();
 export { deductionKardex };

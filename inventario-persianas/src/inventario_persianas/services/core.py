@@ -1,6 +1,7 @@
 import logging
 import traceback
 from typing import List, Optional, Tuple
+import json
 
 import inventario_persianas.model as mod
 from inventario_persianas.app_types import Change
@@ -49,7 +50,11 @@ def recent_tubes_and_fabrics():
     stmt_tubes = (
         select(Tube)
         .options(
-            selectinload(Tube.fabrics).options(selectinload(Fabric.deductions)),
+            selectinload(Tube.fabrics).options(
+                selectinload(Fabric.deductions).options(
+                    selectinload(FabricDeduction.spare_fabric)
+                )
+            ),
             joinedload(Tube.tube_rectified),
         )
         .order_by(desc(Tube.updated_at))
@@ -74,8 +79,17 @@ def recent_tubes_and_fabrics():
         for fabric in fabrics_list:
             deductions = fabric.deductions
             obj = fabric.model_dump()
-            obj["deductions"] = [d.model_dump() for d in deductions]
+            obj["deductions"] = []
+            for deduct in deductions:
+                dedudct_obj = deduct.model_dump()
+                spare_fabric = None
+                if deduct.spare_fabric:
+                    spare_fabric = deduct.spare_fabric.model_dump()
+                dedudct_obj["spare_fabric"] = spare_fabric
+                obj["deductions"].append(dedudct_obj)
             fabrics_obj.append(obj)
+
+    log.debug("Fabrics loaded %s", json.dumps(fabrics_obj, default=str, indent=4))
 
     return tubes_obj, fabrics_obj, len(tubes_obj)
 
@@ -284,9 +298,6 @@ def deduction_new(deduction):
 
     fabric.deductions.append(fabricDeduction)
     db.session.flush()
-    fabricDeduction_obj = fabricDeduction.model_dump()
-    fabric_obj = fabric.model_dump()
-    fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
 
     audit_obj = create_audit_log(
         "Insert", target_id=fabricDeduction.id, target_table="fabric_deduction"
@@ -295,6 +306,7 @@ def deduction_new(deduction):
     log.debug(f"New deduction {audit_obj}")
 
     # Create sparefabric
+    spare_fabric_obj = None
     if fabricDeduction.removed_width != fabric.original_width:
         spareFabric = SpareFabric(
             width=fabric.original_width - fabricDeduction.removed_width,
@@ -309,6 +321,28 @@ def deduction_new(deduction):
             target_id=spareFabric.id,  # type:ignore
             target_table="spare_fabric",
         )
+        fabricDeduction.spare_fabric = spareFabric
+        spare_fabric_obj = spareFabric.model_dump()
+        db.session.flush()
+
+    fabric_obj = fabric.model_dump()
+    fabric_obj["deductions"] = []
+    fabricDeduction_obj = fabricDeduction.model_dump()
+    fabricDeduction_obj["spare_fabric"] = (
+        None
+        if not fabricDeduction.spare_fabric
+        else fabricDeduction.spare_fabric.model_dump()
+    )
+
+    for deduct in fabric.deductions:
+        dedudct_obj = deduct.model_dump()
+        spare_fabric = None
+        if deduct.spare_fabric:
+            spare_fabric = deduct.spare_fabric.model_dump()
+        dedudct_obj["spare_fabric"] = spare_fabric
+        fabric_obj["deductions"].append(dedudct_obj)
+
+    # fabric_obj["spare_fabric"] = spare_fabric_obj
     db.session.commit()
 
     return {"fabric": fabric_obj, "deduction": fabricDeduction_obj}, 200
@@ -370,9 +404,6 @@ def update_deduction(
     after_fabricDeduction_obj = fabricDeduction.model_dump()
     log.debug(f"d after refresh {fabricDeduction}")
 
-    fabric_obj = fabric.model_dump()
-    fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
-
     create_audit_log(
         "Update",
         "fabric_deduction",
@@ -387,26 +418,62 @@ def update_deduction(
     if partial_payload_update.get("removed_width") or partial_payload_update.get(
         "removed_height"
     ):
-        update_spare_fabric(fabric, fabricDeduction, partial_payload_update)
+        spare_fabric, status = get_spare_fabric(
+            fabric, fabricDeduction, partial_payload_update
+        )
+        if status == "Created":
+            fabricDeduction.spare_fabric = spare_fabric
+        if status != "created":
+            if fabricDeduction.removed_width == fabric.original_width:
+                log.debug(
+                    f"removed width is equal to fabric origianl width {fabricDeduction.removed_width, fabric.original_width}"
+                )
+                delete_spare_fabric(
+                    fabric, fabricDeduction, partial_payload_update, spare_fabric
+                )
+            else:
+                update_spare_fabric(
+                    fabric, fabricDeduction, partial_payload_update, spare_fabric
+                )
+
+            db.session.flush()
     # Executes if either key exists and its value is not None or 0
+    really_after_everything_deduction_obj = fabricDeduction.model_dump()
+    really_after_everything_deduction_obj["spare_fabric"] = (
+        None
+        if not fabricDeduction.spare_fabric
+        else fabricDeduction.spare_fabric.model_dump()
+    )
+
+    fabric_obj = fabric.model_dump()
+    fabric_obj["deductions"] = []
+    for d in fabric.deductions:
+        deduct_obj = d.model_dump()
+        spare_fabric = None
+        if d.spare_fabric:
+            spare_fabric = d.spare_fabric.model_dump()
+        deduct_obj["spare_fabric"] = spare_fabric
+        fabric_obj["deductions"].append(deduct_obj)
+
+    # fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
 
     db.session.commit()
 
     return None, {
         "fabric": fabric_obj,
-        "deduction": after_fabricDeduction_obj,
+        "deduction": really_after_everything_deduction_obj,
     }
 
 
-def update_spare_fabric(
-    fabric: Fabric, fabricDeduction: FabricDeduction, partial_payload
-):
-    log.debug("update_spare_fabric")
+def get_spare_fabric(fabric: Fabric, fabricDeduction: FabricDeduction, partial_payload):
+    log.debug("Inside get_spare_fabric")
+
     spare_fabric = db.session.scalar(
         select(SpareFabric).where(SpareFabric.deduction_id == fabricDeduction.id)
     )
 
     if spare_fabric == None:
+        log.debug("Creating spare_fabric")
         spare_fabric = SpareFabric(
             width=fabric.original_width - fabricDeduction.removed_width,
             height=fabricDeduction.removed_height,
@@ -419,10 +486,25 @@ def update_spare_fabric(
             target_id=spare_fabric.id,  # type:ignore
             target_table="spare_fabric",
         )
-        return
+
+        return spare_fabric, "created"
+
+    return spare_fabric, ""
+
+
+def update_spare_fabric(
+    fabric: Fabric,
+    fabricDeduction: FabricDeduction,
+    partial_payload,
+    spare_fabric: SpareFabric,
+):
+
+    log.debug("Updating spare fabric")
 
     spare_partial = {}
     before_spare_fabric_obj = spare_fabric.model_dump()
+    # It means  we ned to remove the spare_fabric
+
     if partial_payload.get("removed_width"):
         spare_fabric.width = fabric.original_width - fabricDeduction.removed_width
         spare_partial["width"] = spare_fabric.width
@@ -443,6 +525,17 @@ def update_spare_fabric(
             )
         ),
     )
+
+
+def delete_spare_fabric(
+    fabric: Fabric,
+    fabricDeduction: FabricDeduction,
+    partial_payload,
+    spare_fabric: SpareFabric,
+):
+    log.debug("Deleting spare_fabric")
+    create_audit_log("Delete", "spare_fabric", spare_fabric.id)
+    db.session.delete(spare_fabric)
 
 
 if __name__ == "__main__":

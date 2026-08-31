@@ -148,6 +148,7 @@ export class Form {
     }
 
     if (!this.data_change_in_update(values)) {
+      this.global_error.textContent = "No se han realizado modificaciones";
       return;
     }
 
@@ -231,9 +232,9 @@ export class Form {
 
     let height_limit;
     const remainingHeight = parseFloat(measurement.remaining_height) || 0;
-    const currentRemovedHeight: number = this.deduction.removed_height;
 
     if (this.modal_state === "editing") {
+      const currentRemovedHeight: number = this.deduction.removed_height;
       height_limit = remainingHeight + currentRemovedHeight;
     } else {
       height_limit = remainingHeight;

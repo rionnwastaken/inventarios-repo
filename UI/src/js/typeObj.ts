@@ -1,4 +1,9 @@
-import { Fabric as SchemaFabric, FabricDeduction, Tube } from "./schema";
+import {
+  Fabric as SchemaFabric,
+  FabricDeduction as SchemaFabricDeduction,
+  SpareFabric,
+  Tube,
+} from "./schema";
 
 export type ViewMode = "tube" | "fabric" | "both";
 
@@ -13,6 +18,10 @@ export interface TubeExtraD extends Tube {
 }
 
 export interface FabricExData extends Fabric {}
+
+export interface FabricDeduction extends SchemaFabric {
+  spare_fabric?: SpareFabric;
+}
 
 export interface Fabric extends SchemaFabric {
   deductions: FabricDeduction[];

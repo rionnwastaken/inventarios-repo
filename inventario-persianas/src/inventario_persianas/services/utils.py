@@ -14,6 +14,7 @@ log = logging.getLogger()
 type Action = Literal["Insert", "Edit", "Delete", "Update"]
 
 
+# Improve audit log so that it caters insertions, updates and deletions
 def create_audit_log(
     action: Action,
     target_table: str,
