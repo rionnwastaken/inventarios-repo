@@ -384,12 +384,65 @@ def update_deduction(
         ),
     )
 
+    if partial_payload_update.get("removed_width") or partial_payload_update.get(
+        "removed_height"
+    ):
+        update_spare_fabric(fabric, fabricDeduction, partial_payload_update)
+    # Executes if either key exists and its value is not None or 0
+
     db.session.commit()
 
     return None, {
         "fabric": fabric_obj,
         "deduction": after_fabricDeduction_obj,
     }
+
+
+def update_spare_fabric(
+    fabric: Fabric, fabricDeduction: FabricDeduction, partial_payload
+):
+    log.debug("update_spare_fabric")
+    spare_fabric = db.session.scalar(
+        select(SpareFabric).where(SpareFabric.deduction_id == fabricDeduction.id)
+    )
+
+    if spare_fabric == None:
+        spare_fabric = SpareFabric(
+            width=fabric.original_width - fabricDeduction.removed_width,
+            height=fabricDeduction.removed_height,
+            deduction_id=fabricDeduction.id,  # type: ignore
+        )
+        db.session.add(spare_fabric)
+        db.session.flush()
+        create_audit_log(
+            "Insert",
+            target_id=spare_fabric.id,  # type:ignore
+            target_table="spare_fabric",
+        )
+        return
+
+    spare_partial = {}
+    before_spare_fabric_obj = spare_fabric.model_dump()
+    if partial_payload.get("removed_width"):
+        spare_fabric.width = fabric.original_width - fabricDeduction.removed_width
+        spare_partial["width"] = spare_fabric.width
+
+    if partial_payload.get("removed_height"):
+        spare_fabric.height = fabricDeduction.removed_height
+        spare_partial["height"] = spare_fabric.height
+
+    after_spare_fabric_obj = spare_fabric.model_dump()
+
+    create_audit_log(
+        "Update",
+        "spare_fabric",
+        spare_fabric.id,  # type:ignore
+        changes=Change(
+            data=create_json_with_actual_values_auditlog(
+                before_spare_fabric_obj, spare_partial
+            )
+        ),
+    )
 
 
 if __name__ == "__main__":
