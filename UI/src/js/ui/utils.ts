@@ -260,13 +260,13 @@ export function calc_remaining_fabric_measurements(fabric: Fabric) {
   }
 
   log.debug({
-    remaining_width: width.toFixed(3),
-    remaining_height: height.toFixed(3),
+    remaining_width: width.toFixed(2),
+    remaining_height: height.toFixed(2),
   });
 
   return {
-    remaining_width: width.toFixed(3),
-    remaining_height: height.toFixed(3),
+    remaining_width: width.toFixed(2),
+    remaining_height: height.toFixed(2),
   };
 }
 
