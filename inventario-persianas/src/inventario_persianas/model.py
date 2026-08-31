@@ -216,6 +216,7 @@ class FabricDeduction(TimestampMixin, table=True):
 
     comment: Optional[str] = Field(default=None, max_length=500)
     fabric: Optional[Fabric] = Relationship(back_populates="deductions")
+    spare_fabric: Optional["SpareFabric"] = Relationship(back_populates="deduction")
 
 
 class FabricDeductionUpdate(SQLModel):
@@ -223,6 +224,27 @@ class FabricDeductionUpdate(SQLModel):
     removed_height: Optional[float] = None
     removed_width: Optional[float] = None
     comment: Optional[str] = Field(default=None, max_length=500)
+
+
+"""
+The spare fabric is made when a deduction has a width not equal
+to the original width, so now you get a small fabric with
+width = original_width - removed_width
+height = removed_height
+Technically height could be the original_height, but would make the code
+harder when new deductions happen
+"""
+
+
+class SpareFabric(SQLModel, table=True):
+    __tablename__ = "spare_fabric"  # type:ignore
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    deduction_id: int = Field(foreign_key="fabric.id")
+    width: float
+    height: float
+
+    deduction: Optional[FabricDeduction] = Relationship(back_populates="spare_fabric")
 
 
 class AuditLog(TimestampMixin, table=True):

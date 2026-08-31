@@ -9,6 +9,7 @@ from inventario_persianas.model import (
     FabricDeduction,
     FabricDeductionUpdate,
     FabricUpdate,
+    SpareFabric,
     Tube,
     db,
 )
@@ -292,6 +293,22 @@ def deduction_new(deduction):
     )
 
     log.debug(f"New deduction {audit_obj}")
+
+    # Create sparefabric
+    if fabricDeduction.removed_width != fabric.original_width:
+        spareFabric = SpareFabric(
+            width=fabric.original_width - fabricDeduction.removed_width,
+            height=fabricDeduction.removed_height,
+            deduction_id=fabricDeduction.id,  # type: ignore
+        )
+
+        db.session.add(spareFabric)
+        db.session.flush()
+        create_audit_log(
+            "Insert",
+            target_id=spareFabric.id,  # type:ignore
+            target_table="spare_fabric",
+        )
     db.session.commit()
 
     return {"fabric": fabric_obj, "deduction": fabricDeduction_obj}, 200
