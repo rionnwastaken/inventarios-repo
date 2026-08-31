@@ -228,8 +228,19 @@ export class Form {
 
     const deductions = this.fabric?.deductions || [];
     const measurement = calc_remaining_fabric_measurements(this.fabric);
-    if (values.height > parseFloat(measurement.remaining_height)) {
-      this.height_obj.error.textContent = `La altura no puede excederse de ${measurement.remaining_height} m`;
+
+    let height_limit;
+    const remainingHeight = parseFloat(measurement.remaining_height) || 0;
+    const currentRemovedHeight: number = this.deduction.removed_height;
+
+    if (this.modal_state === "editing") {
+      height_limit = remainingHeight + currentRemovedHeight;
+    } else {
+      height_limit = remainingHeight;
+    }
+
+    if (values.height > height_limit) {
+      this.height_obj.error.textContent = `La altura no puede excederse de ${height_limit} m`;
       return null;
     }
 
