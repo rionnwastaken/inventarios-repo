@@ -2,12 +2,14 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from pydantic import field_serializer
+
 
 from inventario_persianas.app_types import Change
-from pydantic import PositiveFloat
 from sqlalchemy import JSON, Column, DateTime, event, update
 from sqlmodel import Field, Relationship, SQLModel
 from flask_sqlalchemy import SQLAlchemy
+from decimal import Decimal
 
 log = logging.getLogger()
 
@@ -139,8 +141,8 @@ class Fabric(TimestampMixin, table=True):
     supplier_id: Optional[int] = Field(default=None, foreign_key="supplier.id")
 
     # meters
-    original_width: float
-    original_height: float
+    original_width: Decimal
+    original_height: Decimal
     is_archived: bool = Field(default=False)  # Fabrics runs out of fabric to be used
 
     # Relationships
@@ -157,6 +159,10 @@ class Fabric(TimestampMixin, table=True):
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
 
+    @field_serializer("original_height", "original_width", mode="plain")
+    def serialize_decimal(self, v: Decimal) -> str:
+        return str(v.normalize()) if v is not None else v
+
 
 class FabricUpdate(SQLModel):
     tube_id: Optional[int] = Field(default=None, foreign_key="tube.id")
@@ -167,8 +173,8 @@ class FabricUpdate(SQLModel):
     )
     supplier_id: Optional[int] = Field(default=None, foreign_key="supplier.id")
 
-    original_width: Optional[PositiveFloat] = None
-    original_height: Optional[PositiveFloat] = None
+    original_width: Optional[Decimal] = None
+    original_height: Optional[Decimal] = None
     is_archived: Optional[bool] = None
 
 
@@ -211,18 +217,22 @@ class FabricDeduction(TimestampMixin, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     fabric_id: int = Field(foreign_key="fabric.id")
 
-    removed_height: float
-    removed_width: float
+    removed_height: Decimal
+    removed_width: Decimal
 
     comment: Optional[str] = Field(default=None, max_length=500)
     fabric: Optional[Fabric] = Relationship(back_populates="deductions")
     spare_fabric: Optional["SpareFabric"] = Relationship(back_populates="deduction")
 
+    @field_serializer("removed_height", "removed_width", mode="plain")
+    def serialize_decimal(self, v: Decimal) -> str:
+        return str(v.normalize()) if v is not None else v
+
 
 class FabricDeductionUpdate(SQLModel):
     fabric_id: Optional[int] = None
-    removed_height: Optional[float] = None
-    removed_width: Optional[float] = None
+    removed_height: Optional[Decimal] = None
+    removed_width: Optional[Decimal] = None
     comment: Optional[str] = Field(default=None, max_length=500)
 
 
@@ -240,12 +250,16 @@ class SpareFabric(SQLModel, table=True):
     __tablename__ = "spare_fabric"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    deduction_id: int = Field(foreign_key="fabric_deduction.id",unique=True)
-    width: float
-    height: float
+    deduction_id: int = Field(foreign_key="fabric_deduction.id", unique=True)
+    width: Decimal
+    height: Decimal
     archive: bool = Field(default=False)
 
     deduction: Optional[FabricDeduction] = Relationship(back_populates="spare_fabric")
+
+    @field_serializer("height", "width", mode="plain")
+    def serialize_decimal(self, v: Decimal) -> str:
+        return str(v.normalize()) if v is not None else v
 
 
 class AuditLog(TimestampMixin, table=True):
