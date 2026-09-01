@@ -255,7 +255,9 @@ def validate_fabric_deduction_limits(
             continue
 
         if d.removed_height is not None:
+            p = remaining_height
             remaining_height -= d.removed_height
+            log.debug(f"Removing from {p} - {d.removed_height} = {remaining_height}")
 
     if width > fabric.original_width:
         msg = f"No se puede quitar {width} mts del ancho  {fabric.original_width} mts"
@@ -306,23 +308,8 @@ def deduction_new(deduction):
     log.debug(f"New deduction {audit_obj}")
 
     # Create sparefabric
-    spare_fabric_obj = None
     if fabricDeduction.removed_width != fabric.original_width:
-        spareFabric = SpareFabric(
-            width=fabric.original_width - fabricDeduction.removed_width,
-            height=fabricDeduction.removed_height,
-            deduction_id=fabricDeduction.id,  # type: ignore
-        )
-
-        db.session.add(spareFabric)
-        db.session.flush()
-        create_audit_log(
-            "Insert",
-            target_id=spareFabric.id,  # type:ignore
-            target_table="spare_fabric",
-        )
-        fabricDeduction.spare_fabric = spareFabric
-        spare_fabric_obj = spareFabric.model_dump()
+        create_spare_fabric(fabric, fabricDeduction)
         db.session.flush()
 
     fabric_obj = fabric.model_dump()
@@ -336,10 +323,9 @@ def deduction_new(deduction):
 
     for deduct in fabric.deductions:
         dedudct_obj = deduct.model_dump()
-        spare_fabric = None
-        if deduct.spare_fabric:
-            spare_fabric = deduct.spare_fabric.model_dump()
-        dedudct_obj["spare_fabric"] = spare_fabric
+        dedudct_obj["spare_fabric"] = (
+            None if not deduct.spare_fabric else deduct.spare_fabric.model_dump()
+        )
         fabric_obj["deductions"].append(dedudct_obj)
 
     # fabric_obj["spare_fabric"] = spare_fabric_obj
@@ -354,7 +340,9 @@ def update_deduction(
     log.debug("update_deduction(fabric_id, deduction)")
     log.debug(fabric_id, deduction_payload)
 
-    fabric = db.session.get(Fabric, fabric_id)
+    fabric = db.session.get(
+        Fabric, fabric_id, options=[selectinload(Fabric.deductions)]
+    )
     fabricDeduction = db.session.get(FabricDeduction, deduction_id)
 
     if not fabric:
@@ -421,8 +409,6 @@ def update_deduction(
         spare_fabric, status = get_spare_fabric(
             fabric, fabricDeduction, partial_payload_update
         )
-        if status == "Created":
-            fabricDeduction.spare_fabric = spare_fabric
         if status != "created":
             if fabricDeduction.removed_width == fabric.original_width:
                 log.debug(
@@ -438,8 +424,8 @@ def update_deduction(
 
             db.session.flush()
     # Executes if either key exists and its value is not None or 0
-    really_after_everything_deduction_obj = fabricDeduction.model_dump()
-    really_after_everything_deduction_obj["spare_fabric"] = (
+    fabricDeduction_obj = fabricDeduction.model_dump()
+    fabricDeduction_obj["spare_fabric"] = (
         None
         if not fabricDeduction.spare_fabric
         else fabricDeduction.spare_fabric.model_dump()
@@ -461,7 +447,7 @@ def update_deduction(
 
     return None, {
         "fabric": fabric_obj,
-        "deduction": really_after_everything_deduction_obj,
+        "deduction": fabricDeduction_obj,
     }
 
 
@@ -473,23 +459,28 @@ def get_spare_fabric(fabric: Fabric, fabricDeduction: FabricDeduction, partial_p
     )
 
     if spare_fabric == None:
-        log.debug("Creating spare_fabric")
-        spare_fabric = SpareFabric(
-            width=fabric.original_width - fabricDeduction.removed_width,
-            height=fabricDeduction.removed_height,
-            deduction_id=fabricDeduction.id,  # type: ignore
-        )
-        db.session.add(spare_fabric)
-        db.session.flush()
-        create_audit_log(
-            "Insert",
-            target_id=spare_fabric.id,  # type:ignore
-            target_table="spare_fabric",
-        )
-
+        spare_fabric = create_spare_fabric(fabric, fabricDeduction)
         return spare_fabric, "created"
 
     return spare_fabric, ""
+
+
+def create_spare_fabric(fabric: Fabric, fabricDeduction: FabricDeduction):
+    log.debug("create_spare_fabric()")
+    spare_fabric = SpareFabric(
+        width=fabric.original_width - fabricDeduction.removed_width,
+        height=fabricDeduction.removed_height,
+        deduction_id=fabricDeduction.id,  # type: ignore
+    )
+    db.session.add(spare_fabric)
+    db.session.flush()
+    create_audit_log(
+        "Insert",
+        target_id=spare_fabric.id,  # type:ignore
+        target_table="spare_fabric",
+    )
+    fabricDeduction.spare_fabric = spare_fabric
+    return spare_fabric
 
 
 def update_spare_fabric(

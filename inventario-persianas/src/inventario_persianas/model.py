@@ -240,7 +240,7 @@ class SpareFabric(SQLModel, table=True):
     __tablename__ = "spare_fabric"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    deduction_id: int = Field(foreign_key="fabric_deduction.id")
+    deduction_id: int = Field(foreign_key="fabric_deduction.id",unique=True)
     width: float
     height: float
     archive: bool = Field(default=False)
