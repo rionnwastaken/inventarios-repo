@@ -74,20 +74,22 @@ export class Form {
       const input = container.querySelector<HTMLInputElement>("input");
       const error = container.querySelector<HTMLParagraphElement>("p");
 
-      input.addEventListener("focus", (e) => {
-        error.textContent = "";
+      if (!input || !error) return null;
+
+      return { input, error };
+    }
+
+    function number_event_liesteners(obj: InputComponent) {
+      obj.input.addEventListener("focus", (e) => {
+        obj.error.textContent = "";
         // this.global_error.textContent = ""
       });
 
-      input.addEventListener("keydown", (e) => {
+      obj.input.addEventListener("keydown", (e) => {
         if (["e", "E", "+", "-"].includes(e.key)) {
           e.preventDefault();
         }
       });
-
-      if (!input || !error) return null;
-
-      return { input, error };
     }
 
     this.component = createElementFromHTML(`
@@ -107,6 +109,9 @@ export class Form {
     this.height_obj = getFieldElements(this.component, "alto_component");
     this.comment_obj = getFieldElements(this.component, "comentario_component");
     this.global_error = this.component.querySelector("#global-error");
+
+    number_event_liesteners(this.width_obj);
+    number_event_liesteners(this.height_obj);
   }
 
   public body(): HTMLElement {
