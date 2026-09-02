@@ -353,9 +353,11 @@ export class FabricCraft {
     log.debug(`id is ${selectId} and table ${table_name}`);
     const tom = new TomSelect(`${selectId}`, {
       create: true,
+      createOnBlur: true,
       openOnFocus: true,
       selectOnTab: true,
       refreshThrottle: 0,
+      maxItems: 1,
 
       onOptionAdd: async (value, data) => {
         let res = await request_to_create_value_on_table(
