@@ -518,11 +518,11 @@ def update_spare_fabric(
 
     if partial_payload.get("removed_width"):
         spare_fabric.width = fabric.original_width - fabricDeduction.removed_width
-        spare_partial["width"] = spare_fabric.width
+        spare_partial["width"] = str(spare_fabric.width)
 
     if partial_payload.get("removed_height"):
         spare_fabric.height = fabricDeduction.removed_height
-        spare_partial["height"] = spare_fabric.height
+        spare_partial["height"] = str(spare_fabric.height)
 
     after_spare_fabric_obj = spare_fabric.model_dump()
 
