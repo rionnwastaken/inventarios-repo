@@ -264,8 +264,8 @@ export class FabricCraft {
     data["updated_at"] = now;
 
     data["tube_id"] = this.tube_id;
-    data["original_width"] = parseFloat(width);
-    data["original_height"] = parseFloat(height);
+    data["original_width"] = width;
+    data["original_height"] = height;
 
     return {
       data: data,

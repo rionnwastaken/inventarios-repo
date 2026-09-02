@@ -238,26 +238,31 @@ export function createElementFromHTML<T extends HTMLElement = HTMLElement>(
 }
 
 export function calc_remaining_fabric_measurements(fabric: Fabric) {
+  log.debug("calc_remaining_fabric_measurements");
   if (!fabric) {
     log.error("calc_remaining_fabric_measurements FABRIC is null");
     return null;
   }
 
-  let height = fabric.original_height;
+  let height = num(fabric.original_height) * 100;
+  let width = num(fabric.original_width);
   let deductions = fabric.deductions || [];
 
   deductions.forEach((deduction) => {
-    height -= deduction.removed_height;
+    height -= num(deduction.removed_height) * 100;
     log.debug(`Width and height ${fabric.original_width} ${height}`);
   });
 
+  height = height / 100;
+
   log.debug({
-    remaining_width: fabric.original_width.toFixed(2),
+    remaining_width: width.toFixed(2),
     remaining_height: height.toFixed(2),
   });
 
+  log.debug("remaining height is ", height);
   return {
-    remaining_width: fabric.original_width.toFixed(2),
+    remaining_width: width.toFixed(2),
     remaining_height: height.toFixed(2),
   };
 }
@@ -323,4 +328,9 @@ export function inspect_row(tbody, tbl) {
       log.debug(rowData);
     }
   });
+}
+
+export function num(val: string | number | null | undefined): number {
+  if (val === null || val === undefined) return 0;
+  return typeof val === "number" ? val : parseFloat(val) || 0;
 }

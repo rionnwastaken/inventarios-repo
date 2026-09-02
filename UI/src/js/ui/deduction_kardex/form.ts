@@ -6,6 +6,7 @@ import {
   calc_remaining_fabric_measurements,
   createElementFromHTML,
   get_partial_data,
+  num,
   ObjectChanged,
 } from "../utils";
 import { CoreAPI } from "../../api/core";
@@ -17,9 +18,9 @@ interface InputComponent {
 }
 
 interface ComponentValues {
-  width: number | null;
-  height: number | null;
-  comment: string | null;
+  form_width: string | null;
+  form_height: string | null;
+  form_comment: string | null;
 }
 
 export class Form {
@@ -130,15 +131,15 @@ export class Form {
   data_change_in_update(data: ComponentValues) {
     let changed = false;
 
-    if (this.deduction.removed_width != data.width) {
+    if (this.deduction.removed_width != data.form_width) {
       return true;
     }
 
-    if (this.deduction.removed_height != data.height) {
+    if (this.deduction.removed_height != data.form_height) {
       return true;
     }
 
-    if (this.deduction.comment != data.comment) {
+    if (this.deduction.comment != data.form_comment) {
       return true;
     }
     return false;
@@ -158,9 +159,9 @@ export class Form {
     }
 
     let modified_deduction: FabricDeduction = {
-      removed_width: values.width,
-      removed_height: values.height,
-      comment: values.comment,
+      removed_width: values.form_width,
+      removed_height: values.form_height,
+      comment: values.form_comment,
     };
 
     let changed = ObjectChanged(
@@ -206,29 +207,32 @@ export class Form {
   }
   validate_fileds() {
     let comment = null;
+    let original_width = num(this.fabric.original_width);
     if (this.comment_obj.input.value.trim() !== "") {
       comment = this.comment_obj.input.value.trim();
     }
 
     const values: ComponentValues = {
-      width: parseFloat(this.width_obj.input.value) || null,
-      height: parseFloat(this.height_obj.input.value) || null,
-      comment: comment,
+      form_width: this.width_obj.input.value || null,
+      form_height: this.height_obj.input.value || null,
+      form_comment: comment,
     };
+    let width = num(values.form_width);
+    let height = num(values.form_height);
 
     const mss_campo_vacio = "El campo no puede estar vacio";
-    if (values.width == null) {
+    if (values.form_width == null) {
       this.width_obj.error.textContent = mss_campo_vacio;
       return null;
     }
 
-    if (values.height == null) {
+    if (values.form_height == null) {
       this.height_obj.error.textContent = mss_campo_vacio;
       return null;
     }
 
-    if (values.width > this.fabric.original_width) {
-      this.width_obj.error.textContent = `El ancho no puede ser mayor a ${this.fabric.original_width}`;
+    if (width > original_width) {
+      this.width_obj.error.textContent = `El ancho no puede ser mayor a ${original_width}`;
       return null;
     }
 
@@ -236,16 +240,16 @@ export class Form {
     const measurement = calc_remaining_fabric_measurements(this.fabric);
 
     let height_limit;
-    const remainingHeight = parseFloat(measurement.remaining_height) || 0;
+    const remainingHeight = measurement.remaining_height || 0;
 
     if (this.modal_state === "editing") {
-      const currentRemovedHeight: number = this.deduction.removed_height;
+      const currentRemovedHeight: number = num(this.deduction.removed_height);
       height_limit = remainingHeight + currentRemovedHeight;
     } else {
       height_limit = remainingHeight;
     }
 
-    if (values.height > height_limit) {
+    if (height > height_limit) {
       this.height_obj.error.textContent = `La altura no puede excederse de ${height_limit} m`;
       return null;
     }
@@ -263,9 +267,9 @@ export class Form {
     }
 
     let fabricDeduction: FabricDeduction = {
-      removed_width: values.width,
-      removed_height: values.height,
-      comment: values.comment,
+      removed_width: values.form_width,
+      removed_height: values.form_height,
+      comment: values.form_comment,
       fabric_id: this.fabric.id,
     };
 
@@ -317,7 +321,7 @@ export class Form {
         this.start_editing_mode(deduction);
         return;
       }
-      this.width_obj.input.value = String(this.fabric.original_width);
+      this.width_obj.input.value = this.fabric.original_width;
     });
   }
 
