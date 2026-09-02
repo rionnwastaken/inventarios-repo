@@ -2,6 +2,7 @@ import logging
 import traceback
 from typing import List, Optional, Tuple
 import json
+from decimal import Decimal
 
 import inventario_persianas.model as mod
 from inventario_persianas.app_types import Change
@@ -181,10 +182,16 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
                 if not fabric:
                     raise ValueError(f"Fabric with id {fabric_id} not found.")
 
-                fabric_data_before_update = fabric.model_dump()
+                fabric_data_before_update = fabric.model_dump(mode="json")
                 partial_update_payload = FabricUpdate.model_validate(
                     partial_data
                 ).model_dump(exclude_unset=True)
+
+                partial_update_payload_json = FabricUpdate.model_validate(
+                    partial_data
+                ).model_dump(exclude_unset=True, mode="json")
+
+                log.debug("Partial_data here is %s", partial_update_payload)
 
                 if not partial_update_payload or len(partial_update_payload) <= 0:
                     raise ValueError(
@@ -200,28 +207,34 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
                     fabric_id,
                     changes=Change(
                         data=create_json_with_actual_values_auditlog(
-                            fabric_data_before_update, partial_update_payload
+                            fabric_data_before_update, partial_update_payload_json
                         )
                     ),
                 )
 
+                log.debug("Updated fabric: %s", fabric)
                 updated_fabrics.append(fabric)
 
+            log.debug("we good here?")
             db.session.flush()
             data = []
             for fabric in updated_fabrics:
-                fabric_obj = fabric.model_dump()
-                fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
+                fabric_obj = fabric.model_dump(mode="json")
+                fabric_obj["deductions"] = [
+                    d.model_dump(mode="json") for d in fabric.deductions
+                ]
                 data.append(fabric_obj)
 
             # result_dicts = [fabric.model_dump() for fabric in updated_fabrics]
-            log.debug("results dict here are  %s", data)
+            # log.debug("results dict here are  %s", data,)
             return None, data
 
     except ValidationError as e:
+        log.error(traceback.format_exc())
         return Error(f"Validation failed: {e.errors(include_url=False)}", 400), None
 
     except ValueError as e:
+        log.error(traceback.format_exc())
         return Error(str(e), 400), None
 
     except Exception as e:
@@ -231,8 +244,8 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
 
 def validate_fabric_deduction_limits(
     fabric: Fabric,
-    width: float,
-    height: float,
+    width: Decimal,
+    height: Decimal,
     current_deduction_id: Optional[int] = None,
 ) -> Tuple[bool, Optional[str]]:
     """
@@ -276,10 +289,12 @@ def validate_fabric_deduction_limits(
 
 def deduction_new(deduction):
     try:
-        fabricDeduction = FabricDeduction.model_validate(deduction, strict=True)
+        log.debug("Deduction data %s", deduction)
+        fabricDeduction = FabricDeduction.model_validate(deduction, strict=False)
+
     except Exception as e:
-        log.error(e)
-        log.error(traceback.format_exc())
+        # log.error(e)
+        log.error("Traceback \n%s", traceback.format_exc())
         return Error(f"Could not validate FabricDeduction {deduction}", 400)
 
     fabric = db.session.get(
@@ -360,6 +375,9 @@ def update_deduction(
         return Error(f"Validation error {e}", 400), None
 
     partial_payload_update = validated_data.model_dump(exclude_unset=True)
+    partial_payload_update_json = validated_data.model_dump(
+        exclude_unset=True, mode="json"
+    )
     if not partial_payload_update:
         return Error(
             f"Fabric id {fabric_id}: 'partial_data' contains no valid update fields. {deduction_payload}",
@@ -379,6 +397,7 @@ def update_deduction(
 
     # Capture state before mutating the actual database model
     before_fabricDeduction_obj = fabricDeduction.model_dump()
+    before_fabricDeduction_json = fabricDeduction.model_dump(mode="json")
 
     # Apply partial updates directly to the tracked DB entity
     fabricDeduction.sqlmodel_update(partial_payload_update)
@@ -398,7 +417,7 @@ def update_deduction(
         deduction_id,
         changes=Change(
             data=create_json_with_actual_values_auditlog(
-                before_fabricDeduction_obj, partial_payload_update
+                before_fabricDeduction_json, partial_payload_update_json
             )
         ),
     )
@@ -494,6 +513,7 @@ def update_spare_fabric(
 
     spare_partial = {}
     before_spare_fabric_obj = spare_fabric.model_dump()
+    before_spare_fabric_json = spare_fabric.model_dump(mode="json")
     # It means  we ned to remove the spare_fabric
 
     if partial_payload.get("removed_width"):

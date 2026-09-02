@@ -33,7 +33,7 @@ def create_audit_log(
 
     db.session.add(log_entry)
     # db.session.flush()
-    return log_entry.model_dump()
+    return log_entry.model_dump(mode="json")
 
 
 class Error:
