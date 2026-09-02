@@ -262,6 +262,12 @@ class SpareFabric(SQLModel, table=True):
         return str(v.normalize()) if v is not None else v
 
 
+class SpareFabricUpdate(SQLModel):
+    width: Optional[Decimal] = None
+    height: Optional[Decimal] = None
+    archive: Optional[bool] = None
+
+
 class AuditLog(TimestampMixin, table=True):
     __tablename__ = "audit_log"  # type: ignore #type:ignore
 

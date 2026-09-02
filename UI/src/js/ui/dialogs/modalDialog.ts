@@ -1,3 +1,5 @@
+import { createElementFromHTML } from "../utils";
+
 export type DialogCallback = (
   instance: ModalDialog,
 ) => boolean | void | Promise<boolean | void>;
@@ -19,6 +21,7 @@ export interface ModalDialogOptions {
   onClose?: DialogCallback | null;
   container_tailwind_class?: string | null;
   footerContainer_tailwind_class?: string | null;
+  footer?: string | null;
 }
 
 export class ModalDialog {
@@ -48,6 +51,7 @@ export class ModalDialog {
       onConfirm: options.onConfirm ?? null,
       onCancel: options.onCancel ?? null,
       onClose: options.onClose ?? null,
+      footer: options.footer ?? null,
     };
 
     this._init();
@@ -121,10 +125,19 @@ export class ModalDialog {
   }
 
   private _renderFooter(): void {
+    console.log("rendering footer");
     this.footerContainer = this.dialogEl.querySelector<HTMLElement>(
       ".dialog-footer-container",
     );
     if (!this.footerContainer) return;
+
+    if (this.options.footer != null) {
+      console.log("appending footer?");
+      this.footerContainer.appendChild(
+        createElementFromHTML(this.options.footer),
+      );
+      return;
+    }
 
     if (this.options.showCancel) {
       this.cancelBtn = document.createElement("button");

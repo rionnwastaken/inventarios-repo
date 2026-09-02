@@ -12,6 +12,7 @@ from inventario_persianas.model import (
     FabricDeductionUpdate,
     FabricUpdate,
     SpareFabric,
+    SpareFabricUpdate,
     Tube,
     db,
 )
@@ -22,7 +23,7 @@ from inventario_persianas.services.utils import (
     create_json_with_actual_values_auditlog,
 )
 from pydantic import ValidationError
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 from sqlalchemy.orm import joinedload, selectinload
 from sqlmodel import desc, select
 
@@ -560,3 +561,45 @@ if __name__ == "__main__":
         print(result.deductions)
 
     print(result.deductions)
+
+
+def spare_fabric_update(spare_fabric_id: int, payload):
+
+    try:
+        with db.session.begin():
+            log.debug("paylod %s and id %s ", payload, spare_fabric_id)
+            obj = SpareFabricUpdate.model_validate(payload)
+            partial_spare_fabric = obj.model_dump(exclude_unset=True)
+            partial_spare_fabric_json = obj.model_dump(mode="json", exclude_unset=True)
+
+            if len(partial_spare_fabric) <= 0:
+                raise ValidationError
+
+            spare_fabric = db.session.get(SpareFabric, spare_fabric_id)
+            if spare_fabric == None:
+                raise NoResultFound
+
+            spare_fabric_oldjson = spare_fabric.model_dump(mode="json")
+            spare_fabric.sqlmodel_update(partial_spare_fabric)
+            db.session.add(spare_fabric)
+            create_audit_log(
+                "Update",
+                "spare_fabric",
+                spare_fabric_id,
+                changes=Change(
+                    data=create_json_with_actual_values_auditlog(
+                        spare_fabric_oldjson, partial_spare_fabric_json
+                    )
+                ),
+            )
+            db.session.flush()
+
+            return {"spare_fabric": spare_fabric.model_dump(mode="json")}, 200
+
+    except ValidationError as e:
+        raise
+
+    except NoResultFound as e:
+        raise
+
+    return {}, 200

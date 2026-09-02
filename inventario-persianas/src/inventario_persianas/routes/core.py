@@ -112,3 +112,17 @@ def deduction_new():
         return Error("Didnt receive data", 400).returnIt()
 
     return core.deduction_new(deduction)
+
+
+@core_bp.post("/spare/fabric/update/")
+def spare_fabric_update():
+    log.debug("deduction_new()")
+    data = request.get_json()
+
+    if data is None:
+        return Error("Didnt receive data", 400).returnIt()
+
+    spare_fabric_id = data.get("spare_fabric_id")
+    payload = data.get("payload")
+
+    return core.spare_fabric_update(spare_fabric_id, payload)

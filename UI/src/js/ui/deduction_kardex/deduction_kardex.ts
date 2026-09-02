@@ -21,6 +21,8 @@ import { Form } from "./form";
 import { TypedEventEmitter } from "../../emitter";
 import { column } from "../utils";
 import icon from "../../../assets/icons/spare_fabric_symbol.svg";
+import { SpareFabric } from "../../schema";
+import { SpareFabricView } from "./spare_fabric";
 
 export interface DeductionKardexEvents {
   "deduction:modified": (fabric: Fabric) => void;
@@ -36,15 +38,19 @@ class DeductionKardex {
   title_el: HTMLElement;
 
   deductionForm: Form;
+  spare_fabric_view: SpareFabricView;
   wrapper: HTMLElement;
   public events = new TypedEventEmitter<DeductionKardexEvents>();
 
   constructor() {
     this.deductionForm = new Form();
+    this.spare_fabric_view = new SpareFabricView();
     this.init_elements();
     this.init_binding();
     this.init_columns();
     this.init_table();
+    console.debug("Fabric here is ", this.spare_fabric_view);
+    // this.spare_fabric_view.show("","")
   }
 
   init_binding() {
@@ -90,7 +96,7 @@ class DeductionKardex {
       Medidas Iniciales
     </span>
     <div class="flex flex-col justify-start font-mono text-zinc-800">
-      <p class="ancho">Ancho: <span class="font-bold text-black">${original_width.toFixed(2)} x ${original_height.toFixed(2)} </span> m</p>
+      <p class="ancho">Ancho: <span class="font-bold text-black">${original_width} x ${original_height} </span> m</p>
     </div>
   </div>
 
@@ -329,9 +335,20 @@ class DeductionKardex {
     this.table.draw();
   }
 
-  render_row(row: HTMLTableRowElement, data: FabricDeduction, index: number) {
+  render_row = (
+    row: HTMLTableRowElement,
+    data: FabricDeduction,
+    index: number,
+  ) => {
     if (data.spare_fabric == null) {
       return;
+    }
+
+    const text_not_archived = "text-black";
+    const text_archived = "text-red-500";
+    let text_color = text_not_archived;
+    if (data.spare_fabric.archive) {
+      text_color = text_archived;
     }
 
     const firstCell = row.cells[0];
@@ -360,7 +377,7 @@ class DeductionKardex {
 
     const svg = imageContainer.querySelector("svg");
     if (svg) {
-      svg.classList.add("w-full", "h-full", "text-black");
+      svg.classList.add("w-full", "h-full", text_color);
 
       svg.querySelectorAll("path, rect, circle, polygon").forEach((el) => {
         el.setAttribute("fill", "currentColor");
@@ -368,10 +385,30 @@ class DeductionKardex {
       });
     }
 
-    imageContainer.addEventListener("click", (e) => {
-      log.debug(data.spare_fabric);
+    // this.spare_fabric_view.show("","")
+    imageContainer.addEventListener("click", async (e) => {
+      const res = await this.spare_fabric_view.show(
+        this.fabric,
+        data.spare_fabric,
+      );
+      if (!res) {
+        return;
+      }
+      data.spare_fabric = res.spare_fabric;
+
+      let text_color = text_not_archived;
+      if (data.spare_fabric.archive) {
+        text_color = text_archived;
+        svg.classList.add(text_archived);
+        svg.classList.remove(text_not_archived);
+      } else {
+        svg.classList.add(text_not_archived);
+        svg.classList.remove(text_archived);
+      }
+
+      log.debug(res);
     });
-  }
+  };
 }
 const deductionKardex = new DeductionKardex();
 export { deductionKardex };
