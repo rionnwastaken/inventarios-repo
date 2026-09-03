@@ -249,7 +249,7 @@ class FabricDeduction(TimestampMixin, table=True):
 
     @field_serializer("removed_height", "removed_width", mode="plain")
     def serialize_decimal(self, v: Decimal) -> str:
-        return str(v.normalize()) if v is not None else v
+        return f"{v.normalize():f}" if v is not None else v
 
 
 class FabricDeductionUpdate(SQLModel):
