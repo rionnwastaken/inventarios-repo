@@ -48,7 +48,7 @@ def recent_tubes_and_fabrics():
     stmt_tubes = (
         select(Tube)
         .options(
-            selectinload(Tube.fabrics).options(selectinload(Fabric.deductions)),
+            selectinload(Tube.fabrics).options(selectinload(Fabric.child_deductions)),
             joinedload(Tube.tube_rectified),
         )
         .order_by(desc(Tube.updated_at))
@@ -71,7 +71,7 @@ def recent_tubes_and_fabrics():
 
         tubes_obj.append(tube_dict)
         for fabric in fabrics_list:
-            deductions = fabric.deductions
+            deductions = fabric.child_deductions
             obj = fabric.model_dump()
             obj["deductions"] = []
             for deduct in deductions:
@@ -166,7 +166,7 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
                     )
 
                 fabric = db.session.get(
-                    Fabric, fabric_id, options=[selectinload(Fabric.deductions)]
+                    Fabric, fabric_id, options=[selectinload(Fabric.child_deductions)]
                 )
                 if not fabric:
                     raise ValueError(f"Fabric with id {fabric_id} not found.")
@@ -210,7 +210,7 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
             for fabric in updated_fabrics:
                 fabric_obj = fabric.model_dump(mode="json")
                 fabric_obj["deductions"] = [
-                    d.model_dump(mode="json") for d in fabric.deductions
+                    d.model_dump(mode="json") for d in fabric.child_deductions
                 ]
                 data.append(fabric_obj)
 
@@ -252,7 +252,7 @@ def validate_fabric_deduction_limits(
 
     remaining_height = fabric.original_height
 
-    for d in fabric.deductions:
+    for d in fabric.child_deductions:
         if current_deduction_id != None and d.id == current_deduction_id:
             continue
 
@@ -287,12 +287,14 @@ def deduction_new(deduction):
         return Error(f"Could not validate FabricDeduction {deduction}", 400)
 
     fabric = db.session.get(
-        Fabric, fabricDeduction.fabric_id, options=[selectinload(Fabric.deductions)]
+        Fabric,
+        fabricDeduction.parent_fabric_id,
+        options=[selectinload(Fabric.child_deductions)],
     )
     if not fabric:
-        log.error(f"Fabric was not found with id {fabricDeduction.fabric_id}")
+        log.error(f"Fabric was not found with id {fabricDeduction.parent_fabric_id}")
         return Error(
-            f"Fabric was not found with id {fabricDeduction.fabric_id}", 400
+            f"Fabric was not found with id {fabricDeduction.parent_fabric_id}", 400
         ).returnIt()
 
     measurement_valid, message = validate_fabric_deduction_limits(
@@ -302,7 +304,7 @@ def deduction_new(deduction):
     if not measurement_valid:
         return Error(message, 400).returnIt()
 
-    fabric.deductions.append(fabricDeduction)
+    fabric.child_deductions.append(fabricDeduction)
     db.session.flush()
 
     audit_obj = create_audit_log(
@@ -315,7 +317,7 @@ def deduction_new(deduction):
     fabric_obj["deductions"] = []
     fabricDeduction_obj = fabricDeduction.model_dump()
 
-    for deduct in fabric.deductions:
+    for deduct in fabric.child_deductions:
         dedudct_obj = deduct.model_dump()
         fabric_obj["deductions"].append(dedudct_obj)
 
@@ -331,7 +333,7 @@ def update_deduction(
     log.debug(fabric_id, deduction_payload)
 
     fabric = db.session.get(
-        Fabric, fabric_id, options=[selectinload(Fabric.deductions)]
+        Fabric, fabric_id, options=[selectinload(Fabric.child_deductions)]
     )
     fabricDeduction = db.session.get(FabricDeduction, deduction_id)
 
@@ -402,7 +404,7 @@ def update_deduction(
 
     fabric_obj = fabric.model_dump()
     fabric_obj["deductions"] = []
-    for d in fabric.deductions:
+    for d in fabric.child_deductions:
         deduct_obj = d.model_dump()
         fabric_obj["deductions"].append(deduct_obj)
 
