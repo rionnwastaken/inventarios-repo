@@ -20,6 +20,56 @@ Button to close
 
 
 
+fabric
+
+deduction creates another fabric
+this deductino object is linked to that fabric
+the moment there is an update in that fabric, a flag tells the deduction that it cannot be modified
+If the link is broken from either side, the other must be destroyed with a warning
+Only destruction can happen when the fabric side has not been modified.
+What happens if the deduction is modified before  any changes are made to new fabric?,
+if the deduction is possible, then update the aswell the link
+  so, the deduction points to the id of another fabric?
+
+a deduction now points to the origin fabric and the new fabric?
+A fabric cannot be deleted once there are modificionations that involve deductions?
+what if you can change the height of a fabric after modifications have been made?
+
+if a fabric is created from a deduction, you cannot modify its measurements there, only make more deductions?
+
+
+2.50 x 3.90
+
+1.50 * 1.50
+
+
+whole = 2.50 x 2.40
+
+spare_fabric could extend to height of the deduction, up the height of the whole blind 
+1 * 1.50
+or
+1 * 2.40
+
+It all for this when the latest deduction happens 
+
+second deduction =  1.50  x  1.00 mts
+
+whole = 2.50 * 1.40 mts
+
+second spare_fabric = 1.50 * 1.00 mts or 1.50 * 1.40  
+
+what if we alwasys make the fabric created from a deduction have the small 
+rectangle as a measurement and the fabric be linked to the other fabric?
+
+So a fabric is created a from another fabric by a deduction,
+So a fabric can have a child  and have a parent like nodes?
+
+so a fabric can have columns
+link_deduction
+child optional
+parent optional
+
+
 
 
 mvp2

@@ -1,2 +1,4 @@
 schema.ts
 !**/*/model_test.py
+!assets/icons/**/*
+!**/*schema.ts
