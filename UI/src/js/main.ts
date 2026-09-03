@@ -22,6 +22,7 @@ import { TableView } from "./typeObj.ts";
 import { state } from "./state.ts";
 import { deductionKardex } from "./ui/deduction_kardex/deduction_kardex.ts";
 
+deductionKardex.init();
 state.init();
 
 controlPanel.events.on("view:changed", (...args) => {

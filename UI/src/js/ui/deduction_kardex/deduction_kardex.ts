@@ -24,6 +24,10 @@ import { TypedEventEmitter } from "../../emitter";
 import { column } from "../utils";
 import icon from "../../../assets/icons/spare_fabric_symbol.svg";
 
+const title_catalago_id = "title-catalago-text-id";
+const initial_measurement_container_id = "initial-measurement-container";
+const remaining_measurement_container_id = "remaining-measurement-container";
+
 export interface DeductionKardexEvents {
   "deduction:modified": (fabric: Fabric) => void;
 }
@@ -37,16 +41,22 @@ class DeductionKardex {
   modalDialog: ModalDialog;
   title_el: HTMLElement;
 
+  title_catalago_p: HTMLParagraphElement;
+  initial_measurement_span: HTMLSpanElement;
+  remaining_measurement_span: HTMLSpanElement;
+
   deductionForm: Form;
   wrapper: HTMLElement;
   public events = new TypedEventEmitter<DeductionKardexEvents>();
 
-  constructor() {
+  constructor() {}
+  init() {
     this.deductionForm = new Form();
     this.init_elements();
     this.init_columns();
     this.init_table();
     this.init_binding();
+    this.create_dialog();
   }
 
   init_binding() {
@@ -54,7 +64,7 @@ class DeductionKardex {
     inspect_row(this.tbody, this.table);
   }
 
-  title(fabric: Fabric): HTMLElement {
+  update_title(fabric: Fabric) {
     const tablenames = [
       "blind_model",
       "color",
@@ -71,17 +81,17 @@ class DeductionKardex {
         text += `${name} | `;
       }
     }
-
-    let original_width = fabric.original_width;
-    let original_height = fabric.original_height;
-
     text = text.slice(0, text.length - 2);
     log.debug(text);
+    this.title_catalago_p.textContent = text;
+  }
+
+  title(): HTMLElement {
     this.title_el = createElementFromHTML(`
   <div class="flex justify-between"> 
     <div> 
       <h1>Deduccion Kardex</h1>
-      <h2>${text}</h2>
+      <h2 id="${title_catalago_id}"></h2>
     </div>
     
 <!-- Measurements Section -->
@@ -92,8 +102,8 @@ class DeductionKardex {
     <span class="font-semibold uppercase tracking-wider text-zinc-800 mb-1 flex items-center gap-1">
       Medidas Iniciales
     </span>
-    <div class="flex flex-col justify-start font-mono text-zinc-800">
-      <p class="ancho">Ancho: <span class="font-bold text-black">${original_width} x ${original_height} </span> m</p>
+    <div id="${initial_measurement_container_id}" class="flex flex-col justify-start font-mono text-zinc-800">
+      <span class="font-bold text-black"></span> 
     </div>
   </div>
 
@@ -107,10 +117,8 @@ class DeductionKardex {
     <span class="font-semibold uppercase tracking-wider text-red-700 mb-1 flex items-center gap-1">
       Medidas Restantes
     </span>
-    <div class="flex flex-col justify-start  font-mono text-red-900">
-      <p class="font-bold text-red-600">
-  <span class="ancho-restante"></span> X <span class="alto-restante"></span>m
-</p>
+    <div id="${remaining_measurement_container_id}" class="flex flex-col justify-start  font-mono text-red-900">
+      <p class="font-bold text-red-600"></p>
     </div>
   </div>
 </div>
@@ -187,19 +195,20 @@ class DeductionKardex {
     this.wrapper
       .querySelector(".table-container")
       ?.appendChild(this.table_element);
-    this.update_display_remaining_measurements();
+    // this.update_display_remaining_measurements();
 
     return this.wrapper;
   }
 
   update_display_remaining_measurements() {
     let rer_meau = calc_remaining_fabric_measurements(this.fabric);
-    this.title_el.querySelector(".ancho-restante").textContent = String(
-      rer_meau.remaining_width,
-    );
-    this.title_el.querySelector(".alto-restante").textContent = String(
-      rer_meau.remaining_height,
-    );
+    this.remaining_measurement_span.textContent = `${rer_meau.remaining_width} x ${rer_meau.remaining_height} mts`;
+  }
+
+  update_display_initial_measurements() {
+    let original_width = this.fabric.original_width;
+    let original_height = this.fabric.original_height;
+    this.initial_measurement_span.textContent = `${original_width} x ${original_height} mts`;
   }
 
   init_table() {
@@ -285,12 +294,9 @@ class DeductionKardex {
     this.modalDialog.close();
   }
 
-  cb_show_kardex(fabric: Fabric) {
-    this.fabric = fabric;
-    log.debug("Fabric received in kardex", fabric);
-
+  create_dialog() {
     this.modalDialog = new ModalDialog({
-      title: this.title(fabric),
+      title: this.title(),
       body: this.body(),
       width: "w-full min-w-7xl", // Custom Tailwind classes
       height: "h-auto max-h-[80vh]",
@@ -310,6 +316,23 @@ class DeductionKardex {
         this.table.data().clear();
       },
     });
+
+    let d = this.modalDialog.dialogEl;
+    this.title_catalago_p = d.querySelector(`#${title_catalago_id}`);
+    this.initial_measurement_span = d.querySelector(
+      `#${initial_measurement_container_id} span`,
+    );
+    this.remaining_measurement_span = d.querySelector(
+      `#${remaining_measurement_container_id} p`,
+    );
+  }
+
+  cb_show_kardex(fabric: Fabric) {
+    this.fabric = fabric;
+    this.update_title(fabric);
+    this.update_display_remaining_measurements();
+    this.update_display_initial_measurements();
+    log.debug("Fabric received in kardex", fabric);
 
     this.insert_deductions_to_table(fabric.deductions);
 

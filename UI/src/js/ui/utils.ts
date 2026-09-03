@@ -256,14 +256,14 @@ export function calc_remaining_fabric_measurements(fabric: Fabric) {
   height = height / 100;
 
   log.debug({
-    remaining_width: width.toFixed(2),
-    remaining_height: height.toFixed(2),
+    remaining_width: width,
+    remaining_height: height,
   });
 
   log.debug("remaining height is ", height);
   return {
-    remaining_width: width.toFixed(2),
-    remaining_height: height.toFixed(2),
+    remaining_width: width,
+    remaining_height: height,
   };
 }
 
