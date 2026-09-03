@@ -48,10 +48,8 @@ def fabric_add_many():
     if not fabrics:
         return {"error": "Key 'fabrics' was not passed in the data"}, 400
 
-    err, inserted_fabrics = core.add_fabrics(fabrics)
+    inserted_fabrics = core.add_fabrics(fabrics)
 
-    if err:
-        return err.returnIt()
 
     return {"fabrics": inserted_fabrics}, 200
 

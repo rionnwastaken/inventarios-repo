@@ -3,8 +3,10 @@ import traceback
 from typing import List, Optional, Tuple
 import json
 from decimal import Decimal
+from functools import wraps
 
 from inventario_persianas.app_types import Change
+from inventario_persianas.exceptions import OverDrawing
 from inventario_persianas.model import (
     Fabric,
     FabricDeduction,
@@ -19,11 +21,31 @@ from inventario_persianas.services.utils import (
     create_json_with_actual_values_auditlog,
 )
 from pydantic import ValidationError
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload, selectinload
 from sqlmodel import desc, select
 
 log = logging.getLogger(__name__)
+
+def handle_db_exceptions(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ValidationError as e:
+            log.exception(e)
+            return Error(e, 400).returnIt()
+        except NoResultFound as e:
+            log.exception(e)
+            return Error(str(e), 400).returnIt()
+        except OverDrawing as e:
+            log.exception(e)
+            return Error(str(e), 400).returnIt()
+        except ValueError as e:
+            log.exception(e)
+            return Error(str(e), 400).returnIt()
+
+    return wrapper
 
 
 def new_tube():
@@ -84,58 +106,49 @@ def recent_tubes_and_fabrics():
     return tubes_obj, fabrics_obj, len(tubes_obj)
 
 
-def add_fabrics(fabrics_to_add: list[dict]) -> tuple[None | Error, list[dict] | None]:
+@handle_db_exceptions
+def add_fabrics(fabrics_to_add: list[dict]) -> list[dict]:
 
     log.debug(f"Fabrics to add data {fabrics_to_add} ")
-    try:
-        # Option A: Create SQLModel objects using model_validate (filters/validates types)
+    with db.session.begin():
         fabrics = []
+        retval = []
 
-        for f in fabrics_to_add:  # `fabrics` is your incoming list of dicts
-            f.pop("created_at", None)
-            f.pop("updated_at", None)
-
-            temp_id = f.get("temp_id")
+        for payload in fabrics_to_add:  # `fabrics` is your incoming list of dicts
+            temp_id = payload.get("temp_id")
             if temp_id is None:
-                return Error("'temp_id' was not found", 400), None
+                raise NoResultFound("'temp_id' was not found")
+            
+            fabric = add_fabric(payload)
+            retval.append({
+                    "temp_id": temp_id,
+                    "fabric": fabric.model_dump(),
+                })
 
-            log.debug(f"Fabric here is {f}")
-            fabric_obj = Fabric.model_validate(f)
-            db.session.add(fabric_obj)
-            fabrics.append({"temp_id": temp_id, "fabric": fabric_obj})
-
-        db.session.flush()
-
-        for f in fabrics:
-            create_audit_log(
-                action="Insert", target_table="fabric", target_id=f["fabric"].id
-            )
-
-        retval = [
-            {
-                "temp_id": obj["temp_id"],
-                "fabric": obj["fabric"].model_dump(),
-            }
-            for obj in fabrics
-        ]
 
         log.debug(f"Fabrics {fabrics}")
         log.debug(f"Return value {retval}")
 
-        db.session.commit()
 
-        return None, retval
+        return retval
 
-    except SQLAlchemyError as e:
-        db.session.rollback()  # Crucial: prevents session corruption in Flask
-        log.error(traceback.format_exc(e))
-        log.error(e)
-        return Error(str(e), 400), None
-    except Exception as e:
-        log.error(traceback.format_exc(e))
-        log.error(e)
-        db.session.rollback()
-        return Error(str(e), 400), None
+def add_fabric(payload:dict):
+
+    payload.pop("created_at", None)
+    payload.pop("updated_at", None)
+
+
+    log.debug(f"Fabric here is {payload}")
+    fabric = Fabric.model_validate(payload)
+    db.session.add(fabric)
+    # fabrics.append({"temp_id": temp_id, "fabric": fabric_obj})
+
+    db.session.flush()
+    create_audit_log(
+        action="Insert", target_table="fabric", target_id=fabric.id
+    )
+
+    return fabric
 
 
 def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dict]]]:
@@ -236,7 +249,7 @@ def validate_fabric_deduction_limits(
     width: Decimal,
     height: Decimal,
     current_deduction_id: Optional[int] = None,
-) -> Tuple[bool, Optional[str]]:
+) -> bool:
     """
     Validates if proposed width/height deductions exceed the remaining dimensions of a fabric.
 
@@ -245,10 +258,10 @@ def validate_fabric_deduction_limits(
     """
 
     if width == None:
-        return False, "El ancho esta vacio"
+        raise ValueError("El ancho es nulo")
 
     if height == None:
-        return False, "El alt esta vacio"
+        raise ValueError("El alto es nulo")
 
     remaining_height = fabric.original_height
 
@@ -262,157 +275,141 @@ def validate_fabric_deduction_limits(
             log.debug(f"Removing from {p} - {d.removed_height} = {remaining_height}")
 
     if width > fabric.original_width:
-        msg = f"No se puede quitar {width} mts del ancho  {fabric.original_width} mts"
-        log.debug(f"Fabric ID {fabric.id}: {msg}")
-        return False, msg
+        raise OverDrawing(
+            "No se puede quitar {width} mts del ancho  {fabric.original_width} mts\nFabric ID {fabric.id}:"
+        )
 
     if height > remaining_height:
-        msg = (
+        raise OverDrawing(
             f"No se puede quitar {height} mts del alto restante {remaining_height} mts"
         )
-        log.debug(f"Fabric ID {fabric.id}: {msg}")
-        return False, msg
 
-    return True, None
+    return True
 
 
+
+
+
+
+
+@handle_db_exceptions
 def deduction_new(deduction):
-    try:
+    with db.session.begin():
         log.debug("Deduction data %s", deduction)
         fabricDeduction = FabricDeduction.model_validate(deduction, strict=False)
 
-    except Exception as e:
-        # log.error(e)
-        log.error("Traceback \n%s", traceback.format_exc())
-        return Error(f"Could not validate FabricDeduction {deduction}", 400)
+        fabric = db.session.get(
+            Fabric,
+            fabricDeduction.parent_fabric_id,
+            options=[selectinload(Fabric.child_deductions)],
+        )
+        if not fabric:
+            raise NoResultFound(
+                f"Fabric was not found with id {fabricDeduction.parent_fabric_id}"
+            )
 
-    fabric = db.session.get(
-        Fabric,
-        fabricDeduction.parent_fabric_id,
-        options=[selectinload(Fabric.child_deductions)],
-    )
-    if not fabric:
-        log.error(f"Fabric was not found with id {fabricDeduction.parent_fabric_id}")
-        return Error(
-            f"Fabric was not found with id {fabricDeduction.parent_fabric_id}", 400
-        ).returnIt()
+        measurement_valid = validate_fabric_deduction_limits(
+            fabric, fabricDeduction.removed_width, fabricDeduction.removed_height
+        )
 
-    measurement_valid, message = validate_fabric_deduction_limits(
-        fabric, fabricDeduction.removed_width, fabricDeduction.removed_height
-    )
+        fabric.child_deductions.append(fabricDeduction)
+        db.session.flush()
 
-    if not measurement_valid:
-        return Error(message, 400).returnIt()
+        audit_obj = create_audit_log(
+            "Insert", target_id=fabricDeduction.id, target_table="fabric_deduction"
+        )
 
-    fabric.child_deductions.append(fabricDeduction)
-    db.session.flush()
+        log.debug(f"New deduction {audit_obj}")
 
-    audit_obj = create_audit_log(
-        "Insert", target_id=fabricDeduction.id, target_table="fabric_deduction"
-    )
+        fabric_obj = fabric.model_dump()
+        fabric_obj["deductions"] = []
+        fabricDeduction_obj = fabricDeduction.model_dump()
 
-    log.debug(f"New deduction {audit_obj}")
+        for deduct in fabric.child_deductions:
+            dedudct_obj = deduct.model_dump()
+            fabric_obj["deductions"].append(dedudct_obj)
 
-    fabric_obj = fabric.model_dump()
-    fabric_obj["deductions"] = []
-    fabricDeduction_obj = fabricDeduction.model_dump()
-
-    for deduct in fabric.child_deductions:
-        dedudct_obj = deduct.model_dump()
-        fabric_obj["deductions"].append(dedudct_obj)
-
-    db.session.commit()
-
-    return {"fabric": fabric_obj, "deduction": fabricDeduction_obj}, 200
+        return {"fabric": fabric_obj, "deduction": fabricDeduction_obj}, 200
 
 
+@handle_db_exceptions
 def update_deduction(
     fabric_id: int, deduction_id: int, deduction_payload: dict
 ) -> Tuple[Optional[Error], Optional[dict]]:
     log.debug("update_deduction(fabric_id, deduction)")
     log.debug(fabric_id, deduction_payload)
+    with db.session.begin():
+        fabric = db.session.get(
+            Fabric, fabric_id, options=[selectinload(Fabric.child_deductions)]
+        )
+        fabricDeduction = db.session.get(FabricDeduction, deduction_id)
 
-    fabric = db.session.get(
-        Fabric, fabric_id, options=[selectinload(Fabric.child_deductions)]
-    )
-    fabricDeduction = db.session.get(FabricDeduction, deduction_id)
+        if not fabric:
+            raise NoResultFound(f"Fabric with id {fabric_id} not found.")
 
-    if not fabric:
-        return Error(f"Fabric with id {fabric_id} not found.", 400), None
+        if not fabricDeduction:
+            raise NoResultFound(f"FabricDeduction with id {deduction_id} not found.")
 
-    if not fabricDeduction:
-        return Error(f"FabricDeduction with id {deduction_id} not found.", 400), None
-
-    # Validate into a separate validated_data object (do NOT overwrite fabricDeduction)
-    try:
+        # Validate into a separate validated_data object (do NOT overwrite fabricDeduction)
         validated_data = FabricDeductionUpdate.model_validate(deduction_payload)
-    except Exception as e:
-        log.error(traceback.format_exc())
-        log.error(e)
-        return Error(f"Validation error {e}", 400), None
 
-    partial_payload_update = validated_data.model_dump(exclude_unset=True)
-    partial_payload_update_json = validated_data.model_dump(
-        exclude_unset=True, mode="json"
-    )
-    if not partial_payload_update:
-        return Error(
-            f"Fabric id {fabric_id}: 'partial_data' contains no valid update fields. {deduction_payload}",
-            400,
-        ), None
-
-    measurement_valid, message = validate_fabric_deduction_limits(
-        fabric,
-        partial_payload_update.get("removed_width", fabricDeduction.removed_width),
-        partial_payload_update.get("removed_height", fabricDeduction.removed_height),
-        current_deduction_id=deduction_id,  # Ignore old values of this deduction during calculation
-    )
-
-    if not measurement_valid:
-        log.debug(message)
-        return Error(message, 400), None
-
-    # Capture state before mutating the actual database model
-    before_fabricDeduction_obj = fabricDeduction.model_dump()
-    before_fabricDeduction_json = fabricDeduction.model_dump(mode="json")
-
-    # Apply partial updates directly to the tracked DB entity
-    fabricDeduction.sqlmodel_update(partial_payload_update)
-    db.session.flush()
-
-    log.debug(f"d before refresh {fabricDeduction}")
-    # Refresh relationship state so fabric.deductions contains the newly updated deduction
-    # db.session.refresh(fabricDeduction)
-    # db.session.refresh(fabric)
-
-    after_fabricDeduction_obj = fabricDeduction.model_dump()
-    log.debug(f"d after refresh {fabricDeduction}")
-
-    create_audit_log(
-        "Update",
-        "fabric_deduction",
-        deduction_id,
-        changes=Change(
-            data=create_json_with_actual_values_auditlog(
-                before_fabricDeduction_json, partial_payload_update_json
+        partial_payload_update = validated_data.model_dump(exclude_unset=True)
+        partial_payload_update_json = validated_data.model_dump(
+            exclude_unset=True, mode="json"
+        )
+        if not partial_payload_update:
+            raise ValueError(
+                f"Fabric id {fabric_id}: 'partial_data' contains no valid update fields. {deduction_payload}"
             )
-        ),
-    )
 
-    # Executes if either key exists and its value is not None or 0
-    fabricDeduction_obj = fabricDeduction.model_dump()
+        measurement_valid = validate_fabric_deduction_limits(
+            fabric,
+            partial_payload_update.get("removed_width", fabricDeduction.removed_width),
+            partial_payload_update.get(
+                "removed_height", fabricDeduction.removed_height
+            ),
+            current_deduction_id=deduction_id,  # Ignore old values of this deduction during calculation
+        )
 
-    fabric_obj = fabric.model_dump()
-    fabric_obj["deductions"] = []
-    for d in fabric.child_deductions:
-        deduct_obj = d.model_dump()
-        fabric_obj["deductions"].append(deduct_obj)
+        # Capture state before mutating the actual database model
+        before_fabricDeduction_obj = fabricDeduction.model_dump()
+        before_fabricDeduction_json = fabricDeduction.model_dump(mode="json")
 
-    # fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
+        # Apply partial updates directly to the tracked DB entity
+        fabricDeduction.sqlmodel_update(partial_payload_update)
+        db.session.flush()
 
-    db.session.commit()
+        log.debug(f"d before refresh {fabricDeduction}")
+        # Refresh relationship state so fabric.deductions contains the newly updated deduction
+        # db.session.refresh(fabricDeduction)
+        # db.session.refresh(fabric)
 
-    return None, {
-        "fabric": fabric_obj,
-        "deduction": fabricDeduction_obj,
-    }
+        after_fabricDeduction_obj = fabricDeduction.model_dump()
+        log.debug(f"d after refresh {fabricDeduction}")
+
+        create_audit_log(
+            "Update",
+            "fabric_deduction",
+            deduction_id,
+            changes=Change(
+                data=create_json_with_actual_values_auditlog(
+                    before_fabricDeduction_json, partial_payload_update_json
+                )
+            ),
+        )
+
+        # Executes if either key exists and its value is not None or 0
+        fabricDeduction_obj = fabricDeduction.model_dump()
+
+        fabric_obj = fabric.model_dump()
+        fabric_obj["deductions"] = []
+        for d in fabric.child_deductions:
+            deduct_obj = d.model_dump()
+            fabric_obj["deductions"].append(deduct_obj)
+
+        # fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
+
+        return None, {
+            "fabric": fabric_obj,
+            "deduction": fabricDeduction_obj,
+        }
