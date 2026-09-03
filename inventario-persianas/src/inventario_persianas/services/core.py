@@ -113,7 +113,7 @@ def add_fabrics(fabrics_to_add: list[dict]) -> list[dict]:
         fabrics = []
         retval = []
 
-        for payload in fabrics_to_add:  # `fabrics` is your incoming list of dicts
+        for payload in fabrics_to_add:
             temp_id = payload.get("temp_id")
             if temp_id is None:
                 raise NoResultFound("'temp_id' was not found")
@@ -131,6 +131,7 @@ def add_fabrics(fabrics_to_add: list[dict]) -> list[dict]:
 
         return retval
 
+
 def add_fabric(payload: dict):
 
     payload.pop("created_at", None)
@@ -141,7 +142,6 @@ def add_fabric(payload: dict):
     db.session.add(fabric)
     db.session.flush()
     fabric_json = fabric.model_dump(mode="json")
-    # fabrics.append({"temp_id": temp_id, "fabric": fabric_obj})
 
     log_json = AuditLogger.log("Insert", "fabric", fabric.id, new_values=fabric_json)
 
@@ -221,8 +221,6 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
                 ]
                 data.append(fabric_obj)
 
-            # result_dicts = [fabric.model_dump() for fabric in updated_fabrics]
-            # log.debug("results dict here are  %s", data,)
             return None, data
 
     except ValidationError as e:
@@ -279,11 +277,6 @@ def validate_fabric_deduction_limits(
         )
 
     return True
-
-
-
-
-
 
 
 @handle_db_exceptions
@@ -346,7 +339,6 @@ def update_deduction(
         if not fabricDeduction:
             raise NoResultFound(f"FabricDeduction with id {deduction_id} not found.")
 
-        # Validate into a separate validated_data object (do NOT overwrite fabricDeduction)
         validated_data = FabricDeductionUpdate.model_validate(deduction_payload)
 
         partial_payload_update = validated_data.model_dump(exclude_unset=True)
@@ -367,18 +359,13 @@ def update_deduction(
             current_deduction_id=deduction_id,  # Ignore old values of this deduction during calculation
         )
 
-        # Capture state before mutating the actual database model
         before_fabricDeduction_obj = fabricDeduction.model_dump()
         before_fabricDeduction_json = fabricDeduction.model_dump(mode="json")
 
-        # Apply partial updates directly to the tracked DB entity
         fabricDeduction.sqlmodel_update(partial_payload_update)
         db.session.flush()
 
         log.debug(f"d before refresh {fabricDeduction}")
-        # Refresh relationship state so fabric.deductions contains the newly updated deduction
-        # db.session.refresh(fabricDeduction)
-        # db.session.refresh(fabric)
 
         after_fabricDeduction_obj = fabricDeduction.model_dump()
         log.debug(f"d after refresh {fabricDeduction}")
@@ -391,7 +378,6 @@ def update_deduction(
             new_values=partial_payload_update_json,
         )
 
-        # Executes if either key exists and its value is not None or 0
         fabricDeduction_obj = fabricDeduction.model_dump()
 
         fabric_obj = fabric.model_dump()
@@ -399,8 +385,6 @@ def update_deduction(
         for d in fabric.child_deductions:
             deduct_obj = d.model_dump()
             fabric_obj["deductions"].append(deduct_obj)
-
-        # fabric_obj["deductions"] = [d.model_dump() for d in fabric.deductions]
 
         return None, {
             "fabric": fabric_obj,
