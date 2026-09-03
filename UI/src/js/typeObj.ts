@@ -18,7 +18,7 @@ export interface TubeExtraD extends Tube {
 
 export interface FabricExData extends Fabric {}
 
-export interface FabricDeduction extends SchemaFabric {}
+export interface FabricDeduction extends SchemaFabricDeduction {}
 
 export interface Fabric extends SchemaFabric {
   deductions: FabricDeduction[];

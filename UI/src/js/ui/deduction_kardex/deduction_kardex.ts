@@ -5,6 +5,8 @@ import {
   calc_remaining_fabric_measurements,
   column2,
   createElementFromHTML,
+  inspect_row,
+  RenderingInfo,
 } from "../utils";
 import { state } from "../../state";
 import { Api, ColumnsConfig } from "datatables.net-dt";
@@ -42,13 +44,14 @@ class DeductionKardex {
   constructor() {
     this.deductionForm = new Form();
     this.init_elements();
-    this.init_binding();
     this.init_columns();
     this.init_table();
+    this.init_binding();
   }
 
   init_binding() {
     this.bind_row_double_click();
+    inspect_row(this.tbody, this.table);
   }
 
   title(fabric: Fabric): HTMLElement {
@@ -124,18 +127,15 @@ class DeductionKardex {
     this.columns = [
       //@ts-ignore
       column2({
-        id: "removed_width",
-        column_name: "Ancho",
-        rendering_func: render_plain2,
-        format_func: format_measurement,
-      }),
-
-      //@ts-ignore
-      column2({
-        id: "removed_height",
-        column_name: "Alto",
-        rendering_func: render_plain2,
-        format_func: format_measurement,
+        id: "",
+        column_name: "Deduccion",
+        rendering_func: (info: RenderingInfo) => {
+          let data = info.data as FabricDeduction;
+          let width = data.removed_width;
+          let height = data.removed_height;
+          return `${width} x ${height} mts`;
+        },
+        // format_func: format_measurement,
       }),
 
       //@ts-ignore
