@@ -240,7 +240,7 @@ export class Form {
     const measurement = calc_remaining_fabric_measurements(this.fabric);
 
     let height_limit;
-    const remainingHeight = measurement.remaining_height || 0;
+    const remainingHeight = num(measurement.remaining_height) || 0;
 
     if (this.modal_state === "editing") {
       const currentRemovedHeight: number = num(this.deduction.removed_height);
