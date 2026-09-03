@@ -1,6 +1,5 @@
 import logging
-import traceback
-from typing import List, Optional, Tuple
+from typing import List, Optional
 import json
 from decimal import Decimal
 from functools import wraps
@@ -152,92 +151,67 @@ def add_fabric(payload: dict):
     return fabric
 
 
-def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dict]]]:
-    updated_fabrics: list[Fabric] = []
+@handle_db_exceptions
+def update_fabrics(data: list[dict]) -> tuple[List[dict],int]:
+    updated_fabrics = []
+    with db.session.begin():
+        for index, item in enumerate(data):
 
-    try:
-        with db.session.begin():
-            for index, item in enumerate(data):
-                if not isinstance(item, dict):
-                    raise ValueError(f"Item at index {index} must be a dictionary.")
+            fabric_id = item.get("id")
+            payload = item.get("partial_data",{})
 
-                fabric_id = item.get("id")
-                partial_data = item.get("partial_data")
+            fabric = db.session.get(
+                Fabric, fabric_id, options=[selectinload(Fabric.child_deductions)]
+            )
+            if not fabric:
+                raise ValueError(f"Fabric with id {fabric_id} not found.")
 
-                if fabric_id is None:
-                    raise ValueError(
-                        f"Item at index {index}: missing required field 'id'."
-                    )
-
-                if not isinstance(fabric_id, int):
-                    raise ValueError(
-                        f"Item at index {index}: 'id' must be an integer, got {type(fabric_id).__name__}."
-                    )
-
-                if partial_data is None or not isinstance(partial_data, dict):
-                    raise ValueError(
-                        f"Item at index {index}: 'partial_data' must be a valid dictionary."
-                    )
-
-                fabric = db.session.get(
-                    Fabric, fabric_id, options=[selectinload(Fabric.child_deductions)]
+            if len(fabric.child_deductions) > 0 and (
+                payload.get(
+                    "original_width" or payload.get("original_height")
                 )
-                if not fabric:
-                    raise ValueError(f"Fabric with id {fabric_id} not found.")
-
-                fabric_data_before_update = fabric.model_dump(mode="json")
-                partial_update_payload = FabricUpdate.model_validate(
-                    partial_data
-                ).model_dump(exclude_unset=True)
-
-                partial_update_payload_json = FabricUpdate.model_validate(
-                    partial_data
-                ).model_dump(exclude_unset=True, mode="json")
-
-                log.debug("Partial_data here is %s", partial_update_payload)
-
-                if not partial_update_payload or len(partial_update_payload) <= 0:
-                    raise ValueError(
-                        f"Fabric id {fabric_id}: 'partial_data' contains no valid update fields. {partial_data}"
-                    )
-
-                fabric.sqlmodel_update(partial_update_payload)
-                db.session.add(fabric)
-
-                AuditLogger.log(
-                    "Update",
-                    "fabric",
-                    fabric_id,
-                    old_values=fabric_data_before_update,
-                    new_values=partial_update_payload_json,
+            ):
+                raise ValidationError(
+                    "No se puede actualizar las medidas de la tela mienstras que tenga deducciones"
                 )
 
-                log.debug("Updated fabric: %s", fabric)
-                updated_fabrics.append(fabric)
+            fabric_data_before_update = fabric.model_dump(mode="json")
+            partial_update_payload = FabricUpdate.model_validate(
+                payload
+            ).model_dump(exclude_unset=True)
 
-            log.debug("we good here?")
+            partial_update_payload_json = FabricUpdate.model_validate(
+                payload
+            ).model_dump(exclude_unset=True, mode="json")
+
+            log.debug("Partial_data here is %s", partial_update_payload)
+
+            if not partial_update_payload or len(partial_update_payload) <= 0:
+                raise ValueError(
+                    f"Fabric id {fabric_id}: 'partial_data' contains no valid update fields. {payload}"
+                )
+
+            fabric.sqlmodel_update(partial_update_payload)
+            db.session.add(fabric)
+
+            AuditLogger.log(
+                "Update",
+                "fabric",
+                fabric_id,
+                old_values=fabric_data_before_update,
+                new_values=partial_update_payload_json,
+            )
+
+            log.debug("Updated fabric: %s", fabric)
             db.session.flush()
-            data = []
-            for fabric in updated_fabrics:
-                fabric_obj = fabric.model_dump(mode="json")
-                fabric_obj["deductions"] = [
-                    d.model_dump(mode="json") for d in fabric.child_deductions
-                ]
-                data.append(fabric_obj)
+            fabric_obj = fabric.model_dump(mode="json")
+            fabric_obj["deductions"] = [
+                d.model_dump(mode="json") for d in fabric.child_deductions
+            ]
+            updated_fabrics.append(fabric_obj)
 
-            return None, data
+        return updated_fabrics,200
 
-    except ValidationError as e:
-        log.error(traceback.format_exc())
-        return Error(f"Validation failed: {e.errors(include_url=False)}", 400), None
-
-    except ValueError as e:
-        log.error(traceback.format_exc())
-        return Error(str(e), 400), None
-
-    except Exception as e:
-        log.error(traceback.format_exc())
-        return Error(f"Database update failed: {str(e)}", 500), None
 
 
 def validate_fabric_deduction_limits(

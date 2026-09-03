@@ -60,17 +60,8 @@ def update_fabrics():
     if not data:
         return Error("Payload to update was not passed", 400).returnIt()
 
-    err, updated_fabrics = core.update_fabrics(data["data"])
-    if err:
-        return err.returnIt()
-
-    import json
-
-    log.debug(
-        "Returing the following data %s",
-        json.dumps(updated_fabrics, indent=4, default=str),
-    )
-    return updated_fabrics, 200
+    data = core.update_fabrics(data["data"])
+    return data
 
 
 @core_bp.post("/fabric/deduction/update/")
