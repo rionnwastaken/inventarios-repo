@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import field_serializer
 
@@ -258,19 +258,6 @@ class FabricDeductionUpdate(SQLModel):
     comment: Optional[str] = Field(default=None, max_length=500)
 
 
-class ChangeValue(SQLModel):
-    id: Optional[Any] = None
-    value: Optional[Any] = None
-
-
-class FieldChange(SQLModel):
-    previous: ChangeValue
-    now: ChangeValue
-
-
-ChangePayload = Dict[str, FieldChange]
-
-
 class AuditLog(TimestampMixin, table=True):
     __tablename__ = "audit_log"  # type: ignore #type:ignore
 
@@ -278,8 +265,8 @@ class AuditLog(TimestampMixin, table=True):
     action: str = Field(max_length=50)
     target_table: str = Field(max_length=50)
     target_id: int
-    user_info: Optional[str] = Field(default=None, max_length=100)
-    changes: Optional[ChangePayload] = Field(default=None, sa_column=Column(JSON))
+    extra_message: Optional[str] = Field(default=None, max_length=100)
+    changes: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
 
 
 @event.listens_for(Fabric, "after_insert")

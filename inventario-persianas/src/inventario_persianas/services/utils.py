@@ -43,7 +43,7 @@ class AuditLogger:
                 "value": result.name if result else "Not found",
             }
 
-        return {"id": None, "value": raw_value}
+        return {"value": raw_value}
 
     @classmethod
     def _build_changes(
@@ -97,7 +97,7 @@ class AuditLogger:
         target_id: int,
         old_values: Optional[dict] = None,
         new_values: Optional[dict] = None,
-        user_info: Optional[str] = None,
+        message: Optional[str] = None,
         flush: bool = True,
     ) -> dict:
         """
@@ -109,7 +109,7 @@ class AuditLogger:
             action=action.value if isinstance(action, Enum) else action,
             target_table=target_table,
             target_id=target_id,
-            user_info=user_info,
+            extra_message=message,
             changes=changes,
         )
 
