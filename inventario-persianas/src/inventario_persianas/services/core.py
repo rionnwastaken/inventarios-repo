@@ -5,7 +5,6 @@ import json
 from decimal import Decimal
 from functools import wraps
 
-from inventario_persianas.app_types import Change
 from inventario_persianas.exceptions import OverDrawing
 from inventario_persianas.model import (
     Fabric,
@@ -16,9 +15,8 @@ from inventario_persianas.model import (
     db,
 )
 from inventario_persianas.services.utils import (
+    AuditLogger,
     Error,
-    create_audit_log,
-    create_json_with_actual_values_auditlog,
 )
 from pydantic import ValidationError
 from sqlalchemy.exc import NoResultFound
@@ -26,6 +24,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from sqlmodel import desc, select
 
 log = logging.getLogger(__name__)
+
 
 def handle_db_exceptions(func):
     @wraps(func)
@@ -53,11 +52,11 @@ def new_tube():
     db.session.add(tube)
     db.session.flush()
 
-    tube_json = tube.model_dump()
+    tube_json = tube.model_dump(mode="json")
     tube_json["fabric_count"] = 0
     tube_json["rectified"] = False
 
-    log_json = create_audit_log("Insert", "tube", tube.id)
+    log_json = AuditLogger.log("Insert", "tube", tube.id, new_values=tube_json)
     db.session.commit()
 
     log.debug(tube_json)
@@ -118,35 +117,33 @@ def add_fabrics(fabrics_to_add: list[dict]) -> list[dict]:
             temp_id = payload.get("temp_id")
             if temp_id is None:
                 raise NoResultFound("'temp_id' was not found")
-            
+
             fabric = add_fabric(payload)
-            retval.append({
+            retval.append(
+                {
                     "temp_id": temp_id,
                     "fabric": fabric.model_dump(),
-                })
-
+                }
+            )
 
         log.debug(f"Fabrics {fabrics}")
         log.debug(f"Return value {retval}")
 
-
         return retval
 
-def add_fabric(payload:dict):
+def add_fabric(payload: dict):
 
     payload.pop("created_at", None)
     payload.pop("updated_at", None)
 
-
     log.debug(f"Fabric here is {payload}")
     fabric = Fabric.model_validate(payload)
     db.session.add(fabric)
+    db.session.flush()
+    fabric_json = fabric.model_dump(mode="json")
     # fabrics.append({"temp_id": temp_id, "fabric": fabric_obj})
 
-    db.session.flush()
-    create_audit_log(
-        action="Insert", target_table="fabric", target_id=fabric.id
-    )
+    log_json = AuditLogger.log("Insert", "fabric", fabric.id, new_values=fabric_json)
 
     return fabric
 
@@ -203,15 +200,12 @@ def update_fabrics(data: list[dict]) -> Tuple[Optional[Error], Optional[List[dic
                 fabric.sqlmodel_update(partial_update_payload)
                 db.session.add(fabric)
 
-                create_audit_log(
+                AuditLogger.log(
                     "Update",
                     "fabric",
                     fabric_id,
-                    changes=Change(
-                        data=create_json_with_actual_values_auditlog(
-                            fabric_data_before_update, partial_update_payload_json
-                        )
-                    ),
+                    old_values=fabric_data_before_update,
+                    new_values=partial_update_payload_json,
                 )
 
                 log.debug("Updated fabric: %s", fabric)
@@ -314,12 +308,14 @@ def deduction_new(deduction):
 
         fabric.child_deductions.append(fabricDeduction)
         db.session.flush()
+        fabricDedudction_json = fabricDeduction.model_dump(mode="json")
 
-        audit_obj = create_audit_log(
-            "Insert", target_id=fabricDeduction.id, target_table="fabric_deduction"
+        AuditLogger.log(
+            "Insert",
+            "fabric_deduction",
+            fabricDeduction.id,
+            new_values=fabricDedudction_json,
         )
-
-        log.debug(f"New deduction {audit_obj}")
 
         fabric_obj = fabric.model_dump()
         fabric_obj["deductions"] = []
@@ -387,15 +383,12 @@ def update_deduction(
         after_fabricDeduction_obj = fabricDeduction.model_dump()
         log.debug(f"d after refresh {fabricDeduction}")
 
-        create_audit_log(
+        AuditLogger.log(
             "Update",
             "fabric_deduction",
-            deduction_id,
-            changes=Change(
-                data=create_json_with_actual_values_auditlog(
-                    before_fabricDeduction_json, partial_payload_update_json
-                )
-            ),
+            fabricDeduction.id,
+            old_values=before_fabricDeduction_json,
+            new_values=partial_payload_update_json,
         )
 
         # Executes if either key exists and its value is not None or 0

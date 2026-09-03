@@ -1,11 +1,10 @@
 import logging
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import field_serializer
 
 
-from inventario_persianas.app_types import Change
 from sqlalchemy import JSON, Column, DateTime, event, update
 from sqlmodel import Field, Relationship, SQLModel
 from flask_sqlalchemy import SQLAlchemy
@@ -259,6 +258,19 @@ class FabricDeductionUpdate(SQLModel):
     comment: Optional[str] = Field(default=None, max_length=500)
 
 
+class ChangeValue(SQLModel):
+    id: Optional[Any] = None
+    value: Optional[Any] = None
+
+
+class FieldChange(SQLModel):
+    previous: ChangeValue
+    now: ChangeValue
+
+
+ChangePayload = Dict[str, FieldChange]
+
+
 class AuditLog(TimestampMixin, table=True):
     __tablename__ = "audit_log"  # type: ignore #type:ignore
 
@@ -267,7 +279,7 @@ class AuditLog(TimestampMixin, table=True):
     target_table: str = Field(max_length=50)
     target_id: int
     user_info: Optional[str] = Field(default=None, max_length=100)
-    changes: Optional[Change] = Field(default=None, sa_column=Column(JSON))
+    changes: Optional[ChangePayload] = Field(default=None, sa_column=Column(JSON))
 
 
 @event.listens_for(Fabric, "after_insert")
