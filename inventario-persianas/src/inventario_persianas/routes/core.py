@@ -50,7 +50,6 @@ def fabric_add_many():
 
     inserted_fabrics = core.add_fabrics(fabrics)
 
-
     return {"fabrics": inserted_fabrics}, 200
 
 
@@ -94,11 +93,9 @@ def update_deduction():
             400,
         ).returnIt()
 
-    err, data = core.update_deduction(fabric_id, deduction_id, deduction_partial_data)
-    if err:
-        return err.returnIt()
+    data = core.update_deduction(fabric_id, deduction_id, deduction_partial_data)
 
-    return data, 200
+    return data
 
 
 @core_bp.post("/fabric/new/deduction/")

@@ -44,6 +44,10 @@ def handle_db_exceptions(func):
             log.exception(e)
             return Error(str(e), 400).returnIt()
 
+        except Exception as e:
+            log.exception(e)
+            return Error(str(e), 400).returnIt()
+
     return wrapper
 
 
@@ -279,6 +283,70 @@ def validate_fabric_deduction_limits(
     return True
 
 
+def create_child_fabric(parent_fabric: Fabric, parent_deduction: FabricDeduction):
+    log.debug("create_child_fabric()")
+    attrs_to_copy = [
+        "tube_id",
+        "blind_model_id",
+        "color_id",
+        "fabric_classification_id",
+        "supplier_id",
+    ]
+    child_data = {attr: getattr(parent_fabric, attr) for attr in attrs_to_copy}
+    child_fabric = Fabric(
+        **child_data,
+        original_width=parent_fabric.original_width - parent_deduction.removed_width,
+        original_height=parent_deduction.removed_height,
+        rank=parent_fabric.rank + 1,
+        is_archived=False,
+        parent_deduction_id=parent_deduction.id,
+    )
+    db.session.add(child_fabric)
+    db.session.flush()
+    AuditLogger.log(
+        "Insert",
+        "fabric",
+        child_fabric.id,
+        new_values=child_fabric.model_dump(mode="json"),
+        message="Child fabric",
+    )
+
+
+def update_child_fabric(
+    *,
+    child_fabric: Fabric | None = None,
+    child_fabric_id: int | None = None,
+    partial_payload: dict = {},
+):
+    log.debug("update_child_fabric()")
+
+    if child_fabric and child_fabric_id:
+        raise TypeError("Arguments 'child_fabric' and 'id' are mutually exclusive")
+
+    if child_fabric:
+        validated = FabricUpdate.model_validate(partial_payload)
+
+        child_fabric_partial = validated.model_dump(exclude_unset=True)
+        child_fabric_partial_json = validated.model_dump(
+            exclude_unset=True, mode="json"
+        )
+        if not child_fabric_partial or len(child_fabric_partial) <= 0:
+            raise ValueError(
+                f"No valid keys were passed for the update\nData passed {partial_payload}"
+            )
+
+        child_fabric_json = child_fabric.model_dump(mode="json")
+        child_fabric.sqlmodel_update(child_fabric_partial)
+        AuditLogger.log(
+            "Update",
+            "fabric",
+            child_fabric.id,
+            old_values=child_fabric_json,
+            new_values=child_fabric_partial_json,
+            message="Child fabric",
+        )
+
+
 @handle_db_exceptions
 def deduction_new(deduction):
     with db.session.begin():
@@ -310,6 +378,9 @@ def deduction_new(deduction):
             new_values=fabricDedudction_json,
         )
 
+        if fabricDeduction.removed_width < fabric.original_width:
+            create_child_fabric(fabric, fabricDeduction)
+
         fabric_obj = fabric.model_dump()
         fabric_obj["deductions"] = []
         fabricDeduction_obj = fabricDeduction.model_dump()
@@ -324,14 +395,18 @@ def deduction_new(deduction):
 @handle_db_exceptions
 def update_deduction(
     fabric_id: int, deduction_id: int, deduction_payload: dict
-) -> Tuple[Optional[Error], Optional[dict]]:
+) -> tuple[dict, int]:
     log.debug("update_deduction(fabric_id, deduction)")
     log.debug(fabric_id, deduction_payload)
     with db.session.begin():
         fabric = db.session.get(
             Fabric, fabric_id, options=[selectinload(Fabric.child_deductions)]
         )
-        fabricDeduction = db.session.get(FabricDeduction, deduction_id)
+        fabricDeduction = db.session.get(
+            FabricDeduction,
+            deduction_id,
+            options=[selectinload(FabricDeduction.child_fabric)],
+        )
 
         if not fabric:
             raise NoResultFound(f"Fabric with id {fabric_id} not found.")
@@ -345,7 +420,7 @@ def update_deduction(
         partial_payload_update_json = validated_data.model_dump(
             exclude_unset=True, mode="json"
         )
-        if not partial_payload_update:
+        if not partial_payload_update or len(partial_payload_update) <= 0:
             raise ValueError(
                 f"Fabric id {fabric_id}: 'partial_data' contains no valid update fields. {deduction_payload}"
             )
@@ -357,6 +432,27 @@ def update_deduction(
                 "removed_height", fabricDeduction.removed_height
             ),
             current_deduction_id=deduction_id,  # Ignore old values of this deduction during calculation
+        )
+        child_fabric = fabricDeduction.child_fabric
+        if not child_fabric:
+            raise ValueError("child_fabric es nulo en la deduccion (No es posible)")
+        if len(child_fabric.child_deductions) > 0:
+            raise Exception(
+                "No se puede modificar la deduccion ya que la tela creada por deduccion a tenido por su cuenta una modificacion, si se desea hacer la modificacion, primero se tiene que quitar todas las deducciones de la tela creada por la deduccion"
+            )
+
+        removed_width = partial_payload_update.get("removed_width")
+        removed_height = partial_payload_update.get("removed_height")
+        child_fabric_payload = {}
+        if removed_width:
+            child_fabric_payload["original_width"] = (
+                fabric.original_width - removed_width
+            )
+        if removed_height:
+            child_fabric_payload["original_height"] = removed_height
+
+        update_child_fabric(
+            child_fabric=child_fabric, partial_payload=child_fabric_payload
         )
 
         before_fabricDeduction_obj = fabricDeduction.model_dump()
@@ -386,7 +482,7 @@ def update_deduction(
             deduct_obj = d.model_dump()
             fabric_obj["deductions"].append(deduct_obj)
 
-        return None, {
+        return {
             "fabric": fabric_obj,
             "deduction": fabricDeduction_obj,
-        }
+        }, 200
