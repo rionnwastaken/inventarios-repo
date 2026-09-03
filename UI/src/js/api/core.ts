@@ -1,4 +1,4 @@
-import { Fabric, FabricDeduction, SpareFabric } from "../schema.ts";
+import { Fabric, FabricDeduction } from "../schema.ts";
 import axios from "axios";
 import { createa_api } from "./axios_init.ts";
 
@@ -17,16 +17,6 @@ export const CoreAPI = {
 
   create_deduction: async (deduction: FabricDeduction) => {
     return await api.post("/fabric/new/deduction/", deduction);
-  },
-
-  update_spare_fabric: async (
-    spare_fabric_id,
-    spare_fabric: Partial<SpareFabric>,
-  ) => {
-    return await api.post("/spare/fabric/update/", {
-      spare_fabric_id: spare_fabric_id,
-      payload: spare_fabric,
-    });
   },
 
   update_deduction: async (

@@ -222,7 +222,6 @@ class FabricDeduction(TimestampMixin, table=True):
 
     comment: Optional[str] = Field(default=None, max_length=500)
     fabric: Optional[Fabric] = Relationship(back_populates="deductions")
-    spare_fabric: Optional["SpareFabric"] = Relationship(back_populates="deduction")
 
     @field_serializer("removed_height", "removed_width", mode="plain")
     def serialize_decimal(self, v: Decimal) -> str:
@@ -234,38 +233,6 @@ class FabricDeductionUpdate(SQLModel):
     removed_height: Optional[Decimal] = None
     removed_width: Optional[Decimal] = None
     comment: Optional[str] = Field(default=None, max_length=500)
-
-
-"""
-The spare fabric is made when a deduction has a width not equal
-to the original width, so now you get a small fabric with
-width = original_width - removed_width
-height = removed_height
-Technically height could be the original_height, but would make the code
-harder when new deductions happen
-"""
-
-
-class SpareFabric(SQLModel, table=True):
-    __tablename__ = "spare_fabric"  # type:ignore
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    deduction_id: int = Field(foreign_key="fabric_deduction.id", unique=True)
-    width: Decimal
-    height: Decimal
-    archive: bool = Field(default=False)
-
-    deduction: Optional[FabricDeduction] = Relationship(back_populates="spare_fabric")
-
-    @field_serializer("height", "width", mode="plain")
-    def serialize_decimal(self, v: Decimal) -> str:
-        return str(v.normalize()) if v is not None else v
-
-
-class SpareFabricUpdate(SQLModel):
-    width: Optional[Decimal] = None
-    height: Optional[Decimal] = None
-    archive: Optional[bool] = None
 
 
 class AuditLog(TimestampMixin, table=True):
