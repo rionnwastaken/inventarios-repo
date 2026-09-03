@@ -270,7 +270,7 @@ export class Form {
       removed_width: values.form_width,
       removed_height: values.form_height,
       comment: values.form_comment,
-      fabric_id: this.fabric.id,
+      parent_fabric_id: this.fabric.id,
     };
 
     const res = await CoreAPI.create_deduction(fabricDeduction);

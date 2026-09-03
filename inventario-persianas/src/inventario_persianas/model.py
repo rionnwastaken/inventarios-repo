@@ -160,18 +160,19 @@ class Fabric(TimestampMixin, table=True):
     classification: Optional[FabricClassification] = Relationship(
         back_populates="fabrics"
     )
+
     supplier: Optional[Supplier] = Relationship(back_populates="fabrics")
     comments: List["FabricComment"] = Relationship(back_populates="fabric")
     child_deductions: List["FabricDeduction"] = Relationship(
-        back_populates="fabric",
+        back_populates="parent_fabric",
         sa_relationship_kwargs={
-            "foreign_keys": "[FabricDeduction.parent_fabric_id]",
+            "foreign_keys": "FabricDeduction.parent_fabric_id",
             "cascade": "all, delete-orphan",
         },
     )
     parent_deduction: Optional["FabricDeduction"] = Relationship(
         back_populates="child_fabric",
-        sa_relationship_kwargs={"foreign_keys": "[Fabric.parent_deduction_id]"},
+        sa_relationship_kwargs={"foreign_keys": "Fabric.parent_deduction_id"},
     )
 
     @field_serializer("original_height", "original_width", mode="plain")
@@ -236,7 +237,15 @@ class FabricDeduction(TimestampMixin, table=True):
     removed_width: Decimal
 
     comment: Optional[str] = Field(default=None, max_length=500)
-    fabric: Optional[Fabric] = Relationship(back_populates="deductions")
+
+    parent_fabric: Fabric = Relationship(
+        back_populates="child_deductions",
+        sa_relationship_kwargs={"foreign_keys": "FabricDeduction.parent_fabric_id"},
+    )
+    child_fabric: Optional[Fabric] = Relationship(
+        back_populates="parent_deduction",
+        sa_relationship_kwargs={"foreign_keys": "Fabric.parent_deduction_id"},
+    )
 
     @field_serializer("removed_height", "removed_width", mode="plain")
     def serialize_decimal(self, v: Decimal) -> str:
