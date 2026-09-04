@@ -19,6 +19,7 @@ import { FabricCraft, ItemState } from "./fabricCraft.ts";
 import { InitTable } from "./init_table.ts";
 import { ApiRowsMethods } from "datatables.net";
 import { ModalDialog } from "../dialogs/modalDialog.ts";
+import { Actions } from "./actions.ts";
 
 const add_id = "add-btn";
 const edit_id = "edit-btn";
@@ -75,6 +76,8 @@ class TubeOverview {
     this.initTable = new InitTable(this.tbl_element);
     this.fabricCraft = new FabricCraft(this.events);
     this.table = this.initTable.table;
+    this.fabricCraft = new FabricCraft(this.events);
+    this.actions = new Actions(this.fabricCraft, this.table);
     this.init_bindings();
   }
 
@@ -298,25 +301,7 @@ class TubeOverview {
 
   bind_add_btn() {
     this.add_btn.addEventListener("click", async () => {
-      let fabricData: FabricData = {
-        original_fabric: null,
-        modified_fabric: null,
-        mode: null,
-      };
-
-      const fabric = await this.fabricCraft.show(fabricData, "creating", {
-        tube_id: this.tube.id,
-      });
-
-      if (!fabric) {
-        log.debug("operation was canceled");
-        return;
-      }
-
-      // const fabricData = buildFabricObject(result, this.tube.id);
-      log.info(`Adding table with data ${fabricData}`);
-      this.table.row.add(fabricData);
-      this.table.draw();
+      await this.actions.open_form_create(this.tube.id);
     });
   }
 
@@ -330,31 +315,7 @@ class TubeOverview {
 
       if (row && this.tbody.contains(row)) {
         const row_obj = this.table.row(row);
-        const data = row_obj.data();
-
-        if (data == undefined) {
-          log.debug("Double click row undefined");
-          return;
-        }
-
-        //We are passing data by reference
-        if (data.mode == "created") {
-          await this.fabricCraft.show(data, "editing_created");
-        }
-
-        if (data.mode == "normal") {
-          await this.fabricCraft.show(data, "editing");
-          // this.events.emit("tubo_overview:dblclick_fabric",data.original_fabric)
-        }
-
-        if (data.mode == "edited") {
-          await this.fabricCraft.show(data, "editing");
-        }
-
-        log.info("Redrawing table");
-        log.info("Data of worked row ", data);
-        row_obj.data(data);
-        this.table.draw(false);
+        this.actions.open_form_editing(row_obj);
       }
     });
   }
