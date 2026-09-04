@@ -20,18 +20,12 @@ import { InitTable } from "./init_table.ts";
 import { ApiRowsMethods } from "datatables.net";
 import { ModalDialog } from "../dialogs/modalDialog.ts";
 
-const row_view_modal: HTMLDialogElement =
-  document.querySelector("#row-view-model");
-const modal_title: HTMLHeadingElement = document.querySelector("#modal-title");
-const modal_save_btn: HTMLButtonElement =
-  document.querySelector("#guardar-btn");
+const add_id = "add-btn";
+const edit_id = "edit-btn";
+const archive_id = "archive-btn";
+const tube_id = "tube-id";
 
-const close_btn: HTMLButtonElement = document.querySelector("#close-btn");
-
-const modal_add_btn: HTMLButtonElement =
-  document.querySelector("#modal-btn-add");
-
-const tbody = document.querySelector("#row-modal-table tbody");
+const tbl_id = "tube-overview-table";
 
 let log = getLogger("app");
 
@@ -64,41 +58,98 @@ class TubeOverview {
   fabricColumns: (ColumnsConfig & { data: keyof FabricData })[];
   fabricCraft: FabricCraft;
   initTable: InitTable;
+  modal_dialog: ModalDialog;
+
+  tbl_element: HTMLTableElement;
+  tbody: HTMLBodyElement;
+  add_btn: HTMLButtonElement;
+  edit_btn: HTMLButtonElement;
+  archive_btn: HTMLButtonElement;
+  tube_title: HTMLParagraphElement;
 
   public events = new TypedEventEmitter<RowModalEvents>();
 
   constructor() {
+    this.create_dialog();
     this.init_bindings();
 
-    this.initTable = new InitTable();
+    this.initTable = new InitTable(this.tbl_element);
     this.fabricCraft = new FabricCraft(this.events);
     this.table = this.initTable.table;
   }
 
   init_bindings() {
     this.bind_add_btn();
-    this.bind_save_btn();
-    this.bind_close_btn();
+    // this.bind_save_btn();
+    // this.bind_close_btn();
     this.bind_row_double_click();
     this.bind_inspect_row();
-    this.bind_dialog();
+    // this.bind_dialog();
     this.bind_row_right_click();
   }
 
-  bind_close_btn() {
-    close_btn.addEventListener("click", async () => {
-      this.clean_before_closing();
+  create_dialog() {
+    const a_tw = "min-w-5xl min-h-5xl";
+    this.modal_dialog = new ModalDialog({
+      body: this.body(),
+      title: this.title(),
+      container_tailwind_class: a_tw,
+      confirmText: "Guardar",
+      cancelText: "Cerrar",
+      onConfirm: () => {
+        const mods = get_type_modifications_arrays(this.table);
+        log.debug(
+          `Count of the arrays. Created ${mods.created_arr.data().length}, edited ${mods.edited_arr.data().length}, deleted ${mods.deleted_arr.data().length}`,
+        );
+        this.handle_saving_edited_fabrics(mods.edited_arr);
+        this.handle_saving_created_fabrics(mods.created_arr);
+      },
+      onCancel: () => {
+        this.clean_before_closing();
+      },
+      onClose: () => {
+        this.clean_before_closing();
+      },
     });
+
+    const d = this.modal_dialog.dialogEl;
+    this.tube_title = d.querySelector(`#${tube_id}`);
+    this.tbl_element = d.querySelector(`#${tbl_id}`);
+    this.add_btn = d.querySelector(`#${add_id}`);
+    this.archive_btn = d.querySelector(`#${archive_id}`);
+    this.edit_btn = d.querySelector(`#${edit_id}`);
+    this.tbody = d.querySelector(`#${tbl_id} tbody`);
   }
+  body() {
+    return `
+      <div>
+	<table id="${tbl_id}" class="display">
+	  <thead></thead>
+	  <tbody></tbody>
+	</table>
+      </div>
+    `;
+  }
+  title() {
+    return `
+    <div class="flex justify-between"> 
+	<div class="flex gap-2.5 items-center">
+	  <h3 id="${tube_id}" class="text-lg font-bold"></h3>
+	</div>
 
-  bind_dialog() {
-    row_view_modal.addEventListener("submit", (e) => {
-      e.preventDefault();
-    });
-
-    row_view_modal.addEventListener("close", (event) => {
-      this.clean_before_closing();
-    });
+	<div class="flex gap-4">
+	  <button id="${add_id}" class="w-fit ml-auto btn" type="">
+	    Agregar
+	  </button>
+	  <button id="${edit_id}" class="w-fit ml-auto btn" type="">
+	    Editar
+	  </button>
+	  <button id="${archive_id}" class="w-fit ml-auto btn" type="">
+	    Archivar
+	  </button>
+	</div>
+    </div>
+    `;
   }
 
   async clean_before_closing() {
@@ -131,7 +182,7 @@ class TubeOverview {
     }
 
     log.debug("closing");
-    row_view_modal.close();
+    this.modal_dialog.close();
     this.table.data().clear();
   }
 
@@ -248,21 +299,8 @@ class TubeOverview {
     }
   }
 
-  bind_save_btn() {
-    modal_save_btn.addEventListener("click", async () => {
-      const mods = get_type_modifications_arrays(this.table);
-
-      log.debug(
-        `Count of the arrays. Created ${mods.created_arr.data().length}, edited ${mods.edited_arr.data().length}, deleted ${mods.deleted_arr.data().length}`,
-      );
-
-      this.handle_saving_created_fabrics(mods.created_arr);
-      this.handle_saving_edited_fabrics(mods.edited_arr);
-    });
-  }
-
   bind_add_btn() {
-    modal_add_btn.addEventListener("click", async () => {
+    this.add_btn.addEventListener("click", async () => {
       let fabricData: FabricData = {
         original_fabric: null,
         modified_fabric: null,
@@ -287,13 +325,13 @@ class TubeOverview {
 
   bind_row_right_click() {
     // Listen for clicks
-    tbody.addEventListener("contextmenu", async (event) => {
+    this.tbody.addEventListener("contextmenu", async (event) => {
       event.preventDefault();
       log.debug("right clieck");
 
       const row = event.target.closest("tr");
 
-      if (row && tbody.contains(row)) {
+      if (row && this.tbody.contains(row)) {
         const row_obj = this.table.row(row);
         const data = row_obj.data();
 
@@ -326,10 +364,10 @@ class TubeOverview {
 
   bind_row_double_click() {
     // Listen for clicks
-    tbody.addEventListener("dblclick", async (event) => {
+    this.tbody.addEventListener("dblclick", async (event) => {
       const row = event.target.closest("tr");
 
-      if (row && tbody.contains(row)) {
+      if (row && this.tbody.contains(row)) {
         const row_obj = this.table.row(row);
         const data = row_obj.data();
 
@@ -366,10 +404,10 @@ class TubeOverview {
 
   bind_inspect_row() {
     // Listen for clicks
-    tbody.addEventListener("click", async (event) => {
+    this.tbody.addEventListener("click", async (event) => {
       const row = event.target.closest("tr");
 
-      if (row && tbody.contains(row)) {
+      if (row && this.tbody.contains(row)) {
         const row_obj = this.table.row(row);
         const data = row_obj.data();
         log.debug("Inspecting row", data);
@@ -386,7 +424,7 @@ class TubeOverview {
   }
 
   cb_open_modal_tube(tube_data: TubeExtraD) {
-    modal_title.textContent = `Tubo ${tube_data.id}`;
+    this.tube_title.textContent = `Tubo ${tube_data.id}`;
     this.tube = tube_data;
 
     let fabrics = state.tableData.get_fabrics_by_tube_id(
@@ -405,13 +443,14 @@ class TubeOverview {
 
     log.debug(`Length of fabrics here is ${fabrics_data.length}`);
 
+    // this.table.clear()
     this.table.rows.add(fabrics_data);
     this.table.draw();
 
     log.debug(tube_data, fabrics);
 
-    row_view_modal.showModal();
-
+    // row_view_modal.showModal();
+    this.modal_dialog.show();
     // this.table.row(0).select()
   }
 

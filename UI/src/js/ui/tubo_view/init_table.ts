@@ -36,11 +36,12 @@ export class InitTable {
   tube: Tube;
   fabricColumns: (ColumnsConfig & { data: keyof FabricData })[];
   fabricCraft: FabricCraft;
+  tbl_element: HTMLTableElement;
 
-  constructor() {
+  constructor(tbl_element: HTMLTableElement) {
+    this.tbl_element = tbl_element;
     this.init_columns();
     this.init_table();
-    this.init_visible_group();
   }
 
   init_columns() {
@@ -89,13 +90,14 @@ export class InitTable {
   }
 
   init_table() {
-    this.table = new DataTable("#row-modal-table", {
+    this.table = new DataTable(this.tbl_element, {
       columns: this.fabricColumns,
       paging: false,
       autoWidth: true,
       searching: false,
       order: { name: "original_fabric.updated_at", dir: "asc" },
       rowCallback: render_row,
+      select: true,
       columnDefs: [
         {
           targets: "_all", // Zero-based index of the columns you want to left-align
@@ -103,24 +105,9 @@ export class InitTable {
         },
       ],
     });
-    if (typeof this.table.select === "object") {
-      console.log("Select module is successfully loaded!");
-    } else {
-      console.error("Select module is NOT loaded.");
-    }
-  }
-
-  init_visible_group() {
-    this.table
-      .columns((idx) => {
-        const config = this.table.column(idx).init();
-        return true;
-      })
-      .visible(true); // Pass boolean state directly
   }
 
   //Data is litterally the the value of a column, like an id
-
   render_plain(fabricData: FabricData, type, row, meta, table_name, column_id) {
     // log.debug("fabricdata in redenr cell", fabricData);
     if (type === "display") {
