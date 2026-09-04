@@ -2,7 +2,7 @@ import { getLogger } from "loglevel";
 import { Tube } from "../../schema.ts";
 import { Fabric } from "../../typeObj.ts";
 import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
-import { fabricDataColumn, get_partial_data } from "../utils.ts";
+import { fabricDataColumn, get_partial_data, inspect_row } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
 import { showRecycleDialog } from "../utils.ts";
@@ -71,20 +71,17 @@ class TubeOverview {
 
   constructor() {
     this.create_dialog();
-    this.init_bindings();
 
     this.initTable = new InitTable(this.tbl_element);
     this.fabricCraft = new FabricCraft(this.events);
     this.table = this.initTable.table;
+    this.init_bindings();
   }
 
   init_bindings() {
     this.bind_add_btn();
-    // this.bind_save_btn();
-    // this.bind_close_btn();
     this.bind_row_double_click();
-    this.bind_inspect_row();
-    // this.bind_dialog();
+    inspect_row(this.tbody, this.table);
     this.bind_row_right_click();
   }
 
@@ -398,19 +395,6 @@ class TubeOverview {
         log.info("Data of worked row ", data);
         row_obj.data(data);
         this.table.draw(false);
-      }
-    });
-  }
-
-  bind_inspect_row() {
-    // Listen for clicks
-    this.tbody.addEventListener("click", async (event) => {
-      const row = event.target.closest("tr");
-
-      if (row && this.tbody.contains(row)) {
-        const row_obj = this.table.row(row);
-        const data = row_obj.data();
-        log.debug("Inspecting row", data);
       }
     });
   }
