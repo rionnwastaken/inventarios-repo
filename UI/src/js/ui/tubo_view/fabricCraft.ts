@@ -290,6 +290,9 @@ export class FabricCraft {
       this.tube_id = fabricData?.original_fabric?.tube_id || extra?.tube_id;
       //Create editing copy just in case if the user decides to save
 
+      width_obj.disable(false);
+      height_obj.disable(false);
+
       let fabric;
       if (actionState == "editing") {
         let should_disable =
