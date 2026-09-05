@@ -1,0 +1,2 @@
+class OverDrawing(Exception):
+    pass

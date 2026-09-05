@@ -25,6 +25,7 @@ import {
   format_measurement,
   getDiffValue,
   render_datecell,
+  render_plain2,
 } from "../renderUtils.ts";
 import { fabric_catalago_title_id } from "../misc.ts";
 import { fabric_column_name_from_tablename } from "./utils.ts";
@@ -62,7 +63,27 @@ export class InitTable {
       // @ts-ignore
       column2({
         id: "original_width",
-        column_name: "Ancho",
+        column_name: "Ancho Original",
+        rendering_func: (info: RenderingInfo) => {
+          let data = info.data as FabricData;
+          return data.original_fabric.original_width;
+        },
+        // format_func: format_measurement
+      }), // @ts-ignore
+
+      column2({
+        id: "original_height",
+        column_name: "Altura Original",
+        rendering_func: (info: RenderingInfo) => {
+          let data = info.data as FabricData;
+          return data.original_fabric.original_height;
+        },
+      }), // @ts-ignore
+
+      // @ts-ignore
+      column2({
+        id: "original_width",
+        column_name: "Ancho Restante",
         rendering_func: (info: RenderingInfo) => {
           return render_remaining_measurement(info, "width");
         },
@@ -70,7 +91,7 @@ export class InitTable {
 
       column2({
         id: "original_height",
-        column_name: "Altura",
+        column_name: "Altura Restante",
         rendering_func: (info: RenderingInfo) => {
           return render_remaining_measurement(info, "height");
         },

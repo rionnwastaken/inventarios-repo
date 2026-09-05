@@ -39,7 +39,7 @@ export class ModalDialog {
 
       title: options.title ?? "Dialog",
       body: options.body ?? "",
-      width: options.width ?? "w-11/12 max-w-3xl",
+      width: options.width ?? "",
       height: options.height ?? "",
       closeOnBackdropClick: options.closeOnBackdropClick ?? true,
       confirmText: options.confirmText ?? "Aceptar",
@@ -70,8 +70,10 @@ export class ModalDialog {
       this.options.footerContainer_tailwind_class ||
       "flex justify-end gap-2 mt-4";
 
+    // const containerClasses =
+    // `modal-box absolute ${this.options.container_tailwind_class}  ${widthClass} ${heightClass} flex flex-col gap-4  overflow-visible`.trim();
     const containerClasses =
-      `modal-box absolute ${this.options.container_tailwind_class}  ${widthClass} ${heightClass} flex flex-col gap-4  overflow-visible`.trim();
+      `modal-box absolute ${this.options.container_tailwind_class} ${widthClass} ${heightClass} flex flex-col gap-4 overflow-visible`.trim();
 
     // 3. Build layout template using DaisyUI structure
     this.dialogEl.innerHTML = `

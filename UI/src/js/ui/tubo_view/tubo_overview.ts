@@ -44,6 +44,7 @@ export interface RowModalEvents {
   "catalog_item:added": (catalogItem: CatalogItem) => void;
   "tubo_overview:dblclick_fabric": (fabric: Fabric) => void;
   "fabric:edited": (fabrics: Fabric) => void;
+  "hierarchy-button-pressed": (fabric: Fabric) => void;
 }
 
 class TemporalID {
@@ -145,6 +146,12 @@ class TubeOverview {
 
     this.edit_action_btn.addEventListener("click", () => {
       this.actions.open_form_editing(this.selected_row);
+    });
+    this.hierarchy_action_btn.addEventListener("click", () => {
+      this.events.emit(
+        "hierarchy-button-pressed",
+        this.selected_row.data().original_fabric,
+      );
     });
   }
 
@@ -513,9 +520,6 @@ class TubeOverview {
     log.debug(tube_data, fabrics);
 
     this.modal_dialog.show();
-    this.edit_btn.disabled = true;
-    this.archive_btn.disabled = true;
-    this.hierarchy_btn.disabled = true;
   }
 
   cb_open_modal_fabric(fabric_data: Fabric) {}
