@@ -55,14 +55,6 @@ const get = (obj: Object, path: string): string => {
 
 export function render_datecell(info: RenderingInfo) {
   let value = get(info.data, info.column_id);
-  log.debug(
-    "data in render data cell value" +
-      value +
-      " data " +
-      info.data +
-      " and column name " +
-      info.column_name,
-  );
 
   log.debug("display is ", info.type);
   // return "h"
