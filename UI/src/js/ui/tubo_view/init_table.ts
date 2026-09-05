@@ -37,11 +37,13 @@ export class InitTable {
   fabricColumns: (ColumnsConfig & { data: keyof FabricData })[];
   fabricCraft: FabricCraft;
   tbl_element: HTMLTableElement;
+  selected_rows: Set<number>;
 
-  constructor(tbl_element: HTMLTableElement) {
+  constructor(tbl_element: HTMLTableElement, selected_rows) {
     this.tbl_element = tbl_element;
     this.init_columns();
     this.init_table();
+    // this.selected_rows = selected_rows
   }
 
   init_columns() {
@@ -97,7 +99,9 @@ export class InitTable {
       searching: false,
       order: { name: "original_fabric.updated_at", dir: "asc" },
       rowCallback: render_row,
-      select: true,
+      select: {
+        blurable: true,
+      },
       columnDefs: [
         {
           targets: "_all", // Zero-based index of the columns you want to left-align
@@ -187,6 +191,14 @@ function render_row(row: HTMLTableRowElement, data: FabricData, index: number) {
     cell.style.removeProperty("color");
   });
 
+  style_row_with_color(row, data, index);
+}
+
+function style_row_with_color(
+  row: HTMLTableRowElement,
+  data: FabricData,
+  index: number,
+) {
   switch (data.mode) {
     case "created":
       row.style.setProperty("background-color", "#dfffbf", "important");

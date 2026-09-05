@@ -2,8 +2,13 @@ import { getLogger } from "loglevel";
 import { Tube } from "../../schema.ts";
 import { Fabric } from "../../typeObj.ts";
 import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
-import { fabricDataColumn, get_partial_data, inspect_row } from "../utils.ts";
-import { Api, ColumnsConfig } from "datatables.net-dt";
+import {
+  createElementFromHTML,
+  fabricDataColumn,
+  get_partial_data,
+  inspect_row,
+} from "../utils.ts";
+import { Api, ApiRowMethods, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
 import { showRecycleDialog } from "../utils.ts";
 
@@ -19,12 +24,16 @@ import { FabricCraft, ItemState } from "./fabricCraft.ts";
 import { InitTable } from "./init_table.ts";
 import { ApiRowsMethods } from "datatables.net";
 import { ModalDialog } from "../dialogs/modalDialog.ts";
+import edit_icon from "../../../assets/icons/edit.png";
+import archive_icon from "../../../assets/icons/archive.png";
+import hierarchy_icon from "../../../assets/icons/gear.svg";
 import { Actions } from "./actions.ts";
 
 const add_id = "add-btn";
 const edit_id = "edit-btn";
 const archive_id = "archive-btn";
 const tube_id = "tube-id";
+const hierachy_id = "hierachy-id";
 
 const tbl_id = "tube-overview-table";
 
@@ -58,6 +67,7 @@ class TubeOverview {
   tube: Tube;
   fabricColumns: (ColumnsConfig & { data: keyof FabricData })[];
   fabricCraft: FabricCraft;
+  actions: Actions;
   initTable: InitTable;
   modal_dialog: ModalDialog;
 
@@ -65,31 +75,112 @@ class TubeOverview {
   tbody: HTMLBodyElement;
   add_btn: HTMLButtonElement;
   edit_btn: HTMLButtonElement;
+  hierarchy_btn: HTMLButtonElement;
   archive_btn: HTMLButtonElement;
   tube_title: HTMLParagraphElement;
+  selected_rows: Set<number>;
+  single_select_btns: Array<HTMLButtonElement>;
+
+  row_action_container: HTMLDivElement;
+  edit_action_btn: HTMLButtonElement;
+  archive_action_btn: HTMLButtonElement;
+  hierarchy_action_btn: HTMLButtonElement;
+
+  selected_row: ApiRowMethods<FabricData> | null;
 
   public events = new TypedEventEmitter<RowModalEvents>();
 
   constructor() {
     this.create_dialog();
 
-    this.initTable = new InitTable(this.tbl_element);
-    this.fabricCraft = new FabricCraft(this.events);
+    this.initTable = new InitTable(this.tbl_element, this.selected_rows);
     this.table = this.initTable.table;
     this.fabricCraft = new FabricCraft(this.events);
     this.actions = new Actions(this.fabricCraft, this.table);
     this.init_bindings();
+    this.selected_rows = new Set();
+
+    this.single_select_btns = new Array();
+    // this.single_select_btns.push(this.edit_btn, this.hierarchy_btn);
+
+    this.create_action_on_row_elements();
   }
 
   init_bindings() {
     this.bind_add_btn();
-    this.bind_row_double_click();
+    // this.bind_row_double_click();
     inspect_row(this.tbody, this.table);
     this.bind_row_right_click();
+    this.select_blur_clear_actions_after_clicking_anywhere_else();
+    this.bind_row_click();
+  }
+
+  private create_action_on_row_elements() {
+    function create_icon(src, id, name) {
+      // Use explicit dimensions (e.g., w-8 h-8) instead of w-fit/h-fit for reliable circular icons
+      let icon_tw =
+        "flex items-center justify-center w-8 h-8 rounded-full bg-white  hover:bg-slate-200 transition-colors shadow-md active:scale-95 shrink-0";
+
+      return `
+    <button type="button" title="Editar" class="${icon_tw}" id="${id}">
+      <img src="${src}" alt="${name}" class="w-4 h-4 pointer-events-none object-contain" />
+    </button>
+  `;
+    }
+    this.row_action_container = createElementFromHTML(`
+
+      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
+	${create_icon(edit_icon, "edit-action", "Editar Tela")}
+	${create_icon(archive_icon, "archive-action", "Archivar Tela")}
+	${create_icon(hierarchy_icon, "hierarchy-action", "Ver jerarquia de tela")}
+      </div>
+`);
+
+    this.edit_action_btn =
+      this.row_action_container.querySelector("#edit-action");
+    this.archive_action_btn =
+      this.row_action_container.querySelector("#archive-action");
+    this.hierarchy_action_btn =
+      this.row_action_container.querySelector("#hierarchy-action");
+
+    this.edit_action_btn.addEventListener("click", () => {
+      this.actions.open_form_editing(this.selected_row);
+    });
+  }
+
+  private update_row_actions_overlay(row: ApiRowMethods<FabricData>) {
+    this.remove_actions_overlay(row);
+    this.render_actions_overlay(row);
+  }
+
+  /**
+   * Renders and attaches the overlay to the target row's last cell.
+   */
+  private render_actions_overlay(row: any) {
+    let node = row.node();
+    let lastCell = node.cells[node.cells.length - 1];
+
+    if (!lastCell) return;
+
+    lastCell.classList.add("relative");
+
+    lastCell.appendChild(this.row_action_container);
+    log.debug("image data ", edit_icon);
+  }
+
+  /**
+   * Removes all active overlays from the table DOM.
+   */
+  private remove_actions_overlay(row: ApiRowMethods<FabricData>) {
+    let activeOverlays = this.table
+      .table()
+      .body()
+      .querySelectorAll(".dt-row-overlay");
+    activeOverlays.forEach((el) => el.remove());
   }
 
   create_dialog() {
-    const a_tw = "min-w-5xl min-h-5xl";
+    const a_tw = "min-w-7xl min-h-5xl";
     this.modal_dialog = new ModalDialog({
       body: this.body(),
       title: this.title(),
@@ -116,13 +207,11 @@ class TubeOverview {
     this.tube_title = d.querySelector(`#${tube_id}`);
     this.tbl_element = d.querySelector(`#${tbl_id}`);
     this.add_btn = d.querySelector(`#${add_id}`);
-    this.archive_btn = d.querySelector(`#${archive_id}`);
-    this.edit_btn = d.querySelector(`#${edit_id}`);
     this.tbody = d.querySelector(`#${tbl_id} tbody`);
   }
   body() {
     return `
-      <div>
+      <div class="mr-20">
 	<table id="${tbl_id}" class="display">
 	  <thead></thead>
 	  <tbody></tbody>
@@ -140,12 +229,6 @@ class TubeOverview {
 	<div class="flex gap-4">
 	  <button id="${add_id}" class="w-fit ml-auto btn" type="">
 	    Agregar
-	  </button>
-	  <button id="${edit_id}" class="w-fit ml-auto btn" type="">
-	    Editar
-	  </button>
-	  <button id="${archive_id}" class="w-fit ml-auto btn" type="">
-	    Archivar
 	  </button>
 	</div>
     </div>
@@ -312,6 +395,7 @@ class TubeOverview {
       log.debug("right clieck");
 
       const row = event.target.closest("tr");
+      log.debug(row);
 
       if (row && this.tbody.contains(row)) {
         const row_obj = this.table.row(row);
@@ -320,44 +404,78 @@ class TubeOverview {
     });
   }
 
-  bind_row_double_click() {
+  bind_row_click() {
     // Listen for clicks
-    this.tbody.addEventListener("dblclick", async (event) => {
-      const row = event.target.closest("tr");
+    this.tbody.addEventListener("click", async (event) => {
+      this.remove_actions_overlay(null);
+      setTimeout(async () => {
+        log.debug("click");
+        const row_el = event.target.closest("tr");
+        let row: ApiRowMethods<FabricData>;
+        let data: FabricData = null;
 
-      if (row && this.tbody.contains(row)) {
-        const row_obj = this.table.row(row);
-        const data = row_obj.data();
-
-        if (data == undefined) {
-          log.debug("Double click row undefined");
+        if (row_el && this.tbody.contains(row_el)) {
+          row = this.table.row(row_el);
+          data = row.data();
+        }
+        if (data == null) {
+          log.debug("click row undefined");
           return;
         }
 
-        log.debug(`Dobule clicking row with mode ${data.mode} and data`, data);
-
-        //We are passing data by reference
-        if (data.mode == "created") {
-          await this.fabricCraft.show(data, "editing_created");
+        const hasMoreThanOneSelected = this.table.rows(".selected").count() > 1;
+        if (hasMoreThanOneSelected) {
+          this.selected_row = null;
+          this.remove_actions_overlay(null);
+          log.debug("More than one row is selected.");
+          return;
         }
 
-        if (data.mode == "normal") {
-          this.events.emit(
-            "tubo_overview:dblclick_fabric",
-            data.original_fabric,
-          );
+        this.update_row_actions_overlay(row);
+        if (this.selected_row == null) {
+          log.debug("Assing row", row);
+          this.selected_row = row;
+          return;
         }
 
-        if (data.mode == "edited") {
-          await this.fabricCraft.show(data, "editing");
+        let data_id = data.original_fabric.id;
+        let selected_id = this.selected_row.data().original_fabric.id;
+        if (data_id == selected_id) {
+          this.selected_row = null;
+          await this.handle_fabric_selection(row);
+          return;
         }
-
-        log.info("Redrawing table");
-        log.info("Data of worked row ", data);
-        row_obj.data(data);
-        this.table.draw(false);
-      }
+        this.selected_row = row;
+      }, 0);
     });
+  }
+
+  select_blur_clear_actions_after_clicking_anywhere_else() {
+    this.table.on("select-blur", () => {
+      this.remove_actions_overlay(null);
+      this.selected_row = null;
+    });
+  }
+
+  async handle_fabric_selection(row: ApiRowMethods<FabricData>) {
+    const data = row.data();
+    if (data.mode == "created") {
+      await this.fabricCraft.show(data, "editing_created");
+    }
+
+    if (data.mode == "normal") {
+      this.events.emit("tubo_overview:dblclick_fabric", data.original_fabric);
+      //SHOULDNT I RETURN?
+    }
+
+    if (data.mode == "edited") {
+      await this.fabricCraft.show(data, "editing");
+    }
+
+    log.info("Redrawing table");
+    log.info("Data of worked row ", data);
+    row.data(data);
+    this.table.draw(false);
   }
 
   get_tom_select_id(tablename) {
@@ -394,9 +512,10 @@ class TubeOverview {
 
     log.debug(tube_data, fabrics);
 
-    // row_view_modal.showModal();
     this.modal_dialog.show();
-    // this.table.row(0).select()
+    this.edit_btn.disabled = true;
+    this.archive_btn.disabled = true;
+    this.hierarchy_btn.disabled = true;
   }
 
   cb_open_modal_fabric(fabric_data: Fabric) {}
