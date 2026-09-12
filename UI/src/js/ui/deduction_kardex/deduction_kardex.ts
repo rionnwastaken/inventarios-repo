@@ -26,7 +26,6 @@ import icon from "../../../assets/icons/spare_fabric_symbol.svg";
 
 const title_catalago_id = "title-catalago-text-id";
 const initial_measurement_container_id = "initial-measurement-container";
-const remaining_measurement_container_id = "remaining-measurement-container";
 
 export interface DeductionKardexEvents {
   "deduction:modified": (fabric: Fabric) => void;
@@ -107,21 +106,7 @@ class DeductionKardex {
     </div>
   </div>
 
-  <!-- Arrow Indicator -->
-  <div class="text-zinc-800">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-  </div>
 
-  <!-- Medidas Restantes Card (Soft Reddish Theme) -->
-  <div class="flex flex-col p-2.5 rounded-lg bg-white border border-red-200 text-xs"> 
-    <span class="font-semibold uppercase tracking-wider text-red-700 mb-1 flex items-center gap-1">
-      Medidas Restantes
-    </span>
-    <div id="${remaining_measurement_container_id}" class="flex flex-col justify-start  font-mono text-red-900">
-      <p class="font-bold text-red-600"></p>
-    </div>
-  </div>
-</div>
 
     </div>
   </div>
@@ -321,9 +306,6 @@ class DeductionKardex {
     this.title_catalago_p = d.querySelector(`#${title_catalago_id}`);
     this.initial_measurement_span = d.querySelector(
       `#${initial_measurement_container_id} span`,
-    );
-    this.remaining_measurement_span = d.querySelector(
-      `#${remaining_measurement_container_id} p`,
     );
   }
 
