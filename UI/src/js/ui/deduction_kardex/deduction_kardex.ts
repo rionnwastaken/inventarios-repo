@@ -180,14 +180,8 @@ class DeductionKardex {
     this.wrapper
       .querySelector(".table-container")
       ?.appendChild(this.table_element);
-    // this.update_display_remaining_measurements();
 
     return this.wrapper;
-  }
-
-  update_display_remaining_measurements() {
-    let rer_meau = calc_remaining_fabric_measurements(this.fabric);
-    this.remaining_measurement_span.textContent = `${rer_meau.remaining_width} x ${rer_meau.remaining_height} mts`;
   }
 
   update_display_initial_measurements() {
@@ -267,7 +261,6 @@ class DeductionKardex {
     log.info("Fabric dat after updating deduction ", result.fabric);
     this.fabric = result.fabric;
     state.tableData.update_fabric_by_id(result.fabric);
-    this.update_display_remaining_measurements();
     console.log("result here in kardex:", result);
     this.table.draw();
     this.events.emit("deduction:modified", this.fabric);
@@ -312,7 +305,6 @@ class DeductionKardex {
   cb_show_kardex(fabric: Fabric) {
     this.fabric = fabric;
     this.update_title(fabric);
-    this.update_display_remaining_measurements();
     this.update_display_initial_measurements();
     log.debug("Fabric received in kardex", fabric);
 
