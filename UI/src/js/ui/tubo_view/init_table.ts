@@ -6,6 +6,7 @@ import {
   column,
   column2,
   fabricDataColumn,
+  num,
   RenderingInfo,
 } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
@@ -62,40 +63,34 @@ export class InitTable {
 
       // @ts-ignore
       column2({
-        id: "original_width",
-        column_name: "Ancho Original",
+        id: "",
+        column_name: "Medidas Entrada",
         rendering_func: (info: RenderingInfo) => {
           let data = info.data as FabricData;
-          return data.original_fabric.original_width;
+          return `${data.original_fabric.original_width} x ${data.original_fabric.original_height} mts`;
         },
-        // format_func: format_measurement
-      }), // @ts-ignore
-
-      column2({
-        id: "original_height",
-        column_name: "Altura Original",
-        rendering_func: (info: RenderingInfo) => {
-          let data = info.data as FabricData;
-          return data.original_fabric.original_height;
-        },
-      }), // @ts-ignore
+      }),
 
       // @ts-ignore
       column2({
-        id: "original_width",
-        column_name: "Ancho Restante",
+        id: "",
+        column_name: "% Restante",
         rendering_func: (info: RenderingInfo) => {
-          return render_remaining_measurement(info, "width");
-        },
-      }), // @ts-ignore
+          let data = info.data as FabricData;
+          let whole =
+            num(data.original_fabric.original_width) *
+            num(data.original_fabric.original_height);
+          let remaining = whole;
+          data.original_fabric.deductions.forEach((deduction) => {
+            let deduction_cubit_meter =
+              num(deduction.removed_width) * num(deduction.removed_height);
+            remaining -= deduction_cubit_meter;
+          });
 
-      column2({
-        id: "original_height",
-        column_name: "Altura Restante",
-        rendering_func: (info: RenderingInfo) => {
-          return render_remaining_measurement(info, "height");
+          let percentage = ((remaining * 100) / whole).toFixed(2);
+          return `${percentage}%`;
         },
-      }), // @ts-ignore
+      }),
 
       // @ts-ignore
       column2({
