@@ -143,7 +143,7 @@ class Fabric(TimestampMixin, table=True):
     original_width: Decimal
     original_height: Decimal
     is_archived: bool = Field(default=False)  # Fabrics runs out of fabric to be used
-    remaining_cubic_meters: Decimal = Field(default=100)
+    remaining_cubic_meters: Decimal = Field(default=Decimal(100))
 
     parent_deduction_id: Optional[int] = Field(
         default=None,
