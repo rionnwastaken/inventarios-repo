@@ -90,7 +90,7 @@ class DeductionKardex {
     this.title_el = createElementFromHTML(`
   <div class="flex justify-between"> 
     <div> 
-      <h1>Deduccion Kardex</h1>
+      <h1>Kardex de Salida de Tela</h1>
       <h2 id="${title_catalago_id}"></h2>
     </div>
     
@@ -136,7 +136,7 @@ class DeductionKardex {
       //@ts-ignore
       column2({
         id: "",
-        column_name: "Deduccion",
+        column_name: "Salidas",
         rendering_func: (info: RenderingInfo) => {
           let data = info.data as FabricDeduction;
           let width = data.removed_width;
