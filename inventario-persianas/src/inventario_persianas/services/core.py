@@ -72,7 +72,7 @@ def recent_tubes_and_fabrics():
     stmt_tubes = (
         select(Tube)
         .options(
-            selectinload(Tube.fabrics).options(selectinload(Fabric.child_deductions)),
+            selectinload(Tube.fabrics).options(selectinload(Fabric.deductions)),
             joinedload(Tube.tube_rectified),
         )
         .order_by(desc(Tube.updated_at))
@@ -95,7 +95,7 @@ def recent_tubes_and_fabrics():
 
         tubes_obj.append(tube_dict)
         for fabric in fabrics_list:
-            deductions = fabric.child_deductions
+            deductions = fabric.deductions
             obj = fabric.model_dump()
             obj["deductions"] = []
             for deduct in deductions:
@@ -152,33 +152,30 @@ def add_fabric(payload: dict):
 
 
 @handle_db_exceptions
-def update_fabrics(data: list[dict]) -> tuple[List[dict],int]:
+def update_fabrics(data: list[dict]) -> tuple[List[dict], int]:
     updated_fabrics = []
     with db.session.begin():
         for index, item in enumerate(data):
-
             fabric_id = item.get("id")
-            payload = item.get("partial_data",{})
+            payload = item.get("partial_data", {})
 
             fabric = db.session.get(
-                Fabric, fabric_id, options=[selectinload(Fabric.child_deductions)]
+                Fabric, fabric_id, options=[selectinload(Fabric.deductions)]
             )
             if not fabric:
                 raise ValueError(f"Fabric with id {fabric_id} not found.")
 
-            if len(fabric.child_deductions) > 0 and (
-                payload.get(
-                    "original_width" or payload.get("original_height")
-                )
+            if len(fabric.deductions) > 0 and (
+                payload.get("original_width" or payload.get("original_height"))
             ):
                 raise ValidationError(
                     "No se puede actualizar las medidas de la tela mienstras que tenga deducciones"
                 )
 
             fabric_data_before_update = fabric.model_dump(mode="json")
-            partial_update_payload = FabricUpdate.model_validate(
-                payload
-            ).model_dump(exclude_unset=True)
+            partial_update_payload = FabricUpdate.model_validate(payload).model_dump(
+                exclude_unset=True
+            )
 
             partial_update_payload_json = FabricUpdate.model_validate(
                 payload
@@ -206,12 +203,11 @@ def update_fabrics(data: list[dict]) -> tuple[List[dict],int]:
             db.session.flush()
             fabric_obj = fabric.model_dump(mode="json")
             fabric_obj["deductions"] = [
-                d.model_dump(mode="json") for d in fabric.child_deductions
+                d.model_dump(mode="json") for d in fabric.deductions
             ]
             updated_fabrics.append(fabric_obj)
 
-        return updated_fabrics,200
-
+        return updated_fabrics, 200
 
 
 def validate_fabric_deduction_limits(
@@ -235,7 +231,7 @@ def validate_fabric_deduction_limits(
 
     remaining_height = fabric.original_height
 
-    for d in fabric.child_deductions:
+    for d in fabric.deductions:
         if current_deduction_id != None and d.id == current_deduction_id:
             continue
 
@@ -255,6 +251,14 @@ def validate_fabric_deduction_limits(
         )
 
     return True
+
+
+def validate_deduction(fabric: Fabric, deduction: FabricDeduction):
+
+    whole_m2 = fabric.original_height * fabric.original_width
+    used_m2 = whole_m2
+
+    # for deduct in fabric.deduct
 
 
 def create_child_fabric(parent_fabric: Fabric, parent_deduction: FabricDeduction):
@@ -329,19 +333,19 @@ def deduction_new(deduction):
 
         fabric = db.session.get(
             Fabric,
-            fabricDeduction.parent_fabric_id,
-            options=[selectinload(Fabric.child_deductions)],
+            fabricDeduction.fabric_id,
+            options=[selectinload(Fabric.deductions)],
         )
         if not fabric:
             raise NoResultFound(
-                f"Fabric was not found with id {fabricDeduction.parent_fabric_id}"
+                f"Fabric was not found with id {fabricDeduction.fabric_id}"
             )
 
         measurement_valid = validate_fabric_deduction_limits(
             fabric, fabricDeduction.removed_width, fabricDeduction.removed_height
         )
 
-        fabric.child_deductions.append(fabricDeduction)
+        fabric.deductions.append(fabricDeduction)
         db.session.flush()
         fabricDedudction_json = fabricDeduction.model_dump(mode="json")
 
@@ -359,7 +363,7 @@ def deduction_new(deduction):
         fabric_obj["deductions"] = []
         fabricDeduction_obj = fabricDeduction.model_dump()
 
-        for deduct in fabric.child_deductions:
+        for deduct in fabric.deductions:
             dedudct_obj = deduct.model_dump()
             fabric_obj["deductions"].append(dedudct_obj)
 
@@ -374,7 +378,7 @@ def update_deduction(
     log.debug(fabric_id, deduction_payload)
     with db.session.begin():
         fabric = db.session.get(
-            Fabric, fabric_id, options=[selectinload(Fabric.child_deductions)]
+            Fabric, fabric_id, options=[selectinload(Fabric.deductions)]
         )
         fabricDeduction = db.session.get(
             FabricDeduction,
@@ -410,7 +414,7 @@ def update_deduction(
         child_fabric = fabricDeduction.child_fabric
         if not child_fabric:
             raise ValueError("child_fabric es nulo en la deduccion (No es posible)")
-        if len(child_fabric.child_deductions) > 0:
+        if len(child_fabric.deductions) > 0:
             raise Exception(
                 "No se puede modificar la deduccion ya que la tela creada por deduccion a tenido por su cuenta una modificacion, si se desea hacer la modificacion, primero se tiene que quitar todas las deducciones de la tela creada por la deduccion"
             )
@@ -452,7 +456,7 @@ def update_deduction(
 
         fabric_obj = fabric.model_dump()
         fabric_obj["deductions"] = []
-        for d in fabric.child_deductions:
+        for d in fabric.deductions:
             deduct_obj = d.model_dump()
             fabric_obj["deductions"].append(deduct_obj)
 

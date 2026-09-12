@@ -145,14 +145,6 @@ class Fabric(TimestampMixin, table=True):
     is_archived: bool = Field(default=False)  # Fabrics runs out of fabric to be used
     remaining_cubic_meters: Decimal = Field(default=Decimal(100))
 
-    parent_deduction_id: Optional[int] = Field(
-        default=None,
-        foreign_key="fabric_deduction.id",
-        sa_column_kwargs={"unique": True},
-    )
-    # Track nesting depth (0 = primary roll from supplier, 1 = offcut, 2 = offcut of offcut...)
-    rank: int = Field(default=0, index=True)
-
     # Relationships
     tube: Optional[Tube] = Relationship(back_populates="fabrics")
     blind_model: Optional[BlindModel] = Relationship(back_populates="fabrics")
@@ -163,16 +155,12 @@ class Fabric(TimestampMixin, table=True):
 
     supplier: Optional[Supplier] = Relationship(back_populates="fabrics")
     comments: List["FabricComment"] = Relationship(back_populates="fabric")
-    child_deductions: List["FabricDeduction"] = Relationship(
-        back_populates="parent_fabric",
+    deductions: List["FabricDeduction"] = Relationship(
+        back_populates="fabric",
         sa_relationship_kwargs={
-            "foreign_keys": "FabricDeduction.parent_fabric_id",
+            "foreign_keys": "FabricDeduction.fabric_id",
             "cascade": "all, delete-orphan",
         },
-    )
-    parent_deduction: Optional["FabricDeduction"] = Relationship(
-        back_populates="child_fabric",
-        sa_relationship_kwargs={"foreign_keys": "Fabric.parent_deduction_id"},
     )
 
     @field_serializer(
@@ -233,20 +221,16 @@ class FabricDeduction(TimestampMixin, table=True):
     __tablename__ = "fabric_deduction"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    parent_fabric_id: int = Field(foreign_key="fabric.id")
+    fabric_id: int = Field(foreign_key="fabric.id")
 
     removed_height: Decimal
     removed_width: Decimal
 
     comment: Optional[str] = Field(default=None, max_length=500)
 
-    parent_fabric: Fabric = Relationship(
-        back_populates="child_deductions",
-        sa_relationship_kwargs={"foreign_keys": "FabricDeduction.parent_fabric_id"},
-    )
-    child_fabric: Optional[Fabric] = Relationship(
-        back_populates="parent_deduction",
-        sa_relationship_kwargs={"foreign_keys": "Fabric.parent_deduction_id"},
+    fabric: Fabric = Relationship(
+        back_populates="deductions",
+        sa_relationship_kwargs={"foreign_keys": "FabricDeduction.fabric_id"},
     )
 
     @field_serializer("removed_height", "removed_width", mode="plain")
@@ -298,20 +282,16 @@ def update_fabric_and_tube_on_deduction_change(
 
     # 1. Update parent Fabric
     connection.execute(
-        update(Fabric)
-        .where(Fabric.id == target.parent_fabric_id)
-        .values(updated_at=now)
+        update(Fabric).where(Fabric.id == target.fabric_id).values(updated_at=now)
     )
 
     # 2. Query tube_id directly using the Core connection
     tube_id = connection.scalar(
-        select(Fabric.tube_id).where(Fabric.id == target.parent_fabric_id)
+        select(Fabric.tube_id).where(Fabric.id == target.fabric_id)
     )
 
     if tube_id is None:
-        log.error(
-            "Fabric or Tube ID not found for fabric_id %s", target.parent_fabric_id
-        )
+        log.error("Fabric or Tube ID not found for fabric_id %s", target.fabric_id)
         return
 
     # 3. Update grandparent Tube
