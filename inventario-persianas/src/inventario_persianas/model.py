@@ -143,6 +143,7 @@ class Fabric(TimestampMixin, table=True):
     original_width: Decimal
     original_height: Decimal
     is_archived: bool = Field(default=False)  # Fabrics runs out of fabric to be used
+    remaining_cubic_meters: Decimal = Field(default=100)
 
     parent_deduction_id: Optional[int] = Field(
         default=None,
@@ -174,7 +175,9 @@ class Fabric(TimestampMixin, table=True):
         sa_relationship_kwargs={"foreign_keys": "Fabric.parent_deduction_id"},
     )
 
-    @field_serializer("original_height", "original_width", mode="plain")
+    @field_serializer(
+        "original_height", "original_width", "remaining_cubic_meters", mode="plain"
+    )
     def serialize_decimal(self, v: Decimal) -> str:
         return f"{v.normalize():f}" if v is not None else v
 

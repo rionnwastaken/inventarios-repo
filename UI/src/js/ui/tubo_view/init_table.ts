@@ -77,17 +77,7 @@ export class InitTable {
         column_name: "% Restante",
         rendering_func: (info: RenderingInfo) => {
           let data = info.data as FabricData;
-          let whole =
-            num(data.original_fabric.original_width) *
-            num(data.original_fabric.original_height);
-          let remaining = whole;
-          data.original_fabric.deductions.forEach((deduction) => {
-            let deduction_cubit_meter =
-              num(deduction.removed_width) * num(deduction.removed_height);
-            remaining -= deduction_cubit_meter;
-          });
-
-          let percentage = ((remaining * 100) / whole).toFixed(2);
+          let percentage = data?.original_fabric?.remaining_cubic_meters ?? 100;
           return `${percentage}%`;
         },
       }),
