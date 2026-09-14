@@ -9,7 +9,6 @@ export interface ModalDialogOptions {
   body?: string | HTMLElement;
   width?: string;
   height?: string;
-  closeOnBackdropClick?: boolean;
   confirmText?: string;
   cancelText?: string;
   confirmClass?: string;
@@ -41,7 +40,6 @@ export class ModalDialog {
       body: options.body ?? "",
       width: options.width ?? "",
       height: options.height ?? "",
-      closeOnBackdropClick: options.closeOnBackdropClick ?? true,
       confirmText: options.confirmText ?? "Aceptar",
       cancelText: options.cancelText ?? "Cancelar",
       confirmClass: options.confirmClass ?? "btn-primary",
@@ -164,16 +162,16 @@ export class ModalDialog {
   }
 
   private _bindEvents(): void {
-    if (this.options.closeOnBackdropClick) {
-      const backdropBtn = this.dialogEl.querySelector<HTMLButtonElement>(
-        ".modal-backdrop button",
-      );
-      backdropBtn?.addEventListener("click", () => this.close());
-    }
+    this.dialogEl.addEventListener("cancel", (e) => {
+      e.preventDefault();
+      void this.handleCancel();
+    });
 
+    // 2. Clean up DOM when dialog actually closes
     this.dialogEl.addEventListener("close", () => {
+      log.debug("dialog closing");
       if (typeof this.options.onClose === "function") {
-        this.options.onClose(this);
+        void this.options.onClose(this);
       }
       this.dialogEl.remove();
     });
@@ -192,7 +190,7 @@ export class ModalDialog {
       const result = await this.options.onCancel(this);
       if (result === false) return;
     }
-    // this.close();
+    this.close();
   }
 
   public show(): void {
