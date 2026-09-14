@@ -3,6 +3,7 @@ import { Fabric, ItemState } from "../../typeObj";
 import { ModalState } from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog";
 import {
+  calc_available_cubic_meters,
   createElementFromHTML,
   get_partial_data,
   num,
@@ -150,7 +151,6 @@ export class Form {
     log.debug("update_deduction()");
     const values = this.validate_fileds();
     if (values == null) {
-      this.global_error.textContent = "No se han realizado modificaciones";
       return;
     }
 
@@ -243,6 +243,18 @@ export class Form {
       return null;
     }
 
+    let available_m2 = calc_available_cubic_meters(this.fabric);
+
+    if (this.modal_state == "editing") {
+      available_m2 +=
+        num(this.deduction.removed_width) * num(this.deduction.removed_height);
+    }
+
+    if (width * height > available_m2) {
+      this.global_error.textContent = `La medida de  (${width * height}m2) que quiere ingresar excede los metros cuadrados disponibles ${available_m2}m2`;
+      return null;
+    }
+
     return values;
   }
 
@@ -251,8 +263,7 @@ export class Form {
     let values = this.validate_fileds();
 
     log.debug(values);
-    if (!this.deduction_values_is_edited(values)) {
-      this.global_error.textContent = "No se han realizado modificaciones";
+    if (values == null) {
       return;
     }
 

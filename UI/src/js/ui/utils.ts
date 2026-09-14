@@ -299,6 +299,15 @@ export function inspect_row(tbody, tbl) {
     }
   });
 }
+export function calc_available_cubic_meters(fabric: Fabric) {
+  let total = num(fabric.original_width) * num(fabric.original_height);
+  log.debug(
+    "calc_available_cubic_meters remaining percent " +
+      num(fabric.remaining_percent),
+    "  total " + total,
+  );
+  return (num(fabric.remaining_percent) * total) / 100;
+}
 
 export function num(val: string | number | null | undefined): number {
   if (val === null || val === undefined) return 0;
