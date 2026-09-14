@@ -2,7 +2,6 @@ import { getLogger } from "loglevel";
 import { Fabric, Tube } from "../../schema.ts";
 import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
 import {
-  calc_remaining_fabric_measurements,
   column,
   column2,
   fabricDataColumn,

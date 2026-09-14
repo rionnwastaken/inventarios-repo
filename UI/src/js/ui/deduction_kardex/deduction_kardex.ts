@@ -2,7 +2,6 @@
 import { FabricData, Fabric, ModalState, FabricDeduction } from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog";
 import {
-  calc_remaining_fabric_measurements,
   column2,
   createElementFromHTML,
   inspect_row,

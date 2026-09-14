@@ -237,36 +237,6 @@ export function createElementFromHTML<T extends HTMLElement = HTMLElement>(
   return element as T;
 }
 
-export function calc_remaining_fabric_measurements(fabric: Fabric) {
-  log.debug("calc_remaining_fabric_measurements");
-  if (!fabric) {
-    log.error("calc_remaining_fabric_measurements FABRIC is null");
-    return null;
-  }
-
-  let height = num(fabric.original_height) * 100;
-  let width = num(fabric.original_width);
-  let deductions = fabric.deductions || [];
-
-  deductions.forEach((deduction) => {
-    height -= num(deduction.removed_height) * 100;
-    log.debug(`Width and height ${fabric.original_width} ${height}`);
-  });
-
-  height = height / 100;
-
-  log.debug({
-    remaining_width: width,
-    remaining_height: height,
-  });
-
-  log.debug("remaining height is ", height);
-  return {
-    remaining_width: width,
-    remaining_height: height,
-  };
-}
-
 export function ObjectChanged(
   original: Object,
   modified: Object,

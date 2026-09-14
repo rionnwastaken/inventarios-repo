@@ -3,7 +3,6 @@ import { Fabric, ItemState } from "../../typeObj";
 import { ModalState } from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog";
 import {
-  calc_remaining_fabric_measurements,
   createElementFromHTML,
   get_partial_data,
   num,

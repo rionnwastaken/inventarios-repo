@@ -11,7 +11,6 @@ import DataTable from "datatables.net-dt";
 
 import "datatables.net-dt/css/dataTables.dataTables.css";
 import {
-  calc_remaining_fabric_measurements,
   column,
   column2,
   fabricColumn,
