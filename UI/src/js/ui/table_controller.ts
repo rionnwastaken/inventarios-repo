@@ -17,6 +17,8 @@ import {
   fabricColumn,
   fcolumn,
   inspect_row,
+  num,
+  RenderingInfo,
   tcolumn,
   tubeColumn,
 } from "./utils.ts";
@@ -75,29 +77,23 @@ class TableController {
         }),
       ),
 
-      fabricColumn({
-        id: "original_width",
-        column_name: "Ancho",
-        rendering_func: render_plain2,
-        format_func: (value, data: Fabric) => {
-          let measurements = calc_remaining_fabric_measurements(data);
-          if (!measurements) {
-            return "";
-          }
-          return measurements.remaining_width;
+      column2({
+        id: "",
+        column_name: "Medidas Entrada",
+        group: "fabric",
+        rendering_func: (info: RenderingInfo) => {
+          let data = info.data as Fabric;
+          return `${data.original_width} x ${data.original_height} mts`;
         },
       }),
 
-      fabricColumn({
-        id: "original_height",
-        column_name: "Alto",
-        rendering_func: render_plain2,
-        format_func: (value, data: Fabric) => {
-          let measurements = calc_remaining_fabric_measurements(data);
-          if (!measurements) {
-            return "";
-          }
-          return measurements.remaining_height;
+      column2({
+        id: "",
+        column_name: "% Restante",
+        group: "fabric",
+        rendering_func: (info: RenderingInfo) => {
+          let data = info.data as Fabric;
+          return `${data.remaining_percent}`;
         },
       }),
     ];
