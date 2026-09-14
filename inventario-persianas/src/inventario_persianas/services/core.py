@@ -242,7 +242,7 @@ def validate_fabric_deduction_limits(
 
     if width > fabric.original_width:
         raise OverDrawing(
-            "No se puede quitar {width} mts del ancho  {fabric.original_width} mts\nFabric ID {fabric.id}:"
+            f"No se puede quitar {width} mts del ancho  {fabric.original_width} mts\nFabric ID {fabric.id}:"
         )
 
     if height > remaining_height:
@@ -253,17 +253,45 @@ def validate_fabric_deduction_limits(
     return True
 
 
-def validate_deduction(fabric: Fabric, deduction: FabricDeduction):
+def validate_deduction(
+    fabric: Fabric, deduction: FabricDeduction, dedudction_edited=False
+):
 
-    whole_m2 = fabric.original_height * fabric.original_width
-    used_m2 = whole_m2
+    used_m2 = fabric.original_height * fabric.original_width
+    deduction_m2 = deduction.removed_height * deduction.removed_height
+
+    for deduct in fabric.deductions:
+        if dedudction_edited and deduct.id == deduction.id:
+            continue
+        m2 = deduct.removed_height * deduct.removed_width
+        used_m2 -= m2
+
+    if deduction_m2 > used_m2:
+        raise OverDrawing(f"No se puede quitar {deduction_m2} m2 a {used_m2} m2")
 
     # for deduct in fabric.deduct
 
 
+def update_available_fabric_percentage(fabric: Fabric):
 
+    old_values = fabric.model_dump(mode="json")
+    whole_m2 = fabric.original_height * fabric.original_width
+    rem_m2 = whole_m2
 
+    for deduct in fabric.deductions:
+        rem_m2 -= deduct.removed_height * deduct.removed_width
 
+    remaining_percent = (rem_m2 * 100) / whole_m2
+    fabric.remaining_percent = remaining_percent
+
+    AuditLogger.log(
+        "Update",
+        "fabric",
+        fabric.id,
+        message="Percentage",
+        old_values=old_values,
+        new_values=fabric.model_dump(mode="json", include={"remaining_percent"}),
+    )
 
 
 @handle_db_exceptions
@@ -282,13 +310,12 @@ def deduction_new(deduction):
                 f"Fabric was not found with id {fabricDeduction.fabric_id}"
             )
 
-        measurement_valid = validate_fabric_deduction_limits(
-            fabric, fabricDeduction.removed_width, fabricDeduction.removed_height
-        )
+        validate_deduction(fabric, fabricDeduction)
 
         fabric.deductions.append(fabricDeduction)
         db.session.flush()
         fabricDedudction_json = fabricDeduction.model_dump(mode="json")
+        update_available_fabric_percentage(fabric)
 
         AuditLogger.log(
             "Insert",
@@ -340,20 +367,18 @@ def update_deduction(
                 f"Fabric id {fabric_id}: 'partial_data' contains no valid update fields. {deduction_payload}"
             )
 
-        measurement_valid = validate_fabric_deduction_limits(
-            fabric,
-            partial_payload_update.get("removed_width", fabricDeduction.removed_width),
-            partial_payload_update.get(
-                "removed_height", fabricDeduction.removed_height
-            ),
-            current_deduction_id=deduction_id,  # Ignore old values of this deduction during calculation
-        )
-
         before_fabricDeduction_obj = fabricDeduction.model_dump()
         before_fabricDeduction_json = fabricDeduction.model_dump(mode="json")
 
         fabricDeduction.sqlmodel_update(partial_payload_update)
         db.session.flush()
+
+        validate_deduction(
+            fabric,
+            fabricDeduction,
+            dedudction_edited=True,  # Ignore old values of this deduction during calculation
+        )
+        update_available_fabric_percentage(fabric)
 
         log.debug(f"d before refresh {fabricDeduction}")
 
