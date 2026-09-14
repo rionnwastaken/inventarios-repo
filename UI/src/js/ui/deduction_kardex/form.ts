@@ -42,6 +42,7 @@ export class Form {
 
   constructor() {
     this.init_elements();
+    this.create_dialog();
   }
 
   private init_elements(): void {
@@ -125,6 +126,7 @@ export class Form {
   public reset(): void {
     this.width_obj.input.value = "";
     this.height_obj.input.value = "";
+    this.global_error.textContent = "";
     this.comment_obj.input.value = null;
   }
 
@@ -309,7 +311,6 @@ export class Form {
       this.deduction = deduction;
       this.resolve_promise = resolve;
 
-      this.create_dialog();
       this.modalDialog.show();
 
       if (this.modal_state == "editing") {
