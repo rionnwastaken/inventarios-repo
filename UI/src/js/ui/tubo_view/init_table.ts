@@ -136,53 +136,6 @@ export class InitTable {
 }
 
 //TODO FIGURE OUT HOW TO DISPLAY THIS SHIT WHEN CHANGING XD
-function render_remaining_measurement(
-  info: RenderingInfo,
-  which: "width" | "height",
-) {
-  {
-    if (!which) {
-      throw Error("FUck you, which is null in render_remaining_measurement ");
-    }
-
-    const data = info.data as FabricData;
-
-    // log.debug("fabricdata in redenr cell", data);
-    if (info.type === "display") {
-      let original_value = data?.original_fabric[info.column_id] ?? null;
-      let modified_value = data?.modified_fabric?.[info.column_id] ?? null;
-
-      if (!original_value) {
-        return "";
-      }
-
-      if (
-        data.original_fabric.deductions != null &&
-        data.original_fabric.deductions.length > 0
-      ) {
-        let measurements = calc_remaining_fabric_measurements(
-          data.original_fabric,
-        );
-        let measure;
-        if (which == "width") {
-          measure = measurements["remaining_width"];
-        } else {
-          measure = measurements["remaining_height"];
-        }
-
-        return `${measure} mts`;
-      }
-
-      return getDiffValue(
-        format_measurement(original_value),
-        format_measurement(modified_value),
-        data.mode,
-      );
-    }
-  }
-
-  //TODO I would like to display data for when data has been edited, to display original and modified, and the original criss cross
-}
 
 function render_row(row: HTMLTableRowElement, data: FabricData, index: number) {
   // Reset custom inline styles back to default DataTables values
