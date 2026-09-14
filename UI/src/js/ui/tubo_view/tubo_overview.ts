@@ -26,7 +26,6 @@ import { ApiRowsMethods } from "datatables.net";
 import { ModalDialog } from "../dialogs/modalDialog.ts";
 import edit_icon from "../../../assets/icons/edit.png";
 import archive_icon from "../../../assets/icons/archive.png";
-import hierarchy_icon from "../../../assets/icons/gear.svg";
 import { Actions } from "./actions.ts";
 
 const add_id = "add-btn";
@@ -85,7 +84,6 @@ class TubeOverview {
   row_action_container: HTMLDivElement;
   edit_action_btn: HTMLButtonElement;
   archive_action_btn: HTMLButtonElement;
-  hierarchy_action_btn: HTMLButtonElement;
 
   selected_row: ApiRowMethods<FabricData> | null;
 
@@ -133,7 +131,6 @@ class TubeOverview {
       <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
 	${create_icon(edit_icon, "edit-action", "Editar Tela")}
 	${create_icon(archive_icon, "archive-action", "Archivar Tela")}
-	${create_icon(hierarchy_icon, "hierarchy-action", "Ver jerarquia de tela")}
       </div>
 `);
 
@@ -141,17 +138,9 @@ class TubeOverview {
       this.row_action_container.querySelector("#edit-action");
     this.archive_action_btn =
       this.row_action_container.querySelector("#archive-action");
-    this.hierarchy_action_btn =
-      this.row_action_container.querySelector("#hierarchy-action");
 
     this.edit_action_btn.addEventListener("click", () => {
       this.actions.open_form_editing(this.selected_row);
-    });
-    this.hierarchy_action_btn.addEventListener("click", () => {
-      this.events.emit(
-        "hierarchy-button-pressed",
-        this.selected_row.data().original_fabric,
-      );
     });
   }
 

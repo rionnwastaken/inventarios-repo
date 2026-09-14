@@ -21,7 +21,6 @@ import "../css/input.css";
 import { TableView } from "./typeObj.ts";
 import { state } from "./state.ts";
 import { deductionKardex } from "./ui/deduction_kardex/deduction_kardex.ts";
-import { fabricHierarchy } from "./ui/hierarchy.ts";
 
 deductionKardex.init();
 state.init();
@@ -58,10 +57,6 @@ tubeOverview.events.on("fabric:edited", (...args) => {
 
 tubeOverview.events.on("tubo_overview:dblclick_fabric", (...args) => {
   deductionKardex.cb_show_kardex(...args);
-});
-
-tubeOverview.events.on("hierarchy-button-pressed", (...args) => {
-  fabricHierarchy.show(...args);
 });
 
 deductionKardex.events.on("deduction:modified", (...args) => {
