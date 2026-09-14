@@ -143,7 +143,7 @@ class Fabric(TimestampMixin, table=True):
     original_width: Decimal
     original_height: Decimal
     is_archived: bool = Field(default=False)  # Fabrics runs out of fabric to be used
-    remaining_cubic_meters: Decimal = Field(default=Decimal(100))
+    remaining_percent: Decimal = Field(default=Decimal(100))
 
     # Relationships
     tube: Optional[Tube] = Relationship(back_populates="fabrics")
@@ -164,7 +164,7 @@ class Fabric(TimestampMixin, table=True):
     )
 
     @field_serializer(
-        "original_height", "original_width", "remaining_cubic_meters", mode="plain"
+        "original_height", "original_width", "remaining_percent", mode="plain"
     )
     def serialize_decimal(self, v: Decimal) -> str:
         return f"{v.normalize():f}" if v is not None else v

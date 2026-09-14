@@ -77,7 +77,7 @@ export class InitTable {
         column_name: "% Restante",
         rendering_func: (info: RenderingInfo) => {
           let data = info.data as FabricData;
-          let percentage = data?.original_fabric?.remaining_cubic_meters ?? 100;
+          let percentage = data?.original_fabric?.remaining_percent ?? 100;
           return `${percentage}%`;
         },
       }),
