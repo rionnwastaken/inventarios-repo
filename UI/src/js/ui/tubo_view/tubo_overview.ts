@@ -309,7 +309,7 @@ class TubeOverview {
             return;
           }
           state.tableData.fabrics.push(fabric_data_response);
-          row.original_fabric["id"] = fabric_data_response["id"];
+          row.original_fabric = fabric_data_response;
         }
 
         arr.every(function (row) {

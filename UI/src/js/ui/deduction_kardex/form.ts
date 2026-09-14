@@ -206,9 +206,24 @@ export class Form {
       deduction: data["deduction"],
     };
   }
+  deduction_values_is_edited(values: ComponentValues) {
+    if (this.deduction.removed_width != values.form_width) {
+      return true;
+    }
+
+    if (this.deduction.removed_height != values.form_height) {
+      return true;
+    }
+
+    if (this.deduction.comment != values.form_comment) {
+      return true;
+    }
+    return false;
+  }
   validate_fileds() {
     let comment = null;
     let original_width = num(this.fabric.original_width);
+    let original_height = num(this.fabric.original_height);
     if (this.comment_obj.input.value.trim() !== "") {
       comment = this.comment_obj.input.value.trim();
     }
@@ -237,21 +252,8 @@ export class Form {
       return null;
     }
 
-    const deductions = this.fabric?.deductions || [];
-    const measurement = calc_remaining_fabric_measurements(this.fabric);
-
-    let height_limit;
-    const remainingHeight = num(measurement.remaining_height) || 0;
-
-    if (this.modal_state === "editing") {
-      const currentRemovedHeight: number = num(this.deduction.removed_height);
-      height_limit = remainingHeight + currentRemovedHeight;
-    } else {
-      height_limit = remainingHeight;
-    }
-
-    if (height > height_limit) {
-      this.height_obj.error.textContent = `La altura no puede excederse de ${height_limit} m`;
+    if (height > original_height) {
+      this.height_obj.error.textContent = `El alto no puede ser mayor a ${original_width}`;
       return null;
     }
 
@@ -263,7 +265,8 @@ export class Form {
     let values = this.validate_fileds();
 
     log.debug(values);
-    if (values == null) {
+    if (!this.deduction_values_is_edited(values)) {
+      this.global_error.textContent = "No se han realizado modificaciones";
       return;
     }
 
