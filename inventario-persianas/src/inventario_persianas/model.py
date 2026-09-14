@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from pydantic import field_serializer
+import decimal
 
 
 from sqlalchemy import JSON, Column, DateTime, event, update
@@ -167,7 +168,11 @@ class Fabric(TimestampMixin, table=True):
         "original_height", "original_width", "remaining_percent", mode="plain"
     )
     def serialize_decimal(self, v: Decimal) -> str:
-        return f"{v.normalize():f}" if v is not None else v
+        return (
+            f"{v.quantize(Decimal('0.001'), rounding=decimal.ROUND_HALF_UP).normalize():f}"
+            if v is not None
+            else v
+        )
 
 
 class FabricUpdate(SQLModel):
