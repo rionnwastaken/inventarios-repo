@@ -206,20 +206,6 @@ export class Form {
       deduction: data["deduction"],
     };
   }
-  deduction_values_is_edited(values: ComponentValues) {
-    if (this.deduction.removed_width != values.form_width) {
-      return true;
-    }
-
-    if (this.deduction.removed_height != values.form_height) {
-      return true;
-    }
-
-    if (this.deduction.comment != values.form_comment) {
-      return true;
-    }
-    return false;
-  }
   validate_fileds() {
     let comment = null;
     let original_width = num(this.fabric.original_width);
