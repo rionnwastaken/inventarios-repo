@@ -25,6 +25,7 @@ import icon from "../../../assets/icons/spare_fabric_symbol.svg";
 
 const title_catalago_id = "title-catalago-text-id";
 const initial_measurement_container_id = "initial-measurement-container";
+const fabric_available_percent = "fabric_available_percent";
 
 export interface DeductionKardexEvents {
   "deduction:modified": (fabric: Fabric) => void;
@@ -41,6 +42,7 @@ class DeductionKardex {
 
   title_catalago_p: HTMLParagraphElement;
   initial_measurement_span: HTMLSpanElement;
+  fabric_available_percent_p: HTMLSpanElement;
   remaining_measurement_span: HTMLSpanElement;
 
   deductionForm: Form;
@@ -104,6 +106,8 @@ class DeductionKardex {
       <span class="font-bold text-black"></span> 
     </div>
   </div>
+
+  <p id="${fabric_available_percent}"></p>
 
 
 
@@ -187,6 +191,7 @@ class DeductionKardex {
     let original_width = this.fabric.original_width;
     let original_height = this.fabric.original_height;
     this.initial_measurement_span.textContent = `${original_width} x ${original_height} mts`;
+    this.fabric_available_percent_p.textContent = `${this.fabric.remaining_percent}%`;
   }
 
   init_table() {
@@ -234,6 +239,9 @@ class DeductionKardex {
       log.debug("No result in open_deduction_form");
       return;
     }
+    log.info("Fabric dat after updating deduction ", result.fabric);
+    this.fabric = result.fabric;
+    this.update_display_initial_measurements();
 
     if (mode == "creating") {
       log.debug("result her eshit is ", result);
@@ -257,8 +265,6 @@ class DeductionKardex {
       row.data(result.deduction);
     }
 
-    log.info("Fabric dat after updating deduction ", result.fabric);
-    this.fabric = result.fabric;
     state.tableData.update_fabric_by_id(result.fabric);
     console.log("result here in kardex:", result);
     this.table.draw();
@@ -298,6 +304,9 @@ class DeductionKardex {
     this.title_catalago_p = d.querySelector(`#${title_catalago_id}`);
     this.initial_measurement_span = d.querySelector(
       `#${initial_measurement_container_id} span`,
+    );
+    this.fabric_available_percent_p = d.querySelector(
+      `#${fabric_available_percent}`,
     );
   }
 
