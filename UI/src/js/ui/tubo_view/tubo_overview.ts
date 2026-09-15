@@ -27,6 +27,7 @@ import { ModalDialog } from "../dialogs/modalDialog.ts";
 import edit_icon from "../../../assets/icons/edit.png";
 import archive_icon from "../../../assets/icons/archive.png";
 import { Actions } from "./actions.ts";
+import { ActionOverlay } from "../misc/ActionOverlay.ts";
 
 const add_id = "add-btn";
 const edit_id = "edit-btn";
@@ -81,11 +82,12 @@ class TubeOverview {
   selected_rows: Set<number>;
   single_select_btns: Array<HTMLButtonElement>;
 
-  row_action_container: HTMLDivElement;
+  overlay_action_container: HTMLDivElement;
   edit_action_btn: HTMLButtonElement;
   archive_action_btn: HTMLButtonElement;
 
   selected_row: ApiRowMethods<FabricData> | null;
+  actionOverlay: ActionOverlay;
 
   public events = new TypedEventEmitter<RowModalEvents>();
 
@@ -99,6 +101,14 @@ class TubeOverview {
     this.init_bindings();
     this.selected_rows = new Set();
 
+    this.actionOverlay = new ActionOverlay({
+      container: this.create_action_on_row_elements(),
+      table: this.table,
+      cb_samerow_2clicks: async (data: FabricData, row) => {
+        await this.handle_fabric_selection(row);
+      },
+    });
+
     this.single_select_btns = new Array();
     // this.single_select_btns.push(this.edit_btn, this.hierarchy_btn);
 
@@ -110,7 +120,6 @@ class TubeOverview {
     // this.bind_row_double_click();
     inspect_row(this.tbody, this.table);
     this.bind_row_right_click();
-    this.select_blur_clear_actions_after_clicking_anywhere_else();
     this.bind_row_click();
   }
 
@@ -126,7 +135,7 @@ class TubeOverview {
     </button>
   `;
     }
-    this.row_action_container = createElementFromHTML(`
+    this.overlay_action_container = createElementFromHTML(`
 
       <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
 	${create_icon(edit_icon, "edit-action", "Editar Tela")}
@@ -135,15 +144,16 @@ class TubeOverview {
 `);
 
     this.edit_action_btn =
-      this.row_action_container.querySelector("#edit-action");
+      this.overlay_action_container.querySelector("#edit-action");
     this.archive_action_btn =
-      this.row_action_container.querySelector("#archive-action");
+      this.overlay_action_container.querySelector("#archive-action");
 
     this.edit_action_btn.addEventListener("click", (e) => {
       e.stopPropagation();
       this.remove_actions_overlay();
-      this.actions.open_form_editing(this.selected_row);
+      this.actions.open_form_editing(this.actionOverlay.selected_row);
     });
+    return this.overlay_action_container;
   }
 
   private update_row_actions_overlay(row: ApiRowMethods<FabricData>) {
@@ -162,7 +172,7 @@ class TubeOverview {
 
     lastCell.classList.add("relative");
 
-    lastCell.appendChild(this.row_action_container);
+    lastCell.appendChild(this.overlay_action_container);
     log.debug("image data ", edit_icon);
   }
 
@@ -171,9 +181,9 @@ class TubeOverview {
    */
   public remove_actions_overlay() {
     // Direct O(1) removal: check if the container is currently mounted anywhere
-    if (this.row_action_container.parentElement) {
-      this.row_action_container.parentElement.classList.remove("relative");
-      this.row_action_container.remove();
+    if (this.overlay_action_container.parentElement) {
+      this.overlay_action_container.parentElement.classList.remove("relative");
+      this.overlay_action_container.remove();
     }
   }
 
@@ -403,54 +413,8 @@ class TubeOverview {
   }
 
   bind_row_click() {
-    // Listen for clicks
     this.tbody.addEventListener("click", async (event) => {
-      setTimeout(async () => {
-        log.debug("click");
-        const row_el = event.target.closest("tr");
-        let row: ApiRowMethods<FabricData>;
-        let data: FabricData = null;
-
-        if (row_el && this.tbody.contains(row_el)) {
-          row = this.table.row(row_el);
-          data = row.data();
-        }
-        if (data == null) {
-          log.debug("click row undefined");
-          return;
-        }
-
-        const hasMoreThanOneSelected = this.table.rows(".selected").count() > 1;
-        if (hasMoreThanOneSelected) {
-          this.selected_row = null;
-          this.remove_actions_overlay(null);
-          log.debug("More than one row is selected.");
-          return;
-        }
-
-        this.update_row_actions_overlay(row);
-        if (this.selected_row == null) {
-          log.debug("Assing row", row);
-          this.selected_row = row;
-          return;
-        }
-
-        let data_id = data.original_fabric.id;
-        let selected_id = this.selected_row.data().original_fabric.id;
-        if (data_id == selected_id) {
-          this.selected_row = null;
-          await this.handle_fabric_selection(row);
-          return;
-        }
-        this.selected_row = row;
-      }, 0);
-    });
-  }
-
-  select_blur_clear_actions_after_clicking_anywhere_else() {
-    this.table.on("select-blur", () => {
-      this.remove_actions_overlay(null);
-      this.selected_row = null;
+      this.actionOverlay.handle_row_click(event);
     });
   }
 
