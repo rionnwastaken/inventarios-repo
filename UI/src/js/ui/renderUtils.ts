@@ -56,11 +56,10 @@ const get = (obj: Object, path: string): string => {
 export function render_datecell(info: RenderingInfo) {
   let value = get(info.data, info.column_id);
 
-  log.debug("display is ", info.type);
   // return "h"
   if (info.type === "display") {
     const date = new Date(value);
-    log.debug("data here is ", date);
+    // log.debug("data here is ", date);
     return date.toLocaleString("es-MX", { hour12: true });
   }
 
@@ -96,4 +95,35 @@ export function getDiffValue(
             </span>
         </div>
     `;
+}
+
+export interface IconOptions {
+  src: string;
+  id?: string;
+  title: string;
+  btnClass?: string;
+  imgClass?: string;
+}
+export function createIconHTML(options: IconOptions): string {
+  const {
+    src,
+    id,
+    title,
+    btnClass = "w-8 h-8 bg-white hover:bg-slate-200",
+    imgClass = "w-4 h-4",
+  } = options;
+
+  const idAttr = id ? `id="${id}"` : "";
+
+  // Base layout styles mixed with your custom/override classes
+  const fullBtnClasses =
+    `flex items-center justify-center rounded-full transition-colors shadow-md active:scale-95 shrink-0 ${btnClass}`.trim();
+  const fullImgClasses =
+    `pointer-events-none object-contain ${imgClass}`.trim();
+
+  return `
+    <button type="button" title="${title}" aria-label="${title}" class="${fullBtnClasses}" ${idAttr}>
+      <img src="${src}" alt="" class="${fullImgClasses}" />
+    </button>
+  `;
 }

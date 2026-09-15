@@ -28,6 +28,7 @@ import edit_icon from "../../../assets/icons/edit.png";
 import archive_icon from "../../../assets/icons/archive.png";
 import { Actions } from "./actions.ts";
 import { ActionOverlay } from "../misc/ActionOverlay.ts";
+import { createIconHTML } from "../renderUtils.ts";
 
 const add_id = "add-btn";
 const edit_id = "edit-btn";
@@ -124,22 +125,19 @@ class TubeOverview {
   }
 
   private create_action_on_row_elements() {
-    function create_icon(src, id, name) {
-      // Use explicit dimensions (e.g., w-8 h-8) instead of w-fit/h-fit for reliable circular icons
-      let icon_tw =
-        "flex items-center justify-center w-8 h-8 rounded-full bg-white  hover:bg-slate-200 transition-colors shadow-md active:scale-95 shrink-0";
-
-      return `
-    <button type="button" title="${name}" class="${icon_tw}" id="${id}">
-      <img src="${src}" alt="${name}" class="w-4 h-4 pointer-events-none object-contain" />
-    </button>
-  `;
-    }
     this.overlay_action_container = createElementFromHTML(`
 
       <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
-	${create_icon(edit_icon, "edit-action", "Editar Tela")}
-	${create_icon(archive_icon, "archive-action", "Archivar Tela")}
+      ${createIconHTML({
+        src: edit_icon,
+        id: "edit-action",
+        title: "Editar Tela",
+      })}
+      ${createIconHTML({
+        src: archive_icon,
+        id: "archive-action",
+        title: "Archivar Tela",
+      })}
       </div>
 `);
 
