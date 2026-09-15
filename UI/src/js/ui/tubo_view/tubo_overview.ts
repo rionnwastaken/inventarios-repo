@@ -139,7 +139,9 @@ class TubeOverview {
     this.archive_action_btn =
       this.row_action_container.querySelector("#archive-action");
 
-    this.edit_action_btn.addEventListener("click", () => {
+    this.edit_action_btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.remove_actions_overlay();
       this.actions.open_form_editing(this.selected_row);
     });
   }
@@ -403,7 +405,6 @@ class TubeOverview {
   bind_row_click() {
     // Listen for clicks
     this.tbody.addEventListener("click", async (event) => {
-      this.remove_actions_overlay(null);
       setTimeout(async () => {
         log.debug("click");
         const row_el = event.target.closest("tr");
