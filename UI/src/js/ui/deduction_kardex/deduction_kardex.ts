@@ -11,8 +11,12 @@ import { state } from "../../state";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 
 import DataTable from "datatables.net-dt";
+import "datatables.net-select-dt";
 import "datatables.net-dt/css/dataTables.dataTables.css";
+import "datatables.net-select-dt/css/select.dataTables.css";
+// import "datatables.net-dt/css/dataTables.dataTables.css";
 import {
+  createIconHTML,
   format_measurement,
   render_datecell,
   render_plain,
@@ -21,7 +25,8 @@ import {
 import { Form } from "./form";
 import { TypedEventEmitter } from "../../emitter";
 import { column } from "../utils";
-import icon from "../../../assets/icons/spare_fabric_symbol.svg";
+import edit_icon from "../../../assets/icons/edit.png";
+import { ActionOverlay } from "../misc/ActionOverlay";
 
 const title_catalago_id = "title-catalago-text-id";
 const initial_measurement_container_id = "initial-measurement-container";
@@ -47,20 +52,32 @@ class DeductionKardex {
 
   deductionForm: Form;
   wrapper: HTMLElement;
+
+  overlay_action_container: HTMLDivElement;
+  delete_action_btn: HTMLButtonElement;
+  actionOverlay: ActionOverlay;
   public events = new TypedEventEmitter<DeductionKardexEvents>();
 
   constructor() {}
   init() {
     this.deductionForm = new Form();
-    this.init_elements();
     this.init_columns();
-    this.init_table();
-    this.init_binding();
     this.create_dialog();
+    this.init_table(); //MAKE SURE TO INIT TABLE AFTER TABLE ELEMENT HAS BEEN LAYED SOMEWHERE
+    this.init_binding();
+    this.actionOverlay = new ActionOverlay({
+      table: this.table,
+      container: this.create_action_overlay(),
+      cb_samerow_2clicks: async (deduction, selected_row) => {
+        log.debug("deleting deductionn");
+        await this.open_deduction_form("editing", deduction);
+        this.table.draw(false);
+      },
+    });
   }
 
   init_binding() {
-    this.bind_row_double_click();
+    this.bind_row_click();
     inspect_row(this.tbody, this.table);
   }
 
@@ -157,32 +174,26 @@ class DeductionKardex {
     ];
   }
 
-  init_elements() {
-    this.table_element = createElementFromHTML(
-      ` <table id='duduction-table'> 
-          <tbody></tbody>
-      </table> `,
-    );
-
-    this.tbody = this.table_element.querySelector("tbody");
-  }
-
   body(): HTMLElement {
     this.wrapper = createElementFromHTML(`
     <div class="flex   flex-col gap-4">
       <div class="top-container"> 
 
       </div>
-      <div class="table-container w-full overflow-x-auto"></div>
+      <div class="table-container mr-20">
+	<table id='duduction-table' class="display"> 
+	    <thead></thead>
+	    <tbody></tbody>
+	</table>
+      </div>
+
       <div class="bottom-container flex flex-col"> 
       </div>
     </div>
   `);
 
-    // 3. Insert the table node into the slot
-    this.wrapper
-      .querySelector(".table-container")
-      ?.appendChild(this.table_element);
+    this.table_element = this.wrapper.querySelector("table");
+    this.tbody = this.table_element.querySelector("tbody");
 
     return this.wrapper;
   }
@@ -200,6 +211,9 @@ class DeductionKardex {
       paging: false,
       autoWidth: true,
 
+      select: {
+        blurable: true,
+      },
       searching: false,
       // order: { name: "original_fabric.updated_at", dir: "desc" },
       // rowCallback: this.render_row,
@@ -212,23 +226,9 @@ class DeductionKardex {
     });
   }
 
-  bind_row_double_click() {
-    // Listen for clicks
-    this.tbody.addEventListener("dblclick", async (event) => {
-      const row = event.target.closest("tr");
-
-      if (row && this.tbody.contains(row)) {
-        const row_obj = this.table.row(row);
-        const deduction = row_obj.data();
-
-        if (deduction == undefined) {
-          log.debug("Double click row undefined");
-          return;
-        }
-        await this.open_deduction_form("editing", deduction);
-
-        this.table.draw(false);
-      }
+  bind_row_click() {
+    this.tbody.addEventListener("click", async (event) => {
+      this.actionOverlay.handle_row_click(event);
     });
   }
 
@@ -278,10 +278,12 @@ class DeductionKardex {
   }
 
   create_dialog() {
+    const a_tw = "min-w-7xl min-h-5xl";
     this.modalDialog = new ModalDialog({
       title: this.title(),
       body: this.body(),
       width: "w-full min-w-7xl", // Custom Tailwind classes
+      container_tailwind_class: a_tw,
       height: "h-auto max-h-[80vh]",
       cancelText: "Volver",
       cancelClass: "btn",
@@ -331,6 +333,27 @@ class DeductionKardex {
       this.table.row.add(element);
     });
     this.table.draw();
+  }
+
+  private create_action_overlay() {
+    this.overlay_action_container = createElementFromHTML(`
+      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
+      ${createIconHTML({
+        src: edit_icon,
+        id: "delete-action",
+        title: "Editar Tela",
+      })}
+      </div>
+`);
+
+    this.delete_action_btn =
+      this.overlay_action_container.querySelector("#delete-action");
+
+    this.delete_action_btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      log.debug("Deleting deduction");
+    });
+    return this.overlay_action_container;
   }
 }
 const deductionKardex = new DeductionKardex();
