@@ -121,7 +121,7 @@ class TubeOverview {
         "flex items-center justify-center w-8 h-8 rounded-full bg-white  hover:bg-slate-200 transition-colors shadow-md active:scale-95 shrink-0";
 
       return `
-    <button type="button" title="Editar" class="${icon_tw}" id="${id}">
+    <button type="button" title="${name}" class="${icon_tw}" id="${id}">
       <img src="${src}" alt="${name}" class="w-4 h-4 pointer-events-none object-contain" />
     </button>
   `;
@@ -169,12 +169,12 @@ class TubeOverview {
   /**
    * Removes all active overlays from the table DOM.
    */
-  private remove_actions_overlay(row: ApiRowMethods<FabricData>) {
-    let activeOverlays = this.table
-      .table()
-      .body()
-      .querySelectorAll(".dt-row-overlay");
-    activeOverlays.forEach((el) => el.remove());
+  public remove_actions_overlay() {
+    // Direct O(1) removal: check if the container is currently mounted anywhere
+    if (this.row_action_container.parentElement) {
+      this.row_action_container.parentElement.classList.remove("relative");
+      this.row_action_container.remove();
+    }
   }
 
   create_dialog() {
