@@ -60,6 +60,10 @@ class DeductionKardex {
   actionOverlay: ActionOverlay;
   public events = new TypedEventEmitter<DeductionKardexEvents>();
 
+  goback: HTMLButtonElement;
+  deduct: HTMLButtonElement;
+  comments: HTMLButtonElement;
+
   constructor() {}
   init() {
     this.deductionForm = new Form();
@@ -296,15 +300,38 @@ class DeductionKardex {
       confirmClass: "btn-error",
       footerContainer_tailwind_class: "flex justify-left",
 
-      onConfirm: async () => {
-        await this.open_deduction_form("creating");
-      },
-      onCancel: () => {
-        this.close();
-      },
+      showCancel: false,
+      showConfirm: false,
+
       onClose: () => {
         this.table.data().clear();
       },
+    });
+
+    let buttons = createElementFromHTML(`
+	<div class="flex justify-left"> 
+	    <button class="btn" id="kardex-goback">Volver</button>
+	    <button class="btn" id="kardex-deduct">Crear Salida</button>
+	    <button class="btn" id="kardex-comments">Ver comentarios</button>
+	</div>
+    `);
+
+    this.goback = buttons.querySelector("#kardex-goback");
+    this.deduct = buttons.querySelector("#kardex-deduct");
+    this.comments = buttons.querySelector("#kardex-comments");
+
+    this.modalDialog.footerContainer.appendChild(buttons);
+
+    this.goback.addEventListener("click", () => {
+      this.close();
+    });
+
+    this.deduct.addEventListener("click", async () => {
+      await this.open_deduction_form("creating");
+    });
+
+    this.comments.addEventListener("click", async () => {
+      log.debug("Comments");
     });
 
     let d = this.modalDialog.dialogEl;
