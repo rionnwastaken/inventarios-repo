@@ -63,4 +63,12 @@ deductionKardex.events.on("deduction:modified", (...args) => {
   tubeOverview.cb_update_fabric_data(...args);
 });
 
+deductionKardex.events.on(
+  "deduction:deleted",
+  (fabric: Fabric, deduction_id) => {
+    state.tableData.update_fabric_by_id(fabric);
+    tubeOverview.cb_update_fabric_data(fabric);
+  },
+);
+
 document.addEventListener("DOMContentLoaded", () => {});

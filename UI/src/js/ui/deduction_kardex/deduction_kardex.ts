@@ -27,6 +27,7 @@ import { TypedEventEmitter } from "../../emitter";
 import { column } from "../utils";
 import edit_icon from "../../../assets/icons/edit.png";
 import { ActionOverlay } from "../misc/ActionOverlay";
+import { CoreAPI } from "../../api/core";
 
 const title_catalago_id = "title-catalago-text-id";
 const initial_measurement_container_id = "initial-measurement-container";
@@ -34,6 +35,7 @@ const fabric_available_percent = "fabric_available_percent";
 
 export interface DeductionKardexEvents {
   "deduction:modified": (fabric: Fabric) => void;
+  "deduction:deleted": (fabric: Fabric, deduction_id) => void;
 }
 
 class DeductionKardex {
@@ -115,7 +117,7 @@ class DeductionKardex {
 <div class="flex items-center gap-3"> 
 
   <!-- Medidas Iniciales Card (Black/Dark Slate Theme) -->
-  <div class="flex flex-col p-2.5 rounded-lg bg-white border  text-xs"> 
+  <div class="flex flex-col p-2.5 rounded-lg bg-white   text-xs"> 
     <span class="font-semibold uppercase tracking-wider text-zinc-800 mb-1 flex items-center gap-1">
       Medidas Iniciales
     </span>
@@ -344,7 +346,7 @@ class DeductionKardex {
       ${createIconHTML({
         src: edit_icon,
         id: "delete-action",
-        title: "Editar Tela",
+        title: "Eliminar Deduccion",
       })}
       </div>
 `);
@@ -352,9 +354,25 @@ class DeductionKardex {
     this.delete_action_btn =
       this.overlay_action_container.querySelector("#delete-action");
 
-    this.delete_action_btn.addEventListener("click", (e) => {
+    this.delete_action_btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       log.debug("Deleting deduction");
+
+      let row = this.actionOverlay.selected_row;
+      let deduction = row.data() as FabricDeduction;
+
+      const res = await CoreAPI.delete_deduction(this.fabric.id, deduction.id);
+      if (!res.success) {
+        log.debug(res.data);
+        return;
+      }
+      this.fabric = res.data.fabric;
+      row.remove();
+      this.table.draw();
+
+      this.update_display_initial_measurements();
+      this.events.emit("deduction:deleted", this.fabric, res.data.deduction_id);
+      log.debug(`Deduction removed ${res.data.deduction_id}`);
     });
     return this.overlay_action_container;
   }

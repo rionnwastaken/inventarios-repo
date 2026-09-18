@@ -31,4 +31,12 @@ export const CoreAPI = {
     });
     return res;
   },
+
+  delete_deduction: async (fabric_id: number, deduction_id: number) => {
+    const res = await api.post("/fabric/deduction/delete/", {
+      fabric_id: fabric_id,
+      deduction_id: deduction_id,
+    });
+    return res;
+  },
 };

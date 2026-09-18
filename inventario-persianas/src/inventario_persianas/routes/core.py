@@ -98,3 +98,22 @@ def deduction_new():
         return Error("Didnt receive data", 400).returnIt()
 
     return core.deduction_new(deduction)
+
+
+@core_bp.post("/fabric/deduction/delete/")
+def deduction_delete():
+    log.debug("deduction_delete()")
+    data = request.get_json()
+
+    if data is None:
+        return Error("Didnt receive data", 400).returnIt()
+
+    fabric_id = data.get("fabric_id")
+    deduction_id = data.get("deduction_id")
+
+    if fabric_id == None or deduction_id == None:
+        return Error(
+            f"fabric_id or deduction_id is None {fabric_id} {deduction_id}", 400
+        ).returnIt()
+
+    return core.deduction_delete(fabric_id, deduction_id)

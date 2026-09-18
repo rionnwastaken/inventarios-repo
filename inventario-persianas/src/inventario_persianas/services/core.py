@@ -405,3 +405,33 @@ def update_deduction(
             "fabric": fabric_obj,
             "deduction": fabricDeduction_obj,
         }, 200
+
+
+@handle_db_exceptions
+def deduction_delete(fabric_id: int, deduction_id: int):
+
+    with db.session.begin():
+        fabric = db.session.get(Fabric, fabric_id,options=[selectinload(Fabric.deductions)])
+        deduction = db.session.get(FabricDeduction, deduction_id)
+
+        if not fabric or not deduction:
+            raise ValueError(f"fabric or deduction not found {fabric} {deduction}")
+
+        AuditLogger.log(
+            "Delete",
+            "fabric_deduction",
+            deduction_id,
+            old_values=deduction.model_dump(mode="json"),
+        )
+
+        db.session.delete(deduction)
+        fabric.deductions.remove(deduction)
+        db.session.flush()
+        update_available_fabric_percentage(fabric)
+        fabric_json = fabric.model_dump(mode="json")
+        fabric_json["deductions"] = [deduct.model_dump(mode="json") for deduct in fabric.deductions]
+
+        return {
+            "fabric":fabric_json ,
+            "deduction_id": deduction_id,
+        }
