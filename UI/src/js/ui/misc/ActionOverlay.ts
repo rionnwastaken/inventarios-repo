@@ -1,33 +1,34 @@
 import { Api, ApiRowMethods } from "datatables.net-dt";
 type cb_row_2clicks_type = (
-  data: any,
-  selected_row: ApiRowMethods<any> | null,
+  data: unknown,
+  selected_row: ApiRowMethods<unknown> | null,
 ) => Promise<void> | void;
 export class ActionOverlay {
   container: HTMLDivElement;
   cb_samerow_2clicks: cb_row_2clicks_type;
-  selected_row: ApiRowMethods<any> | null;
-  table: Api<any>;
+  selected_row: ApiRowMethods<unknown> | null;
+  table: Api<unknown>;
   tbody: HTMLElement;
 
   constructor(data: {
     container: HTMLDivElement;
-    table: Api<any>;
+    table: Api<unknown>;
     cb_samerow_2clicks: cb_row_2clicks_type;
   }) {
     this.container = data.container;
     this.table = data.table;
     this.tbody = this.table.table().node().querySelector("tbody");
     this.cb_samerow_2clicks = data.cb_samerow_2clicks;
+    this.selected_row = null;
     this.select_blur_clear_actions_after_clicking_anywhere_else();
   }
 
-  public update_row_actions_overlay(row: ApiRowMethods<any>) {
+  public update_row_actions_overlay(row: ApiRowMethods<unknown>) {
     this.remove_actions_overlay();
     this.render_actions_overlay(row);
   }
 
-  public render_actions_overlay(row: any) {
+  public render_actions_overlay(row: unknown) {
     let node = row.node();
     let lastCell = node.cells[node.cells.length - 1];
 
@@ -49,8 +50,8 @@ export class ActionOverlay {
     setTimeout(async () => {
       log.debug("actionOverlay:handle_row_click");
       const row_el = event.target.closest("tr");
-      let row: ApiRowMethods<any>;
-      let data: any = null;
+      let row: ApiRowMethods<unknown>;
+      let data: unknown = null;
 
       if (row_el && this.tbody.contains(row_el)) {
         row = this.table.row(row_el);
