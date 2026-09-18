@@ -124,7 +124,10 @@ class DeductionKardex {
     </div>
   </div>
 
-  <p id="${fabric_available_percent}"></p>
+  <div> 
+    <p>Disponible</p>
+    <p id="${fabric_available_percent}"></p>
+  </div>
 
 
 

@@ -251,7 +251,7 @@ export class Form {
     }
 
     if (width * height > available_m2) {
-      this.global_error.textContent = `La medida de  (${width * height}m2) que quiere ingresar excede los metros cuadrados disponibles ${available_m2}m2`;
+      this.global_error.textContent = `La medida de  (${width * height} m2) que quiere ingresar excede los metros cuadrados disponibles ${available_m2} m2`;
       return null;
     }
 
