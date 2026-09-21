@@ -167,12 +167,16 @@ class Fabric(TimestampMixin, table=True):
     )
 
     supplier: Optional[Supplier] = Relationship(back_populates="fabrics")
-    comments: List["FabricComment"] = Relationship(back_populates="fabric")
+    comments: List["FabricComment"] = Relationship(
+        back_populates="fabric",
+        sa_relationship_kwargs={"order_by": "desc(FabricComment.updated_at)"},
+    )
     deductions: List["FabricDeduction"] = Relationship(
         back_populates="fabric",
         sa_relationship_kwargs={
             "foreign_keys": "FabricDeduction.fabric_id",
             "cascade": "all, delete-orphan",
+            "order_by": "desc(FabricDeduction.updated_at)",
         },
     )
 
