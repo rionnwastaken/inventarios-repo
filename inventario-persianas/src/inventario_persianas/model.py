@@ -30,6 +30,18 @@ class TimestampMixin(SQLModel):
         sa_column_kwargs={"onupdate": now_utc},
     )
 
+    @field_serializer("created_at", "updated_at")
+    def serialize_dt(self, dt: datetime | None, _info) -> str | None:
+        if dt is None:
+            return None
+
+        # If database/SQLAlchemy stripped tzinfo, explicitly force UTC
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+
+        # Returns standard ISO string ending with 'Z' or offset (e.g., "2026-09-21T17:47:37.104709Z")
+        return dt.isoformat()
+
 
 class Color(SQLModel, table=True):
     __tablename__ = "color"  # type:ignore
