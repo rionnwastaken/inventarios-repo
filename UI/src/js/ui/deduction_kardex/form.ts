@@ -321,7 +321,6 @@ export class Form {
         this.start_editing_mode(deduction);
         return;
       }
-      this.width_obj.input.value = this.fabric.original_width;
     });
   }
 
