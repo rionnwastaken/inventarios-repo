@@ -174,6 +174,18 @@ class Fabric(TimestampMixin, table=True):
             else v
         )
 
+    def payload(self):
+        fabric_json = self.model_dump(mode="json")
+        fabric_json["deductions"] = []
+        fabric_json["comments"] = []
+        for deduct in self.deductions:
+            fabric_json["deductions"].append(deduct.model_dump(mode="json"))
+
+        for comment in self.comments:
+            fabric_json["comments"].append(comment.model_dump(mode="json"))
+
+        return fabric_json
+
 
 class FabricUpdate(SQLModel):
     tube_id: Optional[int] = Field(default=None, foreign_key="tube.id")

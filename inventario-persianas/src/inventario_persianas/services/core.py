@@ -201,10 +201,7 @@ def update_fabrics(data: list[dict]) -> tuple[List[dict], int]:
 
             log.debug("Updated fabric: %s", fabric)
             db.session.flush()
-            fabric_obj = fabric.model_dump(mode="json")
-            fabric_obj["deductions"] = [
-                d.model_dump(mode="json") for d in fabric.deductions
-            ]
+            fabric_obj = fabric.payload()
             updated_fabrics.append(fabric_obj)
 
         return updated_fabrics, 200
@@ -324,13 +321,8 @@ def deduction_new(deduction):
             new_values=fabricDedudction_json,
         )
 
-        fabric_obj = fabric.model_dump()
-        fabric_obj["deductions"] = []
+        fabric_obj = fabric.payload()
         fabricDeduction_obj = fabricDeduction.model_dump()
-
-        for deduct in fabric.deductions:
-            dedudct_obj = deduct.model_dump()
-            fabric_obj["deductions"].append(dedudct_obj)
 
         return {"fabric": fabric_obj, "deduction": fabricDeduction_obj}, 200
 
@@ -395,11 +387,7 @@ def update_deduction(
 
         fabricDeduction_obj = fabricDeduction.model_dump()
 
-        fabric_obj = fabric.model_dump()
-        fabric_obj["deductions"] = []
-        for d in fabric.deductions:
-            deduct_obj = d.model_dump()
-            fabric_obj["deductions"].append(deduct_obj)
+        fabric_obj = fabric.payload()
 
         return {
             "fabric": fabric_obj,
