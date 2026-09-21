@@ -95,13 +95,8 @@ def recent_tubes_and_fabrics():
 
         tubes_obj.append(tube_dict)
         for fabric in fabrics_list:
-            deductions = fabric.deductions
-            obj = fabric.model_dump()
-            obj["deductions"] = []
-            for deduct in deductions:
-                dedudct_obj = deduct.model_dump()
-                obj["deductions"].append(dedudct_obj)
-            fabrics_obj.append(obj)
+            fabric_obj = fabric.payload()
+            fabrics_obj.append(fabric_obj)
 
     log.debug("Fabrics loaded %s", json.dumps(fabrics_obj, default=str, indent=4))
 
@@ -121,11 +116,10 @@ def add_fabrics(fabrics_to_add: list[dict]) -> list[dict]:
             if temp_id is None:
                 raise NoResultFound("'temp_id' was not found")
 
-            fabric = add_fabric(payload)
             retval.append(
                 {
                     "temp_id": temp_id,
-                    "fabric": fabric.model_dump(),
+                    "fabric": add_fabric(payload),
                 }
             )
 
@@ -144,11 +138,11 @@ def add_fabric(payload: dict):
     fabric = Fabric.model_validate(payload)
     db.session.add(fabric)
     db.session.flush()
-    fabric_json = fabric.model_dump(mode="json")
+    fabric_json = fabric.payload()
 
     log_json = AuditLogger.log("Insert", "fabric", fabric.id, new_values=fabric_json)
 
-    return fabric
+    return fabric_json
 
 
 @handle_db_exceptions
@@ -416,8 +410,7 @@ def deduction_delete(fabric_id: int, deduction_id: int):
         fabric.deductions.remove(deduction)
         db.session.flush()
         update_available_fabric_percentage(fabric)
-        fabric_json = fabric.model_dump(mode="json")
-        fabric_json["deductions"] = [deduct.model_dump(mode="json") for deduct in fabric.deductions]
+        fabric_json = fabric.payload()
 
         return {
             "fabric":fabric_json ,
