@@ -102,7 +102,7 @@ export class InitTable {
       paging: false,
       autoWidth: true,
       searching: false,
-      order: { name: "original_fabric.updated_at", dir: "asc" },
+      order: { name: "original_fabric.updated_at", dir: "desc" },
       rowCallback: render_row,
       select: {
         blurable: true,

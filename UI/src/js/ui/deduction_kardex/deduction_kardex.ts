@@ -234,6 +234,7 @@ class DeductionKardex {
       paging: false,
       autoWidth: true,
 
+      order: { name: "updated_at", dir: "desc" },
       select: {
         blurable: true,
       },
