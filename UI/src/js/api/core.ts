@@ -1,4 +1,4 @@
-import { Fabric, FabricDeduction } from "../schema.ts";
+import { Fabric, FabricComment, FabricDeduction } from "../schema.ts";
 import axios from "axios";
 import { createa_api } from "./axios_init.ts";
 
@@ -36,6 +36,29 @@ export const CoreAPI = {
     const res = await api.post("/fabric/deduction/delete/", {
       fabric_id: fabric_id,
       deduction_id: deduction_id,
+    });
+    return res;
+  },
+
+  fabricComment_new: async (fabricComment: FabricComment) => {
+    const res = await api.post("/fabric/comment/new/", {
+      comment: fabricComment,
+    });
+    return res;
+  },
+
+  fabricComment_update: async (fabricComment: FabricComment, fabric_id) => {
+    const res = await api.post("/fabric/comment/update/", {
+      comment_partial: fabricComment,
+      fabric_id: fabric_id,
+    });
+    return res;
+  },
+
+  fabricComment_delete: async (comment_id, fabric_id) => {
+    const res = await api.post("/fabric/comment/delete/", {
+      comment_id: comment_id,
+      fabric_id: fabric_id,
     });
     return res;
   },

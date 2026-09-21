@@ -7,6 +7,7 @@ from functools import wraps
 from inventario_persianas.exceptions import OverDrawing
 from inventario_persianas.model import (
     Fabric,
+    FabricComment,
     FabricDeduction,
     FabricDeductionUpdate,
     FabricUpdate,
@@ -396,7 +397,9 @@ def deduction_delete(fabric_id: int, deduction_id: int):
 
     with db.session.begin():
         fabric = db.session.get(
-            Fabric, fabric_id, options=[selectinload(Fabric.deductions),selectinload(Fabric.comments)]
+            Fabric,
+            fabric_id,
+            options=[selectinload(Fabric.deductions), selectinload(Fabric.comments)],
         )
         deduction = db.session.get(FabricDeduction, deduction_id)
 
@@ -417,6 +420,43 @@ def deduction_delete(fabric_id: int, deduction_id: int):
         fabric_json = fabric.payload()
 
         return {
-            "fabric":fabric_json ,
+            "fabric": fabric_json,
             "deduction_id": deduction_id,
         }
+
+
+@handle_db_exceptions
+def comment_new(comment: dict):
+    log.info("comment_new(comment:")
+    with db.session.begin():
+        fabric_id = comment.get("fabric_id")
+        fabric: Fabric | None = db.session.get(
+            Fabric,
+            fabric_id,
+            options=[selectinload(Fabric.deductions), selectinload(Fabric.comments)],
+        )
+        if fabric == None:
+            raise ValueError(f"Fabric_id {fabric_id} does not exist in table")
+        fabricComment = FabricComment.model_validate(comment)
+        db.session.add(fabricComment)
+        db.session.flush()
+        fabric.comments.insert(0, fabricComment)
+        comment_json = fabricComment.model_dump(mode="json")
+        AuditLogger.log(
+            "Insert", "fabric_comment", fabricComment.id, new_values=comment_json
+        )
+
+        fabric_json = fabric.payload()
+        return {"fabric": fabric_json, "comment": comment_json}, 200
+
+
+@handle_db_exceptions
+def comment_update(payload: dict, fabric_id: int):
+
+    return {}, 200
+
+
+@handle_db_exceptions
+def comment_delete(comment_id: int, fabric_id: int):
+
+    return {}, 200

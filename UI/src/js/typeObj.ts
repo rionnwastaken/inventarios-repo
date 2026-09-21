@@ -1,4 +1,5 @@
 import {
+  FabricComment,
   Fabric as SchemaFabric,
   FabricDeduction as SchemaFabricDeduction,
   Tube,
@@ -22,6 +23,7 @@ export interface FabricDeduction extends SchemaFabricDeduction {}
 
 export interface Fabric extends SchemaFabric {
   deductions: FabricDeduction[];
+  comments: FabricComment[];
 }
 
 export interface FabricData {

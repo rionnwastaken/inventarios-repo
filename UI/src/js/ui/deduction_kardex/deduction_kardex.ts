@@ -28,6 +28,8 @@ import { column } from "../utils";
 import edit_icon from "../../../assets/icons/edit.png";
 import { ActionOverlay } from "../misc/ActionOverlay";
 import { CoreAPI } from "../../api/core";
+import { Comments } from "./comments";
+import { FabricComment } from "../../schema";
 
 const title_catalago_id = "title-catalago-text-id";
 const initial_measurement_container_id = "initial-measurement-container";
@@ -36,6 +38,7 @@ const fabric_available_percent = "fabric_available_percent";
 export interface DeductionKardexEvents {
   "deduction:modified": (fabric: Fabric) => void;
   "deduction:deleted": (fabric: Fabric, deduction_id) => void;
+  "comment:edited": (fabric: Fabric, comment: FabricComment) => void;
 }
 
 class DeductionKardex {
@@ -53,6 +56,7 @@ class DeductionKardex {
   remaining_measurement_span: HTMLSpanElement;
 
   deductionForm: Form;
+  commentsForm: Comments;
   wrapper: HTMLElement;
 
   overlay_action_container: HTMLDivElement;
@@ -64,9 +68,12 @@ class DeductionKardex {
   deduct: HTMLButtonElement;
   comments: HTMLButtonElement;
 
+  recent_comment_p: HTMLParagraphElement;
+
   constructor() {}
   init() {
     this.deductionForm = new Form();
+    this.commentsForm = new Comments(this.events);
     this.init_columns();
     this.create_dialog();
     this.init_table(); //MAKE SURE TO INIT TABLE AFTER TABLE ELEMENT HAS BEEN LAYED SOMEWHERE
@@ -80,6 +87,11 @@ class DeductionKardex {
         this.table.draw(false);
       },
     });
+  }
+
+  cb_update_fabric_data(fabric: Fabric) {
+    this.fabric = fabric;
+    this.update_display();
   }
 
   init_binding() {
@@ -197,12 +209,14 @@ class DeductionKardex {
       </div>
 
       <div class="bottom-container flex flex-col"> 
+      <p id='recent-comment'>Comentario reciente:</p>
       </div>
     </div>
   `);
 
     this.table_element = this.wrapper.querySelector("table");
     this.tbody = this.table_element.querySelector("tbody");
+    this.recent_comment_p = this.wrapper.querySelector("#recent-comment");
 
     return this.wrapper;
   }
@@ -280,6 +294,10 @@ class DeductionKardex {
     this.events.emit("deduction:modified", this.fabric);
   }
 
+  async show_comments() {
+    const result = await this.commentsForm.show(this.fabric);
+  }
+
   close() {
     this.table.data().clear();
     this.table.draw();
@@ -308,6 +326,8 @@ class DeductionKardex {
       },
     });
 
+    let boco = this.modalDialog.dialogEl.querySelector(".bottom-container");
+
     let buttons = createElementFromHTML(`
 	<div class="flex justify-left"> 
 	    <button class="btn" id="kardex-goback">Volver</button>
@@ -320,7 +340,7 @@ class DeductionKardex {
     this.deduct = buttons.querySelector("#kardex-deduct");
     this.comments = buttons.querySelector("#kardex-comments");
 
-    this.modalDialog.footerContainer.appendChild(buttons);
+    boco.prepend(buttons);
 
     this.goback.addEventListener("click", () => {
       this.close();
@@ -331,6 +351,7 @@ class DeductionKardex {
     });
 
     this.comments.addEventListener("click", async () => {
+      this.show_comments();
       log.debug("Comments");
     });
 
@@ -343,12 +364,18 @@ class DeductionKardex {
       `#${fabric_available_percent}`,
     );
   }
+  update_display() {
+    if (this.fabric.comments.length > 0) {
+      this.recent_comment_p.textContent = `Comentario Reciente: ${this.fabric.comments[0].comment} `;
+    }
+  }
 
   cb_show_kardex(fabric: Fabric) {
     this.fabric = fabric;
     this.update_title(fabric);
     this.update_display_initial_measurements();
     log.debug("Fabric received in kardex", fabric);
+    this.update_display();
 
     this.insert_deductions_to_table(fabric.deductions);
 

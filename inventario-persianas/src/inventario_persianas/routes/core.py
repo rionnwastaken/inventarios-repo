@@ -117,3 +117,55 @@ def deduction_delete():
         ).returnIt()
 
     return core.deduction_delete(fabric_id, deduction_id)
+
+
+@core_bp.post("/fabric/comment/new/")
+def comment_new():
+    log.debug("comment_new()")
+    data = request.get_json()
+
+    if data is None:
+        return Error("Didnt receive data", 400).returnIt()
+
+    comment = data.get("comment")
+    if comment == None:
+        return Error(f"Comment is None {comment}", 400).returnIt()
+
+    return core.comment_new(comment)
+
+
+@core_bp.post("/fabric/comment/update/")
+def comment_update():
+    log.debug("comment_update()")
+    data = request.get_json()
+
+    if data is None:
+        return Error("Didnt receive data", 400).returnIt()
+
+    comment_partial = data.get("comment_partial")
+    fabric_id = data.get("fabric_id")
+    if comment_partial == None or fabric_id == None:
+        return Error(
+            f"Commen or fabric_idt is None {comment_partial} {fabric_id}", 400
+        ).returnIt()
+
+    return core.comment_update(fabric_id, fabric_id)
+
+
+@core_bp.post("/fabric/comment/delete/")
+def comment_delete():
+    log.debug("comment_delete()")
+    data = request.get_json()
+
+    if data is None:
+        return Error("Didnt receive data", 400).returnIt()
+
+    comment = data.get("comment")
+    fabric_id = data.get("fabric_id")
+
+    if comment == None or fabric_id == None:
+        return Error(
+            f"Commen or fabric_idt is None {comment} {fabric_id}", 400
+        ).returnIt()
+
+    return core.comment_delete(fabric_id, fabric_id)

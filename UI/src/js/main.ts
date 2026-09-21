@@ -6,7 +6,7 @@ globalThis.log = log;
 import { CatalogApi } from "./api/catalog.ts";
 
 import { CoreAPI } from "./api/core.ts";
-import { Tube } from "./schema.ts";
+import { FabricComment, Tube } from "./schema.ts";
 import { Fabric } from "./typeObj.ts";
 
 // import {ColumnsConfig} from 'datatables.net-dt';
@@ -68,6 +68,15 @@ deductionKardex.events.on(
   (fabric: Fabric, deduction_id) => {
     state.tableData.update_fabric_by_id(fabric);
     tubeOverview.cb_update_fabric_data(fabric);
+  },
+);
+
+deductionKardex.events.on(
+  "comment:edited",
+  (fabric: Fabric, comment: FabricComment) => {
+    state.tableData.update_fabric_by_id(fabric);
+    tubeOverview.cb_update_fabric_data(fabric);
+    deductionKardex.cb_update_fabric_data(fabric);
   },
 );
 
