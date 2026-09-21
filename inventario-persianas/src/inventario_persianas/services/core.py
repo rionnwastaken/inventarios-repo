@@ -72,7 +72,9 @@ def recent_tubes_and_fabrics():
     stmt_tubes = (
         select(Tube)
         .options(
-            selectinload(Tube.fabrics).options(selectinload(Fabric.deductions)),
+            selectinload(Tube.fabrics).options(
+                selectinload(Fabric.deductions), selectinload(Fabric.comments)
+            ),
             joinedload(Tube.tube_rectified),
         )
         .order_by(desc(Tube.updated_at))
@@ -393,7 +395,9 @@ def update_deduction(
 def deduction_delete(fabric_id: int, deduction_id: int):
 
     with db.session.begin():
-        fabric = db.session.get(Fabric, fabric_id,options=[selectinload(Fabric.deductions)])
+        fabric = db.session.get(
+            Fabric, fabric_id, options=[selectinload(Fabric.deductions),selectinload(Fabric.comments)]
+        )
         deduction = db.session.get(FabricDeduction, deduction_id)
 
         if not fabric or not deduction:
