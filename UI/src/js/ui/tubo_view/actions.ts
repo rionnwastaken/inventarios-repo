@@ -10,7 +10,6 @@ import {
 } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
-import { showRecycleDialog } from "../utils.ts";
 
 import DataTable from "datatables.net-dt";
 import "datatables.net-select-dt";

@@ -1,7 +1,6 @@
 import { CatalogApi } from "../../api/catalog";
 import { Fabric } from "../../schema";
 import { state } from "../../state";
-import { showRecycleDialog } from "../utils";
 import { CatalogItem } from "../../typeObj";
 import TomSelect from "tom-select";
 

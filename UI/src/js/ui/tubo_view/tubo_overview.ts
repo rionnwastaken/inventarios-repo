@@ -10,7 +10,6 @@ import {
 } from "../utils.ts";
 import { Api, ApiRowMethods, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
-import { showRecycleDialog } from "../utils.ts";
 
 import DataTable from "datatables.net-dt";
 import "datatables.net-select-dt";
@@ -29,6 +28,7 @@ import archive_icon from "../../../assets/icons/archive.png";
 import { Actions } from "./actions.ts";
 import { ActionOverlay } from "../misc/ActionOverlay.ts";
 import { createIconHTML } from "../renderUtils.ts";
+import { shortLivedDialog } from "../shortLiveDialog.ts";
 
 const add_id = "add-btn";
 const edit_id = "edit-btn";
@@ -202,10 +202,10 @@ class TubeOverview {
         this.handle_saving_created_fabrics(mods.created_arr);
       },
       onCancel: () => {
-        this.clean_before_closing();
+        return this.clean_before_closing();
       },
       onClose: () => {
-        this.clean_before_closing();
+        return this.clean_before_closing();
       },
     });
 
@@ -241,38 +241,41 @@ class TubeOverview {
     `;
   }
 
+  // create_
+
   async clean_before_closing() {
+    log.debug("clean_before_closing()");
     const mods = get_type_modifications_arrays(this.table);
     let display_message = "";
 
     if (mods.created_arr.data().length > 0) {
-      display_message += `Has creado ${mods.created_arr.length} telas`;
+      display_message += `Telas creadas: ${mods.created_arr.length}<br>`;
     }
 
     if (mods.edited_arr.data().length > 0) {
-      display_message += `,has editado ${mods.edited_arr.length} telas`;
+      display_message += `Telas Editadas: ${mods.edited_arr.length}<br>`;
     }
 
     if (mods.deleted_arr.data().length > 0) {
-      display_message += `,has eliminado ${mods.deleted_arr.length} telas`;
+      display_message += `Telas eliminado: ${mods.deleted_arr.length}<br>`;
     }
 
     if (display_message != "") {
-      const confirm = await showRecycleDialog({
-        header: display_message,
-        message: "Que desear hacer",
-        cancelText: "Volver",
-        confirmText: "No guardar los cambios",
-      });
+      shortLivedDialog.titleContainer.innerHTML = `Acciones realizadas:<br>${display_message}`;
+      shortLivedDialog.confirmBtn.textContent = "Cerrar sin  guardar";
+      shortLivedDialog.cancelBtn.textContent = "Regresar";
+      const confirm = await shortLivedDialog.open();
 
       if (!confirm) {
-        return;
+        return false;
       }
     }
 
     log.debug("closing");
+    shortLivedDialog.close();
     this.modal_dialog.close();
     this.table.data().clear();
+    return true;
   }
 
   async handle_saving_created_fabrics(arr: ApiRowsMethods<FabricData>) {

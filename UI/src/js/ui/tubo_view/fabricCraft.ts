@@ -4,7 +4,6 @@ import { CatalogItem, FabricData, Fabric, TubeExtraD } from "../../typeObj";
 import { ObjectChanged as ObjectChanged } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
-import { showRecycleDialog } from "../utils.ts";
 
 import DataTable from "datatables.net-dt";
 
