@@ -24,11 +24,14 @@ export interface ModalDialogOptions {
 }
 
 export class ModalDialog {
-  private options: Required<ModalDialogOptions>;
+  public options: Required<ModalDialogOptions>;
   public dialogEl!: HTMLDialogElement;
   cancelBtn: HTMLButtonElement;
   confirmBtn: HTMLButtonElement;
   footerContainer: HTMLElement;
+
+  bodyContainer: HTMLElement;
+  titleContainer: HTMLElement;
 
   constructor(options: ModalDialogOptions = {}) {
     this.options = {
@@ -78,7 +81,7 @@ export class ModalDialog {
       <div class="${containerClasses}">
         <!-- Header -->
         <div class="modal-header">
-          <h3 class="text-lg font-bold dialog-title-container"></h3>
+          <h3 class="text-lg dialog-title-container"></h3>
         </div>
 
         <!-- Body -->
@@ -99,28 +102,28 @@ export class ModalDialog {
   }
 
   private _renderHeader(): void {
-    const titleContainer = this.dialogEl.querySelector<HTMLElement>(
+    this.titleContainer = this.dialogEl.querySelector<HTMLElement>(
       ".dialog-title-container",
     );
-    if (!titleContainer) return;
+    if (!this.titleContainer) return;
 
     if (this.options.title instanceof HTMLElement) {
-      titleContainer.replaceChildren(this.options.title);
+      this.titleContainer.replaceChildren(this.options.title);
     } else {
-      titleContainer.innerHTML = this.options.title;
+      this.titleContainer.innerHTML = this.options.title;
     }
   }
 
   private _renderBody(): void {
-    const bodyContainer = this.dialogEl.querySelector<HTMLElement>(
+    this.bodyContainer = this.dialogEl.querySelector<HTMLElement>(
       ".dialog-body-container",
     );
-    if (!bodyContainer) return;
+    if (!this.bodyContainer) return;
 
     if (this.options.body instanceof HTMLElement) {
-      bodyContainer.replaceChildren(this.options.body);
+      this.bodyContainer.replaceChildren(this.options.body);
     } else {
-      bodyContainer.innerHTML = this.options.body;
+      this.bodyContainer.innerHTML = this.options.body;
     }
   }
 

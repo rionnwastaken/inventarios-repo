@@ -77,13 +77,8 @@ export class NotiDialog extends ModalDialog {
     });
   }
 }
-
+const notiDialog = new NotiDialog({});
+export { notiDialog };
 export function errorNotiTopRight(title, body) {
-  const notiDialog = new NotiDialog({
-    title: title,
-    persistent: true,
-    body: body,
-    container_tailwind_class: "top-6 right-6 bg-red-500 text-white",
-  });
   notiDialog.show();
 }

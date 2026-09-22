@@ -3,6 +3,9 @@ import { Fabric } from "../../schema";
 import { state } from "../../state";
 import { CatalogItem } from "../../typeObj";
 import TomSelect from "tom-select";
+import { notiDialog } from "../dialogs/notification";
+import { ModalDialog } from "../dialogs/modalDialog";
+import { shortLivedDialog } from "../shortLiveDialog";
 
 /**
  * Compares scalar and relational keys of original and modified Fabric instances,
@@ -43,12 +46,14 @@ export async function request_to_create_value_on_table(
   value,
   table_name,
 ): Promise<{ created: Boolean; item: CatalogItem }> {
-  const userConfirmed = await showRecycleDialog({
-    header: `El elemento ${value} no existe en la tabla ${table_name}`,
-    message: "Desea crearlo?",
-    cancelText: "No",
-    confirmText: "Si",
-  });
+  shortLivedDialog.titleContainer.innerHTML = `Quiere crear el articulo <span class="font-bold">${value}</span> en la tabla ${table_name}?`;
+
+  shortLivedDialog.cancelBtn.textContent = "No";
+  shortLivedDialog.confirmBtn.textContent = "Si";
+  const userConfirmed = await shortLivedDialog.open();
+  // const userConfirmed = await open();
+
+  shortLivedDialog.close();
 
   let created = false;
   let item = null;
@@ -57,6 +62,8 @@ export async function request_to_create_value_on_table(
     const res = await CatalogApi.addItem(table_name, value);
 
     if (res.success) {
+      notiDialog.titleContainer.textContent = `Se ha creado correctamente el articulo ${value} en la table ${table_name}`;
+      notiDialog.show();
       item = res.data["item"];
       created = true;
 
