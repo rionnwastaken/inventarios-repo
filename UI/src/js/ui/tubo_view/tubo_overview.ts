@@ -492,8 +492,9 @@ class TubeOverview {
       original_fabric: fabric,
       mode: "normal",
     };
+    log.debug(data);
     row.data(data);
-    this.table.draw();
+    this.table.draw(false);
   }
 }
 

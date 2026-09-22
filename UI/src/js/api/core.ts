@@ -47,10 +47,13 @@ export const CoreAPI = {
     return res;
   },
 
-  fabricComment_update: async (fabricComment: FabricComment, fabric_id) => {
+  fabricComment_update: async (
+    fabricComment: Partial<FabricComment>,
+    comment_id,
+  ) => {
     const res = await api.post("/fabric/comment/update/", {
       comment_partial: fabricComment,
-      fabric_id: fabric_id,
+      comment_id: comment_id,
     });
     return res;
   },

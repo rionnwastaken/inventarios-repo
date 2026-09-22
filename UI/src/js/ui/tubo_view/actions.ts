@@ -60,6 +60,7 @@ export class Actions {
     this.table.draw(false);
   }
 
+  //Tube overwiew file is an incomprenhesible mess
   async open_form_create(tube_id) {
     let fabricData: FabricData = {
       original_fabric: null,

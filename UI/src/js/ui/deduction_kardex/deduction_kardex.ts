@@ -39,6 +39,7 @@ export interface DeductionKardexEvents {
   "deduction:modified": (fabric: Fabric) => void;
   "deduction:deleted": (fabric: Fabric, deduction_id) => void;
   "comment:edited": (fabric: Fabric, comment: FabricComment) => void;
+  "comment:deleted": (fabric: Fabric, comment: FabricComment) => void;
 }
 
 class DeductionKardex {

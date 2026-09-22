@@ -8,7 +8,7 @@ import {
   RenderingInfo,
 } from "../utils";
 import { state } from "../../state";
-import { Api, ColumnsConfig } from "datatables.net-dt";
+import { Api, ApiRowMethods, ColumnsConfig } from "datatables.net-dt";
 
 import DataTable from "datatables.net-dt";
 import "datatables.net-select-dt";
@@ -50,6 +50,7 @@ export class Comments {
 
   events: TypedEventEmitter<DeductionKardexEvents>;
 
+  delete_comment: HTMLButtonElement;
   // public events = new TypedEventEmitter<DeductionKardexEvents>();
 
   constructor(events: TypedEventEmitter<DeductionKardexEvents>) {
@@ -58,6 +59,24 @@ export class Comments {
     this.init_columns();
     this.init_table();
     this.commentForm = new CommentForm();
+    this.bind_row_click();
+
+    this.actionOverlay = new ActionOverlay({
+      container: this.create_action_overlay(),
+      table: this.table,
+      cb_samerow_2clicks: async (data: FabricData, row) => {
+        this.OpenFormEditing(row);
+        // await this.handle_fabric_selection(row);
+      },
+    });
+  }
+
+  bind_row_click() {
+    inspect_row(this.table.table().body(), this.table);
+    let body = this.table.table().body();
+    body.addEventListener("click", async (event) => {
+      this.actionOverlay.handle_row_click(event);
+    });
   }
 
   body(): HTMLElement {
@@ -84,6 +103,28 @@ export class Comments {
     return wrapper;
   }
 
+  private create_action_overlay() {
+    this.overlay_action_container = createElementFromHTML(`
+
+      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
+      ${createIconHTML({
+        src: edit_icon,
+        id: "delete-btn",
+        title: "Eliminar comentario",
+      })}
+      </div>
+`);
+
+    this.delete_comment =
+      this.overlay_action_container.querySelector("#delete-btn");
+
+    this.delete_comment.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      this.deleteComment();
+    });
+    return this.overlay_action_container;
+  }
+
   title() {
     return createElementFromHTML(`
 
@@ -105,7 +146,7 @@ export class Comments {
         blurable: true,
       },
       searching: false,
-      // order: { name: "original_fabric.updated_at", dir: "desc" },
+      order: { name: "updated_at", dir: "desc" },
       // rowCallback: this.render_row,
       columnDefs: [
         {
@@ -179,8 +220,19 @@ export class Comments {
     this.table.draw(false);
   }
 
-  async OpenFormEditing() {
-    await this.commentForm.open(this.fabric, "editing");
+  async OpenFormEditing(row: ApiRowMethods<FabricComment>) {
+    let comment = row.data();
+    let data: { comment: FabricComment; fabric: Fabric } | null =
+      await this.commentForm.open(this.fabric, "editing", comment);
+
+    if (data == null) {
+      return;
+    }
+
+    row.data(data.comment);
+
+    this.events.emit("comment:edited", data.fabric, data.comment);
+    this.table.draw(false);
   }
 
   async show(fabric: Fabric) {
@@ -194,6 +246,21 @@ export class Comments {
       this.table.rows.add(fabric.comments);
       this.table.draw(false);
     });
+  }
+
+  async deleteComment() {
+    let row = this.actionOverlay.selected_row;
+    let comment: FabricComment =
+      this.actionOverlay.selected_row.data() as FabricComment;
+    let res = await CoreAPI.fabricComment_delete(comment.id, comment.fabric_id);
+    if (!res.success) {
+      log.debug(res.data);
+      return;
+    }
+    let data = res.data;
+    this.events.emit("comment:deleted", data.fabric, data.comment);
+    row.remove();
+    this.table.draw(false);
   }
 
   close() {
@@ -335,17 +402,12 @@ class CommentForm {
   }
 
   submit() {
-    let value = this.validate();
-    if (value == null) {
-      return;
-    }
-
     if (this.mode == "creating") {
       this.new_comment();
     }
 
     if (this.mode == "editing") {
-      // this.
+      this.update_comment();
     }
   }
   async new_comment() {
@@ -378,10 +440,11 @@ class CommentForm {
 
     let res = await CoreAPI.fabricComment_update(
       partial_payload,
-      this.fabric.id,
+      this.fabricComment.id,
     );
 
     if (res.success) {
+      this.resolve_promise(res.data);
       this.close();
     }
   }

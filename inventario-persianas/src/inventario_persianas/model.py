@@ -234,6 +234,11 @@ class FabricComment(TimestampMixin, table=True):
     fabric: Optional[Fabric] = Relationship(back_populates="comments")
 
 
+class FabricCommentUpdate(TimestampMixin):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    comment: Optional[str] = Field(default=None, max_length=500)
+
+
 """
 So we are going to display the original measurement and also the actual value that it has
 The history of quantity removed (We can only remove, not possible to add but we can update history)
@@ -311,6 +316,31 @@ def update_fabric_and_tube_on_deduction_change(
     mapper, connection, target: FabricDeduction
 ):
     log.debug("update_fabric_and_tube_on_deduction_change()")
+    now = datetime.now(timezone.utc)
+
+    # 1. Update parent Fabric
+    connection.execute(
+        update(Fabric).where(Fabric.id == target.fabric_id).values(updated_at=now)
+    )
+
+    # 2. Query tube_id directly using the Core connection
+    tube_id = connection.scalar(
+        select(Fabric.tube_id).where(Fabric.id == target.fabric_id)
+    )
+
+    if tube_id is None:
+        log.error("Fabric or Tube ID not found for fabric_id %s", target.fabric_id)
+        return
+
+    # 3. Update grandparent Tube
+    connection.execute(update(Tube).where(Tube.id == tube_id).values(updated_at=now))
+
+
+@event.listens_for(FabricComment, "after_insert")
+@event.listens_for(FabricComment, "after_update")
+@event.listens_for(FabricComment, "after_delete")
+def update_fabric_and_tube_on_comment_change(mapper, connection, target: FabricComment):
+    log.debug("update_fabric_and_tube_on_comment_change()")
     now = datetime.now(timezone.utc)
 
     # 1. Update parent Fabric

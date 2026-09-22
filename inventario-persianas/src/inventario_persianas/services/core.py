@@ -4,10 +4,12 @@ import json
 from decimal import Decimal
 from functools import wraps
 
+
 from inventario_persianas.exceptions import OverDrawing
 from inventario_persianas.model import (
     Fabric,
     FabricComment,
+    FabricCommentUpdate,
     FabricDeduction,
     FabricDeductionUpdate,
     FabricUpdate,
@@ -451,12 +453,74 @@ def comment_new(comment: dict):
 
 
 @handle_db_exceptions
-def comment_update(payload: dict, fabric_id: int):
+def comment_update(comment_id: int, payload: dict):
+
+    with db.session.begin():
+        comment = db.session.get(FabricComment, comment_id)
+
+        if not comment:
+            raise ValueError(f"Comment not found with id {comment_id}")
+
+        fabric = db.session.get(
+            Fabric,
+            comment.fabric_id,
+            options=[selectinload(Fabric.deductions), selectinload(Fabric.comments)],
+        )
+
+        if not fabric:
+            raise ValueError(f"Fabric not found with id {comment.fabric_id}")
+
+        comment_old_json = comment.model_dump(mode="json")
+        comment_payload = FabricCommentUpdate.model_validate(payload).model_dump(
+            exclude_unset=True
+        )
+
+        if not comment_payload or len(comment_payload) <= 0:
+            raise ValueError(
+                f"Comment id {comment_id}: 'partial_data' contains no valid update fields. {payload}"
+            )
+
+        comment.sqlmodel_update(comment_payload)
+        db.session.add(comment)
+        db.session.flush()
+        db.session.refresh(fabric)
+
+        AuditLogger.log(
+            "Update",
+            "fabric",
+            comment_id,
+            old_values=comment_old_json,
+            new_values=payload,
+        )
+
+        log.debug("Updated comment: %s", comment)
+
+        return {"fabric": fabric.payload(), "comment": comment.model_dump(mode="json")}
 
     return {}, 200
 
 
 @handle_db_exceptions
 def comment_delete(comment_id: int, fabric_id: int):
+    with db.session.begin():
+        comment = db.session.get(FabricComment, comment_id)
+        if comment == None:
+            raise ValueError(f"Comment was not found with id {comment_id}")
 
-    return {}, 200
+        fabric = db.session.get(
+            Fabric,
+            fabric_id,
+            options=[selectinload(Fabric.deductions), selectinload(Fabric.comments)],
+        )
+        if fabric == None:
+            raise ValueError(f"fabric was not found with id {fabric_id}")
+
+        comment_json = comment.model_dump(mode="json")
+        AuditLogger.log("Delete", "fabric_comment", comment.id, old_values=comment_json)
+
+        db.session.delete(comment)
+        fabric.comments.remove(comment)
+        db.session.flush()
+        db.session.refresh(fabric)
+
+        return {"fabric": fabric.payload(), "comment": comment_json}, 200

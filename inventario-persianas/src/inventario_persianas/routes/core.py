@@ -143,13 +143,13 @@ def comment_update():
         return Error("Didnt receive data", 400).returnIt()
 
     comment_partial = data.get("comment_partial")
-    fabric_id = data.get("fabric_id")
-    if comment_partial == None or fabric_id == None:
+    comment_id = data.get("comment_id")
+    if comment_partial == None or comment_id == None:
         return Error(
-            f"Commen or fabric_idt is None {comment_partial} {fabric_id}", 400
+            f"Commen or fabric_idt is None {comment_partial} {comment_id}", 400
         ).returnIt()
 
-    return core.comment_update(fabric_id, fabric_id)
+    return core.comment_update(comment_id, comment_partial)
 
 
 @core_bp.post("/fabric/comment/delete/")
@@ -160,12 +160,12 @@ def comment_delete():
     if data is None:
         return Error("Didnt receive data", 400).returnIt()
 
-    comment = data.get("comment")
+    comment_id = data.get("comment_id")
     fabric_id = data.get("fabric_id")
 
-    if comment == None or fabric_id == None:
+    if comment_id == None or fabric_id == None:
         return Error(
-            f"Commen or fabric_idt is None {comment} {fabric_id}", 400
+            f"Commen or fabric_idt is None {comment_id} {fabric_id}", 400
         ).returnIt()
 
-    return core.comment_delete(fabric_id, fabric_id)
+    return core.comment_delete(comment_id, fabric_id)

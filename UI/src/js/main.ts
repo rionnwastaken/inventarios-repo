@@ -80,4 +80,13 @@ deductionKardex.events.on(
   },
 );
 
+deductionKardex.events.on(
+  "comment:deleted",
+  (fabric: Fabric, comment: FabricComment) => {
+    state.tableData.update_fabric_by_id(fabric);
+    tubeOverview.cb_update_fabric_data(fabric);
+    deductionKardex.cb_update_fabric_data(fabric);
+  },
+);
+
 document.addEventListener("DOMContentLoaded", () => {});
