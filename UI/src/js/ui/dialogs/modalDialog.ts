@@ -168,13 +168,34 @@ export class ModalDialog {
     });
 
     // 2. Clean up DOM when dialog actually closes
-    this.dialogEl.addEventListener("close", () => {
+    this.dialogEl.addEventListener("close", async (e) => {
+      e.preventDefault();
       log.debug("dialog closing");
       if (typeof this.options.onClose === "function") {
-        void this.options.onClose(this);
+        let value = await this.options.onClose(this);
+        if (value == false) {
+          return;
+        }
       }
       this.dialogEl.remove();
     });
+
+    this.dialogEl.addEventListener("submit", (e) => {
+      e.preventDefault();
+    });
+
+    this.dialogEl.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          void this.handleCancel();
+          log.debug("Escape key captured and blocked");
+        }
+      },
+      true,
+    );
   }
 
   public async handleConfirm(): Promise<void> {
