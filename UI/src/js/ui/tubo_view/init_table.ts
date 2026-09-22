@@ -66,7 +66,10 @@ export class InitTable {
         column_name: "Medidas Entrada",
         rendering_func: (info: RenderingInfo) => {
           let data = info.data as FabricData;
-          return `${data.original_fabric.original_width} x ${data.original_fabric.original_height} mts`;
+          let original_value = `${data.original_fabric.original_width} x ${data.original_fabric.original_height} mts`;
+          let modified_value = `${data?.modified_fabric?.original_width} x ${data?.modified_fabric?.original_height} mts`;
+
+          return getDiffValue(original_value, modified_value, data.mode);
         },
       }),
 
