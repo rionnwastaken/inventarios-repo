@@ -189,6 +189,8 @@ def update_fabrics(data: list[dict]) -> tuple[List[dict], int]:
 
             fabric.sqlmodel_update(partial_update_payload)
             db.session.add(fabric)
+            db.session.flush()
+            db.session.refresh(fabric)
 
             AuditLogger.log(
                 "Update",
@@ -199,9 +201,7 @@ def update_fabrics(data: list[dict]) -> tuple[List[dict], int]:
             )
 
             log.debug("Updated fabric: %s", fabric)
-            db.session.flush()
-            fabric_obj = fabric.payload()
-            updated_fabrics.append(fabric_obj)
+            updated_fabrics.append(fabric.payload())
 
         return updated_fabrics, 200
 
@@ -363,6 +363,7 @@ def update_deduction(
 
         fabricDeduction.sqlmodel_update(partial_payload_update)
         db.session.flush()
+        db.session.refresh(fabric)
 
         validate_deduction(
             fabric,
@@ -386,10 +387,8 @@ def update_deduction(
 
         fabricDeduction_obj = fabricDeduction.model_dump()
 
-        fabric_obj = fabric.payload()
-
         return {
-            "fabric": fabric_obj,
+            "fabric": fabric.payload(),
             "deduction": fabricDeduction_obj,
         }, 200
 
