@@ -1,3 +1,4 @@
+import json
 import logging
 
 import inventario_persianas.model as mod
@@ -94,14 +95,16 @@ def colors_bulk_remove():
 
 @catalago_bp.get("/all/")
 def get_all_catalago():
-
     catalog_data = {
         model.__tablename__: [
-            obj.model_dump() for obj in db.session.scalars(select(model))
+            obj.model_dump()
+            for obj in db.session.scalars(select(model).order_by(model.id.asc()))
         ]
         for model in mod.catalago_models
     }
 
+    pretty_json = json.dumps(catalog_data, indent=2, default=str)
+    log.debug(f"Catalog data:\n{pretty_json}")
     return catalog_data, 200
 
 
