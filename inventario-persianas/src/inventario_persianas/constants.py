@@ -10,3 +10,7 @@ DATABASE_PATH = ROOT / "inventarios.db"
 LOCATION_IMAGES = (
     ROOT / "location_images"
 )  # Images for the real locations where tubes go
+
+LOCATION_IMAGES.mkdir(
+    parents=True, exist_ok=True
+)  # Creates the location_images directory
