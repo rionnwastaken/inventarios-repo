@@ -21,4 +21,18 @@ export const CatalogApi = {
       value: value,
     });
   },
+  uploadLocationImage: async (file: File, description?: string) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    if (description) {
+      formData.append("description", description);
+    }
+
+    return await api.post("/upload-location-image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
 };

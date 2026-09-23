@@ -29,6 +29,8 @@ import { Actions } from "./actions.ts";
 import { ActionOverlay } from "../misc/ActionOverlay.ts";
 import { createIconHTML } from "../renderUtils.ts";
 import { shortLivedDialog } from "../shortLiveDialog.ts";
+import arrow_icon from "../../../assets/icons/arrow.svg";
+import { LocationController } from "./location/location.ts";
 
 const add_id = "add-btn";
 const edit_id = "edit-btn";
@@ -89,6 +91,8 @@ class TubeOverview {
 
   selected_row: ApiRowMethods<FabricData> | null;
   actionOverlay: ActionOverlay;
+  change_location: HTMLButtonElement;
+  locationController: LocationController;
 
   public events = new TypedEventEmitter<RowModalEvents>();
 
@@ -101,6 +105,7 @@ class TubeOverview {
     this.actions = new Actions(this.fabricCraft, this.table);
     this.init_bindings();
     this.selected_rows = new Set();
+    this.locationController = new LocationController();
 
     this.actionOverlay = new ActionOverlay({
       container: this.create_action_on_row_elements(),
@@ -226,10 +231,18 @@ class TubeOverview {
     `;
   }
   title() {
-    return `
+    const element = createElementFromHTML(`
     <div class="flex justify-between"> 
-	<div class="flex gap-2.5 items-center">
+	<div class="flex gap-2.5  flex-col">
 	  <h3 id="${tube_id}" class="text-lg font-bold"></h3>
+      <div class="flex gap-2 items-center"> 
+      <p>Ubicacion: No asignado</p>
+      ${createIconHTML({
+        src: arrow_icon,
+        id: "change-location-btn",
+        title: "Cambiar ubicacion",
+      })}
+      </div>
 	</div>
 
 	<div class="flex gap-4">
@@ -238,7 +251,16 @@ class TubeOverview {
 	  </button>
 	</div>
     </div>
-    `;
+    `);
+
+    this.change_location = element.querySelector("#change-location-btn");
+
+    this.change_location.addEventListener("click", () => {
+      this.locationController.show();
+      log.debug("click");
+    });
+
+    return element;
   }
 
   // create_

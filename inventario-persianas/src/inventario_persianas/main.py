@@ -37,6 +37,19 @@ def initial():
     return render_template("index.html")
 
 
+from flask import send_from_directory, abort
+
+
+@app.get("/images/<filename>")
+def serve_location_image(filename):
+    try:
+        # Serves files directly from your LOCATION_IMAGES directory
+        log.debug("serving image ", const.LOCATION_IMAGES, filename)
+        return send_from_directory(const.LOCATION_IMAGES, f"{filename}.webp")
+    except FileNotFoundError:
+        abort(404)
+
+
 print("hi")
 
 

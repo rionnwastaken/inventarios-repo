@@ -1,6 +1,7 @@
 import json
 import logging
 
+import inventario_persianas.services.catalogs as service
 import inventario_persianas.model as mod
 from flask import Blueprint, request
 from inventario_persianas.model import (
@@ -157,3 +158,10 @@ def add_to_catalago():
     db.session.commit()
 
     return {"success": "Catalago item has been created", "item": obj_json}, 200
+
+
+@catalago_bp.post("/upload-location-image")
+def upload_location_image():
+    log.debug("upload_location_image()")
+    files = request.files
+    return service.save_image(files)

@@ -46,6 +46,7 @@ tableController.events.on("fabric:dblclick", (...args) => {
 state.events.on("catalago:loaded", () => {
   console.log("fuck");
   tubeOverview.cb_initModalDropdowns();
+  tubeOverview.locationController.loadSlots();
 });
 
 tubeOverview.events.on("catalog_item:added", (...args) => {

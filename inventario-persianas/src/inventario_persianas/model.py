@@ -356,6 +356,7 @@ catalago_models = [
     BlindModel,
     Supplier,
     Color,
+    Location,
 ]
 
 
@@ -364,6 +365,7 @@ fabric_column2catalago_models = {
     "color_id": Color,
     "fabric_classification_id": FabricClassification,
     "supplier_id": Supplier,
+    "location_id": Location,
 }
 
 

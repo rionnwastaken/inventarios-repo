@@ -76,6 +76,7 @@ class CatalagoData {
         this.data[key] = arr;
       }
 
+      log.debug("Catalog data loaded ", this.data);
       this.events.emit("catalago:loaded");
     }
   }
