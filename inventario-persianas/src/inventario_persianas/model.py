@@ -66,19 +66,9 @@ class Location(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     description: Optional[str] = Field(default=None, max_length=100)
+    image_path: str = Field(max_length=100)
 
     tubes: List["Tube"] = Relationship(back_populates="location")
-    location_images: List["LocationImage"] = Relationship(back_populates="location")
-
-
-class LocationImage(SQLModel, table=True):
-    __tablename__ = "location_image"  # type:ignore
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    image_path: str = Field(max_length=100)
-    location_id: int = Field(foreign_key="location.id")
-
-    location: Optional[Location] = Relationship(back_populates="location_images")
 
 
 class Supplier(SQLModel, table=True):
@@ -366,7 +356,6 @@ catalago_models = [
     BlindModel,
     Supplier,
     Color,
-    LocationImage,
 ]
 
 
