@@ -10,11 +10,6 @@ import {
 import { state } from "../../state";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 
-import DataTable from "datatables.net-dt";
-import "datatables.net-select-dt";
-import "datatables.net-dt/css/dataTables.dataTables.css";
-import "datatables.net-select-dt/css/select.dataTables.css";
-// import "datatables.net-dt/css/dataTables.dataTables.css";
 import {
   createIconHTML,
   format_measurement,
@@ -26,10 +21,10 @@ import { Form } from "./form";
 import { TypedEventEmitter } from "../../emitter";
 import { column } from "../utils";
 import edit_icon from "../../../assets/icons/edit.png";
-import { ActionOverlay } from "../misc/ActionOverlay";
 import { CoreAPI } from "../../api/core";
 import { Comments } from "./comments";
 import { FabricComment } from "../../schema";
+import { KardexTable } from "./table";
 
 const title_catalago_id = "title-catalago-text-id";
 const initial_measurement_container_id = "initial-measurement-container";
@@ -43,10 +38,8 @@ export interface DeductionKardexEvents {
 }
 
 class DeductionKardex {
-  columns: (ColumnsConfig & { data: keyof FabricDeduction })[];
   table_element: HTMLTableElement;
   table: Api<FabricDeduction>;
-  tbody: HTMLTableElement;
   fabric: Fabric;
   modalDialog: ModalDialog;
   title_el: HTMLElement;
@@ -60,9 +53,6 @@ class DeductionKardex {
   commentsForm: Comments;
   wrapper: HTMLElement;
 
-  overlay_action_container: HTMLDivElement;
-  delete_action_btn: HTMLButtonElement;
-  actionOverlay: ActionOverlay;
   public events = new TypedEventEmitter<DeductionKardexEvents>();
 
   goback: HTMLButtonElement;
@@ -71,33 +61,46 @@ class DeductionKardex {
 
   recent_comment_p: HTMLParagraphElement;
 
+  kardexTable: KardexTable;
+
   constructor() {}
   init() {
     this.deductionForm = new Form();
     this.commentsForm = new Comments(this.events);
-    this.init_columns();
     this.create_dialog();
-    this.init_table(); //MAKE SURE TO INIT TABLE AFTER TABLE ELEMENT HAS BEEN LAYED SOMEWHERE
-    this.init_binding();
-    this.actionOverlay = new ActionOverlay({
-      table: this.table,
-      container: this.create_action_overlay(),
-      cb_samerow_2clicks: async (deduction, selected_row) => {
-        log.debug("deleting deductionn");
-        await this.open_deduction_form("editing", deduction);
-        this.table.draw(false);
+    this.kardexTable = new KardexTable({
+      on_delete: async (data, row) => {
+        const res = await CoreAPI.delete_deduction(this.fabric.id, data.id);
+        if (!res.success) {
+          log.debug(res.data);
+          return;
+        }
+        this.fabric = res.data.fabric;
+        row.remove();
+        this.table.draw();
+
+        this.update_display_initial_measurements();
+        this.events.emit(
+          "deduction:deleted",
+          this.fabric,
+          res.data.deduction_id,
+        );
+        log.debug(`Deduction removed ${res.data.deduction_id}`);
       },
     });
+    this.kardexTable.init(this.table_element);
+    this.table = this.kardexTable.dt;
+
+    this.kardexTable.actionOverlay.cb_samerow_2clicks = async (data, row) => {
+      log.debug("deleting deductionn");
+      await this.open_deduction_form("editing", data);
+      this.table.draw(false);
+    };
   }
 
   cb_update_fabric_data(fabric: Fabric) {
     this.fabric = fabric;
     this.update_display();
-  }
-
-  init_binding() {
-    this.bind_row_click();
-    inspect_row(this.tbody, this.table);
   }
 
   update_title(fabric: Fabric) {
@@ -157,45 +160,6 @@ class DeductionKardex {
     return this.title_el;
   }
 
-  init_columns() {
-    //@ts-ignore
-    this.columns = [
-      //@ts-ignore
-      column2({
-        id: "",
-        column_name: "Salidas",
-        rendering_func: (info: RenderingInfo) => {
-          let data = info.data as FabricDeduction;
-          let width = data.removed_width;
-          let height = data.removed_height;
-          return `${width} x ${height} mts`;
-        },
-        // format_func: format_measurement,
-      }),
-
-      //@ts-ignore
-      column2({
-        id: "comment",
-        column_name: "Comentario",
-        rendering_func: render_plain2,
-      }),
-
-      //@ts-ignore
-      column2({
-        id: "updated_at",
-        column_name: "Ultima actualizacion",
-        rendering_func: render_datecell,
-      }),
-
-      //@ts-ignore
-      column2({
-        id: "created_at",
-        column_name: "Creado",
-        rendering_func: render_datecell,
-      }),
-    ];
-  }
-
   body(): HTMLElement {
     this.wrapper = createElementFromHTML(`
     <div class="flex   flex-col gap-4">
@@ -216,7 +180,6 @@ class DeductionKardex {
   `);
 
     this.table_element = this.wrapper.querySelector("table");
-    this.tbody = this.table_element.querySelector("tbody");
     this.recent_comment_p = this.wrapper.querySelector("#recent-comment");
 
     return this.wrapper;
@@ -227,34 +190,6 @@ class DeductionKardex {
     let original_height = this.fabric.original_height;
     this.initial_measurement_span.textContent = `${original_width} x ${original_height} mts`;
     this.fabric_available_percent_p.textContent = `${this.fabric.remaining_percent}%`;
-  }
-
-  init_table() {
-    this.table = new DataTable(this.table_element, {
-      columns: this.columns,
-      paging: false,
-      autoWidth: true,
-
-      order: { name: "updated_at", dir: "desc" },
-      select: {
-        blurable: true,
-      },
-      searching: false,
-      // order: { name: "original_fabric.updated_at", dir: "desc" },
-      // rowCallback: this.render_row,
-      columnDefs: [
-        {
-          targets: "_all", // Zero-based index of the columns you want to left-align
-          className: "dt-left", // Applies left-alignment to both header and body cells
-        },
-      ],
-    });
-  }
-
-  bind_row_click() {
-    this.tbody.addEventListener("click", async (event) => {
-      this.actionOverlay.handle_row_click(event);
-    });
   }
 
   async open_deduction_form(mode: ModalState, deduction?: FabricDeduction) {
@@ -301,9 +236,9 @@ class DeductionKardex {
   }
 
   close() {
-    this.table.data().clear();
-    this.table.draw();
+    this.kardexTable.clear();
     this.modalDialog.close();
+    this.recent_comment_p.textContent = "";
   }
 
   create_dialog() {
@@ -394,43 +329,6 @@ class DeductionKardex {
       this.table.row.add(element);
     });
     this.table.draw();
-  }
-
-  private create_action_overlay() {
-    this.overlay_action_container = createElementFromHTML(`
-      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
-      ${createIconHTML({
-        src: edit_icon,
-        id: "delete-action",
-        title: "Eliminar Deduccion",
-      })}
-      </div>
-`);
-
-    this.delete_action_btn =
-      this.overlay_action_container.querySelector("#delete-action");
-
-    this.delete_action_btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      log.debug("Deleting deduction");
-
-      let row = this.actionOverlay.selected_row;
-      let deduction = row.data() as FabricDeduction;
-
-      const res = await CoreAPI.delete_deduction(this.fabric.id, deduction.id);
-      if (!res.success) {
-        log.debug(res.data);
-        return;
-      }
-      this.fabric = res.data.fabric;
-      row.remove();
-      this.table.draw();
-
-      this.update_display_initial_measurements();
-      this.events.emit("deduction:deleted", this.fabric, res.data.deduction_id);
-      log.debug(`Deduction removed ${res.data.deduction_id}`);
-    });
-    return this.overlay_action_container;
   }
 }
 const deductionKardex = new DeductionKardex();
