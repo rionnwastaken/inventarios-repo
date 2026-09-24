@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from inventario_persianas import constants
 from inventario_persianas.model import (
     Color,
@@ -72,6 +74,11 @@ def process_and_save_thumbnail(
     Uses WebP format and fast downscaling.
     """
     file_path = os.path.join(output_dir, f"{filename_prefix}.webp")
+    path = Path(file_path)
+
+    if path.exists():
+        os.remove(path)
+
     img = Image.open(file_storage)
     img = ImageOps.exif_transpose(img)
     if img.mode in ("RGBA", "P"):
