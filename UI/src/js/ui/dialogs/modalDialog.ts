@@ -35,7 +35,8 @@ export class ModalDialog {
 
   constructor(options: ModalDialogOptions = {}) {
     this.options = {
-      container_tailwind_class: options.container_tailwind_class ?? "",
+      container_tailwind_class:
+        options.container_tailwind_class ?? "w-fit h-fit",
       footerContainer_tailwind_class:
         options.footerContainer_tailwind_class ?? null,
 

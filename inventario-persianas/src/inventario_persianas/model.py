@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import field_serializer
 import decimal
@@ -61,6 +61,17 @@ class BlindModel(SQLModel, table=True):
     fabrics: List["Fabric"] = Relationship(back_populates="blind_model")
 
 
+class LocationTagLink(SQLModel, table=True):
+    __tablename__ = "location_tag_link"
+
+    location_id: Optional[int] = Field(
+        default=None, foreign_key="location.id", primary_key=True
+    )
+    tag_id: Optional[int] = Field(
+        default=None, foreign_key="location_tag.id", primary_key=True
+    )
+
+
 class Location(SQLModel, table=True):
     __tablename__ = "location"  # type:ignore
 
@@ -69,6 +80,31 @@ class Location(SQLModel, table=True):
     image_path: str = Field(max_length=100)
 
     tubes: List["Tube"] = Relationship(back_populates="location")
+    tags: List["LocationTag"] = Relationship(
+        back_populates="locations", link_model=LocationTagLink
+    )
+
+    def payload(self) -> Dict[str, Any]:
+        data = self.model_dump()
+        data["tags"] = [tag.model_dump() for tag in self.tags]
+        return data
+
+
+class LocationUpdate(SQLModel):
+    description: Optional[str] = Field(default=None, max_length=100)
+    image_path: Optional[str] = Field(max_length=100, default=None)
+
+
+# 3. Add reverse relationship to LocationTag
+class LocationTag(SQLModel, table=True):
+    __tablename__ = "location_tag"  # type:ignore
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(max_length=100)
+
+    locations: List[Location] = Relationship(
+        back_populates="tags", link_model=LocationTagLink
+    )
 
 
 class Supplier(SQLModel, table=True):
@@ -357,6 +393,7 @@ catalago_models = [
     Supplier,
     Color,
     Location,
+    LocationTag,
 ]
 
 
@@ -366,6 +403,7 @@ fabric_column2catalago_models = {
     "fabric_classification_id": FabricClassification,
     "supplier_id": Supplier,
     "location_id": Location,
+    "location_tag": LocationTag,
 }
 
 

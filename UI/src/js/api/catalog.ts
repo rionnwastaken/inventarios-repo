@@ -35,4 +35,24 @@ export const CatalogApi = {
       },
     });
   },
+
+  updateLocationImage: async (
+    id: number | string,
+    file: File,
+    description?: string,
+  ) => {
+    const formData = new FormData();
+    formData.append("id", String(id));
+    formData.append("image", file);
+
+    if (description) {
+      formData.append("description", description);
+    }
+
+    return await api.post("/update/location-image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
 };

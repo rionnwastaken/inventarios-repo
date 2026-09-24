@@ -5,7 +5,7 @@ from inventario_persianas.model import (
     Color,
 )
 from sqlalchemy import Delete
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from inventario_persianas.services.core import handle_db_exceptions
 
@@ -34,34 +34,56 @@ def delete_color(db: Session, id: int):
 @handle_db_exceptions
 def save_image(files):
     with db.session.begin():
-        if "image" not in files:
-            raise ValueError("No image file provided")
-
-        file = files["image"]
-        if file.filename == "":
-            raise ValueError("No selected file")
-
-        # 1. Instantiate location and generate ID
         location = Location(image_path="")
         db.session.add(location)
         db.session.flush()
 
-        # 2. Process binary file and save thumbnail via helper
-        file_path = process_and_save_thumbnail(
-            file_storage=file,
-            output_dir=constants.LOCATION_IMAGES,
-            filename_prefix=f"image_{location.id}",
-            max_size=(300, 300),
-        )
-
-        # 3. Update database record with final file path
+        file_path = process_file(files, location)
         location.image_path = file_path
         location_json = location.model_dump(mode="json")
 
         AuditLogger.log("Insert", "location", location.id, new_values=location_json)
 
-        log.debug(f"Saved thumbnail to {file_path}")
+        # log.debug(f"Saved thumbnail to {file_path}")
         return {"location": location_json}, 201
+
+
+@handle_db_exceptions
+def update_image(files, location_id):
+    with db.session.begin():
+        location = db.session.get(Location, location_id)
+        if not location:
+            raise ValueError(f"Location not found with id {location_id}")
+
+        process_file(files, location)
+        location_json = location.model_dump(mode="json")
+        AuditLogger.log(
+            "Update",
+            "location",
+            location.id,
+            message="Image update",
+            new_values={},
+            old_values={},
+        )
+        return {"location": location_json}, 201
+
+
+def process_file(files, location: Location):
+    if "image" not in files:
+        raise ValueError("No image file provided")
+
+    file = files["image"]
+    if file.filename == "":
+        raise ValueError("No selected file")
+
+    file_path = process_and_save_thumbnail(
+        file_storage=file,
+        output_dir=constants.LOCATION_IMAGES,
+        filename_prefix=f"image_{location.id}",
+        max_size=(300, 300),
+    )
+
+    return file_path
 
 
 def process_and_save_thumbnail(
@@ -89,3 +111,16 @@ def process_and_save_thumbnail(
     img.save(file_path, "WEBP", quality=80, method=4)
 
     return file_path
+
+
+@handle_db_exceptions
+def location_update_data(location_data: dict, id):
+    with db.session.begin():
+        location = db.session.get(Location, id, options=[selectinload(Location.tags)])
+
+        if not location:
+            raise ValueError(
+                f"Location was not found with if {id}, data is {location_data}"
+            )
+
+        # if location.image

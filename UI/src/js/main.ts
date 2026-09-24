@@ -47,6 +47,7 @@ state.events.on("catalago:loaded", () => {
   console.log("fuck");
   tubeOverview.cb_initModalDropdowns();
   tubeOverview.locationController.loadSlots();
+  tubeOverview.locationController.locationForm.loadTags();
 });
 
 tubeOverview.events.on("catalog_item:added", (...args) => {

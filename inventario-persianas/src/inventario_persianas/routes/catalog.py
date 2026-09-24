@@ -1,6 +1,8 @@
 import json
 import logging
 
+from sqlalchemy.orm import selectinload
+
 import inventario_persianas.services.catalogs as service
 import inventario_persianas.model as mod
 from flask import Blueprint, request
@@ -8,11 +10,15 @@ from inventario_persianas.model import (
     BlindModel,
     Color,
     FabricClassification,
+    Location,
+    LocationTag,
     Supplier,
     db,
 )
 from sqlalchemy import Select, delete
 from sqlmodel import SQLModel, select
+
+from inventario_persianas.services.utils import Error
 
 log = logging.getLogger(__name__)
 
@@ -96,13 +102,26 @@ def colors_bulk_remove():
 
 @catalago_bp.get("/all/")
 def get_all_catalago():
-    catalog_data = {
-        model.__tablename__: [
+    skip_classes = [Location]
+    catalog_data = {}
+
+    for model in mod.catalago_models:
+        if model in skip_classes:
+            continue
+
+        catalog_data[model.__tablename__] = [
             obj.model_dump()
             for obj in db.session.scalars(select(model).order_by(model.id.asc()))
         ]
-        for model in mod.catalago_models
-    }
+
+    catalog_data[Location.__tablename__] = [
+        obj.payload()
+        for obj in db.session.scalars(
+            select(Location)
+            .options(selectinload(Location.tags))
+            .order_by(Location.id.asc())
+        )
+    ]
 
     pretty_json = json.dumps(catalog_data, indent=2, default=str)
     log.debug(f"Catalog data:\n{pretty_json}")
@@ -137,7 +156,13 @@ def add_to_catalago():
     table_name = data.get("table_name")
     value: str = data.get("value")
 
-    cat_arr: list[type[SQLModel]] = [Color, Supplier, FabricClassification, BlindModel]
+    cat_arr: list[type[SQLModel]] = [
+        Color,
+        Supplier,
+        FabricClassification,
+        BlindModel,
+        LocationTag,
+    ]
     cat_map = {c.__tablename__: c for c in cat_arr}
 
     if not value:
@@ -165,3 +190,27 @@ def upload_location_image():
     log.debug("upload_location_image()")
     files = request.files
     return service.save_image(files)
+
+
+@catalago_bp.post("/update/location-image")
+def update_location_image():
+    log.debug("upload_location_image()")
+    files = request.files
+    location_id = request.form.get("id")
+    description = request.form.get("description")
+
+    if not location_id:
+        return Error("FUCK YOU", 400)
+
+    return service.update_image(files, int(location_id))
+
+
+@catalago_bp.post("/location/update/")
+def location_update():
+    data = request.get_json()
+    location = data.get("payload")
+    id = data.get("id")
+    if not location:
+        return Error("No location provided", 400)
+
+    return service.location_update(location, id), 200
