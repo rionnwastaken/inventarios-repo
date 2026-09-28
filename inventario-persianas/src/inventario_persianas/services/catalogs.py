@@ -69,13 +69,14 @@ def update_image(files, location_id):
 
         process_file(files, location)
         location_json = location.model_dump(mode="json")
+        #TODO WHY it complains if new values and olva values empty dict
         AuditLogger.log(
             "Update",
             "location",
             location.id,
             message="Image update",
-            new_values={},
-            old_values={},
+            new_values={"yeah": "hey"},
+            old_values={"yeah": "saywaht"},
         )
         return {"location": location_json}, 201
 
