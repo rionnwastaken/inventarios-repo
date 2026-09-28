@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from sqlmodel import select
+
 from inventario_persianas import constants
 from inventario_persianas.model import (
     Color,
@@ -34,7 +36,16 @@ def delete_color(db: Session, id: int):
 @handle_db_exceptions
 def save_image(files):
     with db.session.begin():
-        location = Location(image_path="")
+        latest_location = (
+            db.session.execute(select(Location).order_by(Location.id.desc()))
+            .scalars()
+            .first()
+        )
+        sequence_number = 1
+        if latest_location:
+            sequence_number = latest_location.sequence_number + 1
+        location = Location(image_path="", sequence_number=sequence_number)
+
         db.session.add(location)
         db.session.flush()
 
