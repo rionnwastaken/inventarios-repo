@@ -1,6 +1,6 @@
 import { CatalogApi } from "../../../api/catalog";
 import { TypedEventEmitter } from "../../../emitter";
-import { Location, LocationTag } from "../../../schema";
+import { LocationTag } from "../../../schema";
 import { state } from "../../../state";
 import { ModalDialog } from "../../dialogs/modalDialog";
 import { notiDialog } from "../../dialogs/notification";
@@ -8,6 +8,7 @@ import { createIconHTML } from "../../renderUtils";
 import { createElementFromHTML, num } from "../../utils";
 import { request_to_create_value_on_table } from "../utils";
 import TomSelect from "tom-select";
+import { Location } from "../../../typeObj";
 
 export interface LocationEvents {
   "location:created": (location: Location) => {};
@@ -169,6 +170,10 @@ export class LocationController {
           class="w-full h-full object-cover block"
         />
       </div>
+
+    <ul class="tags-container flex gap-4">
+      ${location.tags.map((tag) => this.createTag(tag.name))}
+    </ul>
       
       <p class="mt-2 text-sm text-slate-800">${location?.description ?? ""}</p>
     </div>`);
@@ -176,6 +181,31 @@ export class LocationController {
     this.grid.appendChild(slot);
     this.slots.push(slot);
     return slot;
+  }
+
+  createTag(value) {
+    return `
+    <li class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/60 shadow-sm transition-colors hover:bg-slate-200/80">
+      ${value}
+    </li>
+  `;
+  }
+
+  updateSlot(slot: HTMLElement, location: Location) {
+    log.debug("updating slot with data ", location);
+
+    let filename = `image_${location.id}`;
+    let img = slot.querySelector("img");
+    img.src = `/images/${filename}?t=${Date.now()}`;
+
+    let tags_container = slot.querySelector(".tags-container");
+    tags_container.replaceChildren();
+
+    for (let tag of location.tags) {
+      tags_container.appendChild(
+        createElementFromHTML(this.createTag(tag.name)),
+      );
+    }
   }
   createAddSlot(onClick?: () => void) {
     const addslot_element = createElementFromHTML(`
@@ -265,7 +295,10 @@ export class LocationController {
 
         let imageCopy = image ? image.cloneNode(true) : null;
         log.debug("locationObj ", locatinoObj);
-        let location = await this.locationForm.open(locatinoObj, imageCopy);
+
+        let data = await this.locationForm.open(locatinoObj, imageCopy);
+
+        this.updateSlot(this.selected_slot, data.location);
       }
     });
 
@@ -431,6 +464,12 @@ class LocationForm {
         //   this.events.emit("catalog_item:added", res.item);
         // }
       },
+
+      onItemAdd: () => {
+        this.tom.setTextboxValue("");
+
+        this.tom.refreshOptions();
+      },
     });
 
     this.tom.control_input.addEventListener("input", function (e) {
@@ -492,17 +531,26 @@ class LocationForm {
       this.location = location;
       this.resolve_promise = resolve;
       this.insert_image(locationImage);
+      this.insert_tags(location.tags);
       this.modalDialog.show();
       this.new_image_selected = null;
     });
+  }
+
+  insert_tags(tags: Array<LocationTag>) {
+    let ids = tags.map((tag) => String(tag.id));
+    this.tom.addItems(ids);
   }
 
   insert_image(img: HTMLImageElement) {
     this.image_container.replaceChildren(img);
 
     this.img_dimensions = {
-      width: `${img.naturalWidth}px`,
-      height: `${img.naturalHeight}px`,
+      // width: `${img.naturalWidth}px`,
+      // height: `${img.naturalHeight}px`,
+
+      width: `300px`,
+      height: `300px`,
     };
   }
 
@@ -517,6 +565,7 @@ class LocationForm {
   }
 
   async submit() {
+    let location: Location = null;
     if (this.new_image_selected) {
       let res = await CatalogApi.updateLocationImage(
         this.location.id,
@@ -527,7 +576,57 @@ class LocationForm {
         log.debug(res.data());
         return;
       }
+
+      location = res.data.location;
     }
+
+    let tags = this.items_modified();
+    if (tags.changed) {
+      let payload = {
+        tags_id: tags.tags,
+      };
+      let res = await CatalogApi.location_update(this.location.id, payload);
+
+      if (!res.success) {
+        log.debug(res.data);
+        return;
+      }
+      location = res.data.location;
+      state.catalagoData.replace_by_id("location", location.id, location);
+    }
+
+    this.resolve_promise({
+      location: location,
+    });
+    // this.resolve_promise = null;
+  }
+
+  items_modified() {
+    const currentTags = this.location.tags || [];
+    const tomTags = this.tom.getValue() || [];
+
+    const tags = [];
+    tomTags.forEach((value) => {
+      tags.push(num(value));
+    });
+
+    // 1. If lengths differ, they definitely changed
+    log.debug("tomtags ", tags);
+    if (currentTags.length !== tags.length) {
+      return {
+        changed: true,
+        tags: tags,
+      };
+    }
+
+    // 2. Compare content using a Set
+    const currentSet = new Set(currentTags.map((t) => t.id ?? t));
+    const hasChanged = tags.some((id) => !currentSet.has(id));
+
+    return {
+      changed: hasChanged,
+      tags: tags,
+    };
   }
 }
 

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { createa_api } from "./axios_init.ts";
+import { Location } from "../typeObj.ts";
 
 const api = createa_api("catalago");
 
@@ -59,6 +60,13 @@ export const CatalogApi = {
   location_delete: async (location_id: number) => {
     return await api.post("/location/delete/", {
       id: location_id,
+    });
+  },
+
+  location_update: async (location_id: number, paylod: Partial<Location>) => {
+    return await api.post("/location/update/", {
+      id: location_id,
+      payload: paylod,
     });
   },
 };

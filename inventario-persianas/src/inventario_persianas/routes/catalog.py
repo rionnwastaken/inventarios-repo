@@ -205,17 +205,6 @@ def update_location_image():
     return service.update_image(files, int(location_id))
 
 
-@catalago_bp.post("/location/update/")
-def location_update():
-    data = request.get_json()
-    location = data.get("payload")
-    id = data.get("id")
-    if not location:
-        return Error("No location provided", 400)
-
-    return service.location_update(location, id), 200
-
-
 @catalago_bp.post("/location/delete/")
 def location_delete():
     data = request.get_json()
@@ -224,3 +213,14 @@ def location_delete():
         return Error("No ID provided", 400)
 
     return service.location_delete(id)
+
+
+@catalago_bp.post("/location/update/")
+def location_update():
+    data = request.get_json()
+    id = data.get("id")
+    payload = data.get("payload")
+    if not id or not payload:
+        return Error(f"No ID provided or payload not provided {id} {payload}", 400)
+
+    return service.location_update(id, payload)

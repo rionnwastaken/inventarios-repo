@@ -121,6 +121,21 @@ class CatalagoData {
     }
     arr.splice(index, 1);
   }
+
+  replace_by_id(tablename, id: number, obj: unknown) {
+    let arr = this.data[tablename];
+    if (arr == undefined) {
+      throw Error("bruv");
+    }
+    const index = arr.findIndex((item) => item.id === id);
+
+    if (index == -1) {
+      log.error(`Not able to find fabric with id ${id}, obj is `, obj);
+      return;
+    }
+    log.debug(`Updating in ${tablename}  in state with `, obj);
+    arr[index] = obj;
+  }
 }
 
 class TableData {

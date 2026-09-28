@@ -72,8 +72,10 @@ export async function request_to_create_value_on_table(
         value: item.id,
         text: item.name,
       });
-      tom.setValue(item.id);
-      tom.refreshItems();
+
+      tom.addItem(item.id);
+      tom.refreshOptions(false);
+      tom.close();
       log.debug(item);
     }
   } else {

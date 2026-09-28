@@ -3,6 +3,8 @@ import {
   Fabric as SchemaFabric,
   FabricDeduction as SchemaFabricDeduction,
   Tube,
+  Location as SchemaLocation,
+  LocationTag,
 } from "./schema";
 
 export type ViewMode = "tube" | "fabric" | "both";
@@ -36,6 +38,10 @@ export interface CatalogItem {
   name: string;
   id: number;
   table_name: string;
+}
+
+export interface Location extends SchemaLocation {
+  tags: LocationTag[];
 }
 
 export type ItemState = "created" | "edited" | "normal" | "deleted";
