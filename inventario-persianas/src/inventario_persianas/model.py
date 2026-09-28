@@ -86,8 +86,8 @@ class Location(SQLModel, table=True):
     )
 
     def payload(self) -> Dict[str, Any]:
-        data = self.model_dump()
-        data["tags"] = [tag.model_dump() for tag in self.tags]
+        data = self.model_dump(mode="json")
+        data["tags"] = [tag.model_dump(mode="json") for tag in self.tags]
         return data
 
 

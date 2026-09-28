@@ -4,6 +4,7 @@ import {
   BlindModel,
   Color,
   FabricClassification,
+  Location,
   LocationImage,
   Supplier,
   Tube,
@@ -101,6 +102,24 @@ class CatalagoData {
       this.fabric_optional_tables = data;
       log.info("Optional data of row loaded");
     }
+  }
+
+  remove_by_id(table_name, id) {
+    let arr: Array<Location> = this.data[table_name];
+    if (arr == undefined) {
+      throw `Array not found with table name ${table_name}`;
+    }
+
+    let index = arr.findIndex((value, index) => {
+      if (value.id == id) {
+        return true;
+      }
+    });
+
+    if (index == -1) {
+      throw `Id ${id} was not found in array state ${arr}`;
+    }
+    arr.splice(index, 1);
   }
 }
 

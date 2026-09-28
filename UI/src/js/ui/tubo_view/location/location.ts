@@ -3,8 +3,9 @@ import { TypedEventEmitter } from "../../../emitter";
 import { Location, LocationTag } from "../../../schema";
 import { state } from "../../../state";
 import { ModalDialog } from "../../dialogs/modalDialog";
+import { notiDialog } from "../../dialogs/notification";
 import { createIconHTML } from "../../renderUtils";
-import { createElementFromHTML } from "../../utils";
+import { createElementFromHTML, num } from "../../utils";
 import { request_to_create_value_on_table } from "../utils";
 import TomSelect from "tom-select";
 
@@ -24,13 +25,15 @@ export class LocationController {
   goback: HTMLButtonElement;
   slots: HTMLElement[];
   selected_slot: HTMLElement | null;
-  slotManager: SlotManager;
   locationForm: LocationForm;
+  deletebtn: HTMLButtonElement;
+
+  private overlayElement: HTMLElement = this.createButtonOverlay();
+
   constructor() {
     this.create_dialog();
     this.slots = [];
     this.locationForm = new LocationForm();
-    this.slotManager = new SlotManager(this.locationForm);
 
     this.bindEvents();
   }
@@ -118,6 +121,12 @@ export class LocationController {
       // 2. Check if a standard Location Card was clicked
       const slotCard = target.closest<HTMLElement>("[data-id]");
 
+      if (this.slots.length > 0 && slotCard == this.slots.at(-1)) {
+        this.deletebtn.classList.remove("hidden");
+      } else {
+        this.deletebtn.classList.add("hidden");
+      }
+
       if (this.selected_slot) {
         this.selected_slot.classList.add("bg-white");
         this.selected_slot.classList.remove("bg-blue-100");
@@ -126,8 +135,8 @@ export class LocationController {
       if (slotCard) {
         this.selected_slot = slotCard;
         const locationId = slotCard.dataset.id;
-        this.slotManager.selected_slot = slotCard;
-        this.slotManager.inject_buttons(slotCard);
+        this.selected_slot = slotCard;
+        this.inject_buttons(slotCard);
         console.log(`Clicked slot location ID: ${locationId}`);
 
         this.selected_slot.classList.add("bg-blue-100");
@@ -150,7 +159,7 @@ export class LocationController {
     let slot = createElementFromHTML(`
     <div data-id="${location.id}" class="flex flex-col border border-slate-200 rounded-lg p-3 bg-white shadow-sm relative">
       <div class="flex "> 
-          <span class="text-xs font-semibold text-slate-600 mb-2">Ubicación ${location.id}</span>
+          <span class="text-xs font-semibold text-slate-600 mb-2">Ubicación ${location.sequence_number}</span>
       </div>
       
       <div class="w-full aspect-[4/3] overflow-hidden rounded bg-slate-100">
@@ -199,23 +208,13 @@ export class LocationController {
       let location = response.data.location as Location;
       this.createSlot(location);
 
+      state.catalagoData.data["location"].push(location);
       console.log("Upload successful:", response.data);
 
       // Refresh your grid or render the new slot card here
     });
 
     return addslot_element;
-  }
-}
-
-export class SlotManager {
-  // Reusable overlay element
-  private overlayElement: HTMLElement = this.createButtonOverlay();
-  locationForm: LocationForm;
-  selected_slot: HTMLElement | null;
-
-  constructor(locationForm: LocationForm) {
-    this.locationForm = locationForm;
   }
 
   private createButtonOverlay(): HTMLElement {
@@ -236,7 +235,7 @@ export class SlotManager {
           type="button" 
           data-action="delete" 
           title="Eliminar" 
-          class="p-1.5 rounded bg-red-50 text-slate-600 hover:text-red-600 transition-colors"
+          class="p-1.5 rounded bg-red-50 text-slate-600 hover:text-red-600 transition-colors hidden"
         >
           <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -249,7 +248,7 @@ export class SlotManager {
     const editBtn = overlay.querySelector<HTMLButtonElement>(
       'button[data-action="edit"]',
     );
-    const deleteBtn = overlay.querySelector<HTMLButtonElement>(
+    this.deletebtn = overlay.querySelector<HTMLButtonElement>(
       'button[data-action="delete"]',
     );
 
@@ -271,13 +270,12 @@ export class SlotManager {
     });
 
     // Attach direct listener to Delete button
-    deleteBtn.addEventListener("click", (e: MouseEvent) => {
+    this.deletebtn.addEventListener("click", (e: MouseEvent) => {
       e.stopPropagation(); // Prevents triggering card click event
-      const card = overlay.closest<HTMLElement>("[data-location-id]");
-      const locationId = card?.dataset.locationId;
-
+      const locationId = this.selected_slot.dataset.id;
+      log.debug("clicked ", locationId);
       if (locationId) {
-        this.handleDeleteSlot(locationId);
+        this.handleDeleteSlot(this.selected_slot, locationId);
       }
     });
 
@@ -306,11 +304,25 @@ export class SlotManager {
     console.log(`Edit clicked for slot ID: ${locationId}`);
   }
 
-  private handleDeleteSlot(locationId: string) {
+  async handleDeleteSlot(slot: HTMLElement, locationId: string) {
+    const res = await CatalogApi.location_delete(num(locationId));
+
+    if (!res.success) {
+      log.debug(res.data);
+      notiDialog.titleContainer.textContent = "Error";
+      notiDialog.bodyContainer.textContent = res.data.error;
+      notiDialog.show();
+      return;
+    }
+
+    log.debug("Deleted ", res.data);
+
+    slot.remove();
+    this.slots.pop();
+    state.catalagoData.remove_by_id("location", locationId);
     console.log(`Delete clicked for slot ID: ${locationId}`);
   }
 }
-
 class LocationForm {
   location: Location;
   modalDialog: ModalDialog;
@@ -515,27 +527,6 @@ class LocationForm {
         log.debug(res.data());
         return;
       }
-    }
-  }
-
-  async update_clocation() {
-    let value = this.validate();
-    if (!value) {
-      return;
-    }
-
-    let partial_payload: FabricComment = {
-      comment: value,
-    };
-
-    let res = await CoreAPI.fabricComment_update(
-      partial_payload,
-      this.fabricComment.id,
-    );
-
-    if (res.success) {
-      this.resolve_promise(res.data);
-      this.close();
     }
   }
 }

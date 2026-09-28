@@ -5,8 +5,9 @@ from sqlmodel import select
 from inventario_persianas import constants
 from inventario_persianas.model import (
     Color,
+    Tube,
 )
-from sqlalchemy import Delete
+from sqlalchemy import Delete, exists
 from sqlalchemy.orm import Session, selectinload
 
 from inventario_persianas.services.core import handle_db_exceptions
@@ -135,3 +136,35 @@ def location_update_data(location_data: dict, id):
             )
 
         # if location.image
+
+
+@handle_db_exceptions
+def location_delete(id: int):
+    with db.session.begin():
+        latest_location = (
+            db.session.execute(select(Location).order_by(Location.id.desc()))
+            .scalars()
+            .first()
+        )
+
+        if not latest_location:
+            raise ValueError("No existe ninguna ubicacion para eliminar")
+
+        if latest_location.id != id:
+            raise ValueError(f"Id provided {id} does not belong to the last location")
+
+        has_tubes = db.session.query(exists().where(Tube.location_id == id)).scalar()
+
+        if has_tubes:
+            raise ValueError(
+                "No se puede borrar la ubicacion ya que existen tubos asignados a la ubicacion"
+            )
+
+        location_json = latest_location.payload()
+        db.session.delete(latest_location)
+        db.session.flush()
+        AuditLogger.log(
+            "Delete", "location", id, old_values=location_json, new_values=None
+        )
+
+        return location_json, 200

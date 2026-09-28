@@ -55,4 +55,10 @@ export const CatalogApi = {
       },
     });
   },
+
+  location_delete: async (location_id: number) => {
+    return await api.post("/location/delete/", {
+      id: location_id,
+    });
+  },
 };

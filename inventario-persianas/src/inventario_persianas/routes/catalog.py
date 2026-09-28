@@ -214,3 +214,13 @@ def location_update():
         return Error("No location provided", 400)
 
     return service.location_update(location, id), 200
+
+
+@catalago_bp.post("/location/delete/")
+def location_delete():
+    data = request.get_json()
+    id = data.get("id")
+    if not id:
+        return Error("No ID provided", 400)
+
+    return service.location_delete(id)
