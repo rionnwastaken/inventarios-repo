@@ -53,7 +53,7 @@ def save_image(files):
 
         file_path = process_file(files, location)
         location.image_path = file_path
-        location_json = location.model_dump(mode="json")
+        location_json = location.payload()
 
         AuditLogger.log("Insert", "location", location.id, new_values=location_json)
 
