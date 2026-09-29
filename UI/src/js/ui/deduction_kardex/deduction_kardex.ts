@@ -22,7 +22,7 @@ import { TypedEventEmitter } from "../../emitter";
 import { column } from "../utils";
 import edit_icon from "../../../assets/icons/edit.png";
 import { CoreAPI } from "../../api/core";
-import { Comments } from "./comments";
+import { Comments } from "./comments/comments";
 import { FabricComment } from "../../schema";
 import { KardexTable } from "./table";
 

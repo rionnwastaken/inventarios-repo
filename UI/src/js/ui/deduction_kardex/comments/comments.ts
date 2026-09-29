@@ -1,13 +1,18 @@
 // import { FabricDeduction } from "../../schema";
-import { FabricData, Fabric, ModalState, FabricDeduction } from "../../typeObj";
-import { ModalDialog } from "../dialogs/modalDialog";
+import {
+  FabricData,
+  Fabric,
+  ModalState,
+  FabricDeduction,
+} from "../../../typeObj";
+import { ModalDialog } from "../../dialogs/modalDialog";
 import {
   column2,
   createElementFromHTML,
   inspect_row,
   RenderingInfo,
-} from "../utils";
-import { state } from "../../state";
+} from "../../utils";
+import { state } from "../../../state";
 import { Api, ApiRowMethods, ColumnsConfig } from "datatables.net-dt";
 
 import DataTable from "datatables.net-dt";
@@ -15,21 +20,13 @@ import "datatables.net-select-dt";
 import "datatables.net-dt/css/dataTables.dataTables.css";
 import "datatables.net-select-dt/css/select.dataTables.css";
 // import "datatables.net-dt/css/dataTables.dataTables.css";
-import {
-  createIconHTML,
-  format_measurement,
-  render_datecell,
-  render_plain,
-  render_plain2,
-} from "../renderUtils";
-import { Form } from "./form";
-import { TypedEventEmitter } from "../../emitter";
-import { column } from "../utils";
-import edit_icon from "../../../assets/icons/edit.png";
-import { ActionOverlay } from "../misc/ActionOverlay";
-import { CoreAPI } from "../../api/core";
-import { FabricComment } from "../../schema";
-import { DeductionKardexEvents } from "./deduction_kardex";
+import { TypedEventEmitter } from "../../../emitter";
+import edit_icon from "../../../../assets/icons/edit.png";
+import { ActionOverlay } from "../../misc/ActionOverlay";
+import { CoreAPI } from "../../../api/core";
+import { FabricComment } from "../../../schema";
+import { DeductionKardexEvents } from "../deduction_kardex";
+import { CommentsTable } from "./table";
 
 export class Comments {
   columns: (ColumnsConfig & { data: keyof FabricDeduction })[];
@@ -37,6 +34,7 @@ export class Comments {
   table: Api<FabricComment>;
   fabric: Fabric;
   modalDialog: ModalDialog;
+  commentsTable: CommentsTable;
 
   edit_action_btn: HTMLButtonElement;
   delete_action_btn: HTMLButtonElement;
@@ -55,28 +53,20 @@ export class Comments {
 
   constructor(events: TypedEventEmitter<DeductionKardexEvents>) {
     this.events = events;
-    this.create_dialog();
-    this.init_columns();
-    this.init_table();
     this.commentForm = new CommentForm();
-    this.bind_row_click();
 
-    this.actionOverlay = new ActionOverlay({
-      container: this.create_action_overlay(),
-      table: this.table,
-      cb_samerow_2clicks: async (data: FabricData, row) => {
+    this.commentsTable = new CommentsTable({
+      on_delete: async (data, row) => {
+        this.deleteComment(data, row);
+      },
+      on_select_row: async (data, row: ApiRowMethods<FabricComment>) => {
         this.OpenFormEditing(row);
-        // await this.handle_fabric_selection(row);
       },
     });
-  }
+    this.create_dialog();
 
-  bind_row_click() {
-    inspect_row(this.table.table().body(), this.table);
-    let body = this.table.table().body();
-    body.addEventListener("click", async (event) => {
-      this.actionOverlay.handle_row_click(event);
-    });
+    this.commentsTable.init(this.table_element);
+    this.table = this.commentsTable.dt as Api<FabricComment>;
   }
 
   body(): HTMLElement {
@@ -98,31 +88,7 @@ export class Comments {
   `);
 
     this.table_element = wrapper.querySelector("table");
-    // this.tbody = this.table_element.querySelector("tbody");
-
     return wrapper;
-  }
-
-  private create_action_overlay() {
-    this.overlay_action_container = createElementFromHTML(`
-
-      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
-      ${createIconHTML({
-        src: edit_icon,
-        id: "delete-btn",
-        title: "Eliminar comentario",
-      })}
-      </div>
-`);
-
-    this.delete_comment =
-      this.overlay_action_container.querySelector("#delete-btn");
-
-    this.delete_comment.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      this.deleteComment();
-    });
-    return this.overlay_action_container;
   }
 
   title() {
@@ -134,53 +100,6 @@ export class Comments {
 
   </div>
 				 `);
-  }
-
-  init_table() {
-    this.table = new DataTable(this.table_element, {
-      columns: this.columns,
-      paging: false,
-      autoWidth: true,
-
-      select: {
-        blurable: true,
-      },
-      searching: false,
-      order: { name: "updated_at", dir: "desc" },
-      // rowCallback: this.render_row,
-      columnDefs: [
-        {
-          targets: "_all", // Zero-based index of the columns you want to left-align
-          className: "dt-left", // Applies left-alignment to both header and body cells
-        },
-      ],
-    });
-  }
-
-  init_columns() {
-    //@ts-ignore
-    this.columns = [
-      //@ts-ignore
-      column2({
-        id: "comment",
-        column_name: "Comentario",
-        rendering_func: render_plain2,
-      }),
-
-      //@ts-ignore
-      column2({
-        id: "updated_at",
-        column_name: "Ultima actualizacion",
-        rendering_func: render_datecell,
-      }),
-
-      //@ts-ignore
-      column2({
-        id: "created_at",
-        column_name: "Creado",
-        rendering_func: render_datecell,
-      }),
-    ];
   }
 
   create_dialog() {
@@ -248,10 +167,7 @@ export class Comments {
     });
   }
 
-  async deleteComment() {
-    let row = this.actionOverlay.selected_row;
-    let comment: FabricComment =
-      this.actionOverlay.selected_row.data() as FabricComment;
+  async deleteComment(comment: FabricComment, row) {
     let res = await CoreAPI.fabricComment_delete(comment.id, comment.fabric_id);
     if (!res.success) {
       log.debug(res.data);
