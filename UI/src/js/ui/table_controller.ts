@@ -1,6 +1,5 @@
 import { CatalogApi } from "../api/catalog.ts";
 import { CoreAPI } from "../api/core.ts";
-import { Tube } from "../schema.ts";
 import { Fabric } from "../typeObj.ts";
 
 import { Api, ColumnsConfig } from "datatables.net-dt";
@@ -190,6 +189,28 @@ class TableController {
         );
       }
     });
+  }
+
+  update_tube(tube: Tube) {
+    if (state.active_view === "tube") {
+      const row = this.table.row((idx, data) => data.id === tube.id);
+      if (row.any()) {
+        row.data(tube).draw(false);
+      } else {
+        this.table.row.add(tube).draw(false);
+      }
+    }
+  }
+
+  update_fabric(fabric: Fabric) {
+    if (state.active_view === "fabric") {
+      const row = this.table.row((idx, data) => data.id === fabric.id);
+      if (row.any()) {
+        row.data(fabric).draw(false);
+      } else {
+        this.table.row.add(fabric).draw(false);
+      }
+    }
   }
 
   cb_toggle_group_colums(view: TableView) {
