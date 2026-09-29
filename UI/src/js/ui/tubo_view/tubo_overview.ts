@@ -228,7 +228,16 @@ class TubeOverview {
 	  <thead></thead>
 	  <tbody></tbody>
 	</table>
+
+
       </div>
+
+
+	<div class="flex gap-4">
+	  <button id="${add_id}" class="w-fit  btn" type="">
+	    Agregar
+	  </button>
+	</div>
     `;
   }
   title() {
@@ -246,11 +255,6 @@ class TubeOverview {
       </div>
 	</div>
 
-	<div class="flex gap-4">
-	  <button id="${add_id}" class="w-fit ml-auto btn" type="">
-	    Agregar
-	  </button>
-	</div>
     </div>
     `);
 
