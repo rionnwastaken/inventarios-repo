@@ -1,6 +1,6 @@
 import { getLogger } from "loglevel";
 import { Fabric, Tube } from "../../schema.ts";
-import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
+import { CatalogItem, FabricData, Tube } from "../../typeObj.ts";
 import {
   column,
   column2,

@@ -1,6 +1,6 @@
 import { disableAll, getLogger } from "loglevel";
 import { Tube } from "../../schema";
-import { CatalogItem, FabricData, Fabric, TubeExtraD } from "../../typeObj";
+import { CatalogItem, FabricData, Fabric, Tube } from "../../typeObj";
 import { ObjectChanged as ObjectChanged } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";

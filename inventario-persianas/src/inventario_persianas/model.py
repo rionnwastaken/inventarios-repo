@@ -144,6 +144,10 @@ class Tube(TimestampMixin, table=True):
     fabrics: List["Fabric"] = Relationship(back_populates="tube")
     tube_rectified: Optional["TubeRectified"] = Relationship(back_populates="tube")
 
+    def payload(self):
+        tube = self.model_dump(mode="json")
+        return tube
+
 
 """
 When a tube is rectified, it means that the tube was opened in real life

@@ -1,7 +1,6 @@
 import { getLogger } from "loglevel";
-import { Tube } from "../../schema.ts";
-import { Fabric } from "../../typeObj.ts";
-import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
+import { Fabric, Location } from "../../typeObj.ts";
+import { CatalogItem, FabricData, Tube } from "../../typeObj.ts";
 import {
   createElementFromHTML,
   fabricDataColumn,
@@ -48,6 +47,7 @@ export interface RowModalEvents {
   "tubo_overview:dblclick_fabric": (fabric: Fabric) => void;
   "fabric:edited": (fabrics: Fabric) => void;
   "hierarchy-button-pressed": (fabric: Fabric) => void;
+  "tube:updated": (tube: Tube) => void;
 }
 
 class TemporalID {
@@ -93,6 +93,7 @@ class TubeOverview {
   actionOverlay: ActionOverlay;
   change_location: HTMLButtonElement;
   locationController: LocationController;
+  location_par: HTMLParagraphElement;
 
   public events = new TypedEventEmitter<RowModalEvents>();
 
@@ -236,7 +237,7 @@ class TubeOverview {
 	<div class="flex gap-2.5  flex-col">
 	  <h3 id="${tube_id}" class="text-lg font-bold"></h3>
       <div class="flex gap-2 items-center"> 
-      <p>Ubicacion: No asignado</p>
+      <p class="location-paragraph">Ubicacion: No asignado</p>
       ${createIconHTML({
         src: arrow_icon,
         id: "change-location-btn",
@@ -253,14 +254,49 @@ class TubeOverview {
     </div>
     `);
 
+    this.location_par = element.querySelector(".location-paragraph");
     this.change_location = element.querySelector("#change-location-btn");
 
-    this.change_location.addEventListener("click", () => {
-      this.locationController.show();
+    this.change_location.addEventListener("click", async () => {
+      let location = null;
+
+      if (this.tube.location_id != null) {
+        let data = state.catalagoData.data["location"];
+        location = data.find((el) => {
+          if (el.id == this.tube.location_id) {
+            return true;
+          }
+        });
+      }
+      let data: Location | null = await this.locationController.show(location);
+
+      if (data == null) {
+        return;
+      }
+      let payload: Partial<Tube> = {
+        location_id: data.id,
+      };
+
+      log.debug("sending data ", this.tube.id, payload);
+      const res = await CoreAPI.update_tube(this.tube.id, payload);
+
+      if (!res.success) {
+        log.debug(res.data);
+        return;
+      }
+
+      this.tube = res.data.tube;
+      this.update_display();
+      this.events.emit("tube:updated", this.tube);
+
       log.debug("click");
     });
 
     return element;
+  }
+
+  update_display() {
+    this.location_par.textContent = `Ubicación: ${this.tube.location_id ?? "No asignado"}`;
   }
 
   // create_
@@ -470,9 +506,11 @@ class TubeOverview {
     this.fabricCraft.cb_initModalDropdowns();
   }
 
-  cb_open_modal_tube(tube_data: TubeExtraD) {
+  cb_open_modal_tube(tube_data: Tube) {
     this.tube_title.textContent = `Tubo ${tube_data.id}`;
     this.tube = tube_data;
+
+    this.update_display();
 
     let fabrics = state.tableData.get_fabrics_by_tube_id(
       this.tube.id,

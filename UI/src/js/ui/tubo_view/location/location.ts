@@ -29,8 +29,10 @@ export class LocationController {
   locationForm: LocationForm;
   deletebtn: HTMLButtonElement;
   searchBarTom: TomSelect;
+  resolvePromise?: (value: Location) => void;
 
   private overlayElement: HTMLElement = this.createButtonOverlay();
+  tube_location: Location | null;
 
   constructor() {
     this.create_dialog();
@@ -40,8 +42,12 @@ export class LocationController {
     this.bindEvents();
   }
 
-  show() {
-    this.modalDialog.show();
+  show(location: Location | null): Promise<any> {
+    return new Promise((resolve) => {
+      this.modalDialog.show();
+      this.resolvePromise = resolve;
+      this.tube_location = location;
+    });
   }
 
   create_dialog() {
@@ -166,6 +172,20 @@ export class LocationController {
       log.debug("matching tag yes no ", hasMatchingTag);
     }
   }
+
+  onDoubleClickSlot(slotCard) {
+    let id = num(slotCard.dataset.id);
+    log.debug("yeah bitch", this.tube_location, this.tube_location?.id, id);
+    if (this.tube_location && this.tube_location.id == id) {
+      return;
+    }
+    let data = state.catalagoData.data["location"];
+    let location = data.find((el) => (el.id = id));
+    this.resolvePromise(location);
+    this.modalDialog.close();
+    this.resolvePromise = null;
+  }
+
   bindEvents() {
     this.grid.addEventListener("click", (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -183,6 +203,12 @@ export class LocationController {
         this.deletebtn.classList.remove("hidden");
       } else {
         this.deletebtn.classList.add("hidden");
+      }
+
+      if (slotCard == this.selected_slot) {
+        log.debug("same");
+        this.onDoubleClickSlot(slotCard);
+        return;
       }
 
       if (this.selected_slot) {
@@ -588,9 +614,12 @@ class LocationForm {
       cancelText: "Volver",
       confirmText: "Guardar",
 
-      // onCancel: () => {
-      //   this.close();
-      // },
+      onCancel: () => {
+        this.close();
+        this.resolve_promise(null);
+        this.resolve_promise = null;
+      },
+
       onConfirm: () => {
         this.submit();
       },

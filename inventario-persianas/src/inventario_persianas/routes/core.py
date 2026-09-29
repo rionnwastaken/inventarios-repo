@@ -37,6 +37,20 @@ def recent_tubes():
     }, 200
 
 
+@core_bp.post("/tube/update/")
+def update_tube():
+    log.info("updat_tube()")
+    data = request.get_json()
+
+    tube_id = data.get("id")
+    payload = data.get("payload")
+
+    if tube_id == None or payload == None:
+        return Error(f"tube id or payload are None {tube_id} {payload}", 400)
+
+    return core.update_tube(tube_id, payload)
+
+
 @core_bp.post("/fabric/add_many")
 def fabric_add_many():
     data = request.get_json()

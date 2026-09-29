@@ -2,7 +2,7 @@ import {
   FabricComment,
   Fabric as SchemaFabric,
   FabricDeduction as SchemaFabricDeduction,
-  Tube,
+  Tube as SchemaTube,
   Location as SchemaLocation,
   LocationTag,
 } from "./schema";
@@ -14,7 +14,7 @@ export interface TableView {
   new_view: ViewMode;
 }
 
-export interface TubeExtraD extends Tube {
+export interface Tube extends SchemaTube {
   fabric_count: number;
   rectified: boolean;
 }

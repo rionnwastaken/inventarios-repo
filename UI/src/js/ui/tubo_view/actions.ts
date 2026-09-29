@@ -1,7 +1,7 @@
 import { getLogger } from "loglevel";
 import { Tube } from "../../schema.ts";
 import { Fabric } from "../../typeObj.ts";
-import { CatalogItem, FabricData, TubeExtraD } from "../../typeObj.ts";
+import { CatalogItem, FabricData, Tube } from "../../typeObj.ts";
 import {
   createElementFromHTML,
   fabricDataColumn,

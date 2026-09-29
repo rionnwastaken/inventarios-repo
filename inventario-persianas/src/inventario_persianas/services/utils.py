@@ -38,10 +38,11 @@ class AuditLogger:
         if column in mod.fabric_column2catalago_models:
             model = mod.fabric_column2catalago_models[column]
             result = db.session.get(model, raw_value)
-            return {
-                "id": raw_value,
-                "value": result.name if result else "Not found",
-            }
+
+            value = "Not found"
+            if result and getattr(result, "name", None):
+                value = result.name
+            return {"id": raw_value, "value": value}
 
         return {"value": raw_value}
 

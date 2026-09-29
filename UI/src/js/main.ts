@@ -61,6 +61,10 @@ tubeOverview.events.on("tubo_overview:dblclick_fabric", (...args) => {
   deductionKardex.cb_show_kardex(...args);
 });
 
+tubeOverview.events.on("tube:updated", (...args) => {
+  state.tableData.update_tube_by_id(...args);
+});
+
 deductionKardex.events.on("deduction:modified", (...args) => {
   tubeOverview.cb_update_fabric_data(...args);
 });

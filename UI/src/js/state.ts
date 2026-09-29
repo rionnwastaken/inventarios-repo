@@ -1,4 +1,4 @@
-import { CatalogItem, TubeExtraD, ViewMode } from "./typeObj";
+import { CatalogItem, Tube, ViewMode } from "./typeObj";
 import { CatalogApi } from "./api/catalog";
 import {
   BlindModel,
@@ -139,7 +139,7 @@ class CatalagoData {
 }
 
 class TableData {
-  tubes: Array<TubeExtraD>;
+  tubes: Array<Tube>;
   fabrics: Array<Fabric>;
   size: number;
   public events = new TypedEventEmitter<StateEvents>();
@@ -174,7 +174,17 @@ class TableData {
     this.fabrics[index] = fabric;
   }
 
-  cb_insert_new_tube(tube: TubeExtraD) {
+  update_tube_by_id(tube: Tube) {
+    const index = this.tubes.findIndex((item) => item.id === tube.id);
+    if (index == -1) {
+      log.error(`Not able to find fabric with id ${tube.id}, obj is `, tube);
+      return;
+    }
+    log.debug("Updating tube  in state with ", tube);
+    this.tubes[index] = tube;
+  }
+
+  cb_insert_new_tube(tube: Tube) {
     log.debug("cb_insert_new_tube(tube:Tube)");
     this.tubes.push(tube);
   }

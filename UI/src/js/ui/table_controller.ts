@@ -4,7 +4,7 @@ import { Tube } from "../schema.ts";
 import { Fabric } from "../typeObj.ts";
 
 import { Api, ColumnsConfig } from "datatables.net-dt";
-import { TableView, TubeExtraD as TubeExtraD, ViewMode } from "../typeObj.ts";
+import { TableView, Tube as Tube, ViewMode } from "../typeObj.ts";
 import { TypedEventEmitter } from "../emitter.ts";
 
 import DataTable from "datatables.net-dt";
@@ -33,12 +33,12 @@ type TubeColumns = ColumnsConfig & { data: keyof Tube };
 
 export interface TableControllerEvents {
   // "row:dblclick": (tube_data: TubeExtraD, fabrics: Fabric[]) => void;
-  "tube:dblclick": (tube_data: TubeExtraD) => void;
+  "tube:dblclick": (tube_data: Tube) => void;
   "fabric:dblclick": (fabric: Fabric) => void;
 }
 
 class TableController {
-  table: Api<TubeExtraD | Fabric>;
+  table: Api<Tube | Fabric>;
   columns: (ColumnsConfig & { data: keyof Tube })[];
   public events = new TypedEventEmitter<TableControllerEvents>();
 
@@ -175,7 +175,8 @@ class TableController {
         log.debug(`Data of row `, data);
         if (state.active_view == "tube") {
           log.info("Double click on tube");
-          this.events.emit("tube:dblclick", data as TubeExtraD);
+          let tube = state.tableData.tubes.find((el) => el.id == data.id);
+          this.events.emit("tube:dblclick", tube as Tube);
           return;
         }
 

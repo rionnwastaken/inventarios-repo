@@ -70,6 +70,33 @@ def new_tube():
     return tube_json, log_json
 
 
+@handle_db_exceptions
+def update_tube(tube_id: int, payload: dict):
+    with db.session.begin():
+        tube = db.session.get(Tube, tube_id)
+
+        if not tube:
+            raise ValueError(f"Tube was not found with id {tube_id}")
+
+        tube_payload = Tube.model_validate(payload).model_dump(exclude_unset=True)
+        if not tube_payload or len(tube_payload) <= 0:
+            raise ValueError(f"Payload is wrong shape {payload}")
+
+        before_json = tube.payload()
+
+        tube.sqlmodel_update(tube_payload)
+        tube_json = tube.payload()
+
+        db.session.add(tube)
+        db.session.flush()
+        db.session.refresh(tube)
+        AuditLogger.log(
+            "Update", "tube", tube_id, old_values=before_json, new_values=tube_payload
+        )
+
+        return {"tube": tube_json}, 200
+
+
 def recent_tubes_and_fabrics():
     log.info("recent_tubes_and_fabrics()")
     stmt_tubes = (
