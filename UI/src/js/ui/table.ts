@@ -14,6 +14,12 @@ export abstract class Table {
   overlay_container: HTMLDivElement;
   actionOverlay: ActionOverlay;
 
+  constructor() {
+    this.actionOverlay = new ActionOverlay({
+      container: this.create_action_overlay(),
+    });
+  }
+
   init(tbl_element) {
     this.dt = new DataTable(tbl_element, {
       columns: this.init_columns(),
@@ -24,6 +30,8 @@ export abstract class Table {
       select: {
         blurable: true,
       },
+
+      info: false,
       searching: false,
       order: { name: "updated_at", dir: "desc" },
       columnDefs: [
@@ -34,10 +42,7 @@ export abstract class Table {
       ],
     });
 
-    this.actionOverlay = new ActionOverlay({
-      table: this.dt,
-      container: this.create_action_overlay(),
-    });
+    this.actionOverlay.init(this.dt);
     this.bind_row_click();
   }
 

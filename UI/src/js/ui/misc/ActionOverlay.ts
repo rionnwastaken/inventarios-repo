@@ -12,14 +12,17 @@ export class ActionOverlay {
 
   constructor(data: {
     container: HTMLDivElement;
-    table: Api<unknown>;
+    // table: Api<unknown>;
     cb_samerow_2clicks?: cb_row_2clicks_type;
   }) {
     this.container = data.container;
-    this.table = data.table;
-    this.tbody = this.table.table().node().querySelector("tbody");
     this.cb_samerow_2clicks = data?.cb_samerow_2clicks ?? (() => {});
     this.selected_row = null;
+  }
+
+  init(table: Api<unknown>) {
+    this.table = table;
+    this.tbody = this.table.table().node().querySelector("tbody");
     this.select_blur_clear_actions_after_clicking_anywhere_else();
   }
 

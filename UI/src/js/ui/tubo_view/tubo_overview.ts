@@ -110,12 +110,11 @@ class TubeOverview {
 
     this.actionOverlay = new ActionOverlay({
       container: this.create_action_on_row_elements(),
-      table: this.table,
       cb_samerow_2clicks: async (data: FabricData, row) => {
         await this.handle_fabric_selection(row);
       },
     });
-
+    this.actionOverlay.init(this.table);
     this.single_select_btns = new Array();
     // this.single_select_btns.push(this.edit_btn, this.hierarchy_btn);
 
