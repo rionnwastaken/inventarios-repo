@@ -28,6 +28,7 @@ export class LocationController {
   selected_slot: HTMLElement | null;
   locationForm: LocationForm;
   deletebtn: HTMLButtonElement;
+  searchBarTom: TomSelect;
 
   private overlayElement: HTMLElement = this.createButtonOverlay();
 
@@ -56,22 +57,13 @@ export class LocationController {
       confirmClass: "btn-error",
       footerContainer_tailwind_class: "flex justify-left",
 
-      showCancel: false,
+      showCancel: true,
       showConfirm: false,
 
-      onClose: () => {},
+      onCancel: () => {
+        this.modalDialog.close();
+      },
     });
-
-    let boco = this.modalDialog.dialogEl.querySelector(".bottom-container");
-
-    let buttons = createElementFromHTML(`
-	<div class="flex justify-left"> 
-	    <button class="btn" id="kardex-goback">Volver</button>
-	</div>
-    `);
-
-    this.goback = buttons.querySelector("#kardex-goback");
-    boco.prepend(buttons);
 
     let d = this.modalDialog.dialogEl;
   }
@@ -93,6 +85,10 @@ export class LocationController {
   body(): HTMLElement {
     const b = createElementFromHTML(`
     <div class="flex flex-col gap-4">
+
+      <select
+        class="w-full input-lowercase searchbar"
+      ></select>
       <div class="top-container grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 p-4 w-full">
       </div>
 
@@ -104,11 +100,72 @@ export class LocationController {
 
     this.grid = b.querySelector(".top-container");
 
-    console.log("grid here is ", this.grid);
+    let el = b.querySelector(".searchbar");
+
+    this.searchBarTom = new TomSelect(el, {
+      create: false,
+      createOnBlur: true,
+      openOnFocus: true,
+      selectOnTab: true,
+      refreshThrottle: 0,
+      maxItems: null,
+
+      plugins: ["clear_button"],
+
+      onItemAdd: function () {
+        this.setTextboxValue("");
+        this.refreshOptions();
+        this.close();
+      },
+
+      onChange: (tags) => {
+        log.debug("change value ", tags);
+        this.filter_slots(tags);
+      },
+    });
 
     return b;
   }
 
+  filter_slots(tags_id: Array<string>) {
+    if (tags_id.length <= 0) {
+      for (const slot of this.slots) {
+        slot.classList.remove("hidden");
+      }
+      return;
+    }
+
+    const tagSet = new Set(tags_id.map((id) => num(id)));
+    const data: Array<Location> = state.catalagoData.data["location"];
+
+    const locationMap = new Map<number, Location>(
+      data.map((loc) => [loc.id, loc]),
+    );
+
+    for (const slot of this.slots) {
+      const id = num(slot.dataset.id);
+      const location = locationMap.get(id);
+
+      // Safeguard against missing data
+      if (!location || !location.tags) {
+        log.debug("Missing data in slot");
+        slot.classList.add("hidden");
+        continue;
+      }
+
+      const hasMatchingTag = location.tags.some((tag) => {
+        log.debug(`Comparing tag ${tag.name} with tagset `, tagSet);
+        return tagSet.has(tag.id);
+      });
+      if (hasMatchingTag) {
+        slot.classList.remove("hidden");
+      } else {
+        slot.classList.add("hidden");
+      }
+      // slot.classList.toggle("hidden", !hasMatchingTag);
+      log.debug("matching tag yes no ", hasMatchingTag);
+    }
+  }
   bindEvents() {
     this.grid.addEventListener("click", (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -355,6 +412,24 @@ export class LocationController {
     state.catalagoData.remove_by_id("location", locationId);
     console.log(`Delete clicked for slot ID: ${locationId}`);
   }
+
+  loadTags() {
+    let items: Array<LocationTag> = state.catalagoData.data["location_tag"];
+    items.forEach((item) => {
+      let display = item.name ? item.name : item.id;
+      this.searchBarTom.addOption({
+        value: item.id,
+        text: display,
+      });
+
+      log.debug({ value: item.id, text: display });
+    });
+
+    this.searchBarTom.refreshOptions();
+    this.searchBarTom.close();
+
+    this.locationForm.loadTags();
+  }
 }
 class LocationForm {
   location: Location;
@@ -533,6 +608,7 @@ class LocationForm {
       this.insert_image(locationImage);
       this.insert_tags(location.tags);
       this.modalDialog.show();
+      this.tom.close();
       this.new_image_selected = null;
     });
   }
