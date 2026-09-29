@@ -186,7 +186,12 @@ def update_fabrics(data: list[dict]) -> tuple[List[dict], int]:
             payload = item.get("partial_data", {})
 
             fabric = db.session.get(
-                Fabric, fabric_id, options=[selectinload(Fabric.deductions)]
+                Fabric,
+                fabric_id,
+                options=[
+                    selectinload(Fabric.deductions),
+                    selectinload(Fabric.comments),
+                ],
             )
             if not fabric:
                 raise ValueError(f"Fabric with id {fabric_id} not found.")

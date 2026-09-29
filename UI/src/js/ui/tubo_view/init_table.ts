@@ -107,6 +107,8 @@ export class InitTable {
       searching: false,
       order: { name: "original_fabric.updated_at", dir: "desc" },
       rowCallback: render_row,
+
+      info: false,
       select: {
         blurable: true,
       },

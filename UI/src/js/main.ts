@@ -55,6 +55,8 @@ tubeOverview.events.on("catalog_item:added", (...args) => {
 });
 tubeOverview.events.on("fabric:edited", (...args) => {
   state.tableData.update_fabric_by_id(...args);
+  tableController.update_fabric(...args);
+  tableController.update_tube(...args);
 });
 
 tubeOverview.events.on("tubo_overview:dblclick_fabric", (...args) => {
@@ -63,6 +65,7 @@ tubeOverview.events.on("tubo_overview:dblclick_fabric", (...args) => {
 
 tubeOverview.events.on("tube:updated", (...args) => {
   state.tableData.update_tube_by_id(...args);
+  tableController.update_tube(...args);
 });
 
 deductionKardex.events.on("deduction:modified", (...args) => {
