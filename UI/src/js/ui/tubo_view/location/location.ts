@@ -10,6 +10,8 @@ import { request_to_create_value_on_table } from "../utils";
 import TomSelect from "tom-select";
 import { Location } from "../../../typeObj";
 
+let slot_in_use_tw = "!bg-purple-500";
+
 export interface LocationEvents {
   "location:created": (location: Location) => {};
   "location:edited": (location: Location) => {};
@@ -25,11 +27,14 @@ export class LocationController {
 
   goback: HTMLButtonElement;
   slots: HTMLElement[];
+  slotsMap: Map<number, HTMLDivElement>;
   selected_slot: HTMLElement | null;
   locationForm: LocationForm;
   deletebtn: HTMLButtonElement;
   searchBarTom: TomSelect;
   resolvePromise?: (value: Location) => void;
+
+  slot_location_in_use: HTMLDivElement;
 
   private overlayElement: HTMLElement = this.createButtonOverlay();
   tube_location: Location | null;
@@ -37,6 +42,7 @@ export class LocationController {
   constructor() {
     this.create_dialog();
     this.slots = [];
+    this.slotsMap = new Map();
     this.locationForm = new LocationForm();
 
     this.bindEvents();
@@ -47,8 +53,21 @@ export class LocationController {
       this.modalDialog.show();
       this.resolvePromise = resolve;
       this.tube_location = location;
+
+      this.slot_location_in_use = null;
+      if (location) {
+        let slot = this.slotsMap.get(location.id);
+        if (!slot) {
+          throw new Error(`slot not found with id ${location.id}`);
+        }
+        this.slot_location_in_use = slot;
+        slot.classList.add(slot_in_use_tw);
+        log.debug("setting color here to ", slot);
+      }
     });
   }
+
+  update_display() {}
 
   create_dialog() {
     const a_tw = "w-full h-full min-w-full min-h-full";
@@ -68,6 +87,12 @@ export class LocationController {
 
       onCancel: () => {
         this.modalDialog.close();
+      },
+
+      onClose: () => {
+        if (this.slot_location_in_use) {
+          this.slot_location_in_use.classList.remove(slot_in_use_tw);
+        }
       },
     });
 
@@ -263,6 +288,7 @@ export class LocationController {
 
     this.grid.appendChild(slot);
     this.slots.push(slot);
+    this.slotsMap.set(location.id, slot);
     return slot;
   }
 
