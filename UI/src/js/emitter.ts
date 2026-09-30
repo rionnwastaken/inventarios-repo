@@ -17,6 +17,7 @@ export class TypedEventEmitter<
 
   // Trigger an event (Autocomplete on event string & type checks emitted data)
   emit<K extends keyof Events>(event: K, ...args: Parameters<Events[K]>): void {
+    log.debug(`Emitting event ${event} with args `, args);
     this.listeners[event]?.forEach((callback) => callback(...args));
   }
 

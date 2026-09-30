@@ -160,7 +160,7 @@ class TableData {
     return this.fabrics.filter((el) => el.tube_id == tube_id);
   }
 
-  update_fabric_by_id(fabric: Fabric) {
+  update_fabric_by_id(fabric: Fabric, remove = false) {
     //TODO MAKE SURE WHEN YOU UPDATE, THAT IT ALSO REFLECTS IN THE TABLE VIEW XD
     const index = this.fabrics.findIndex((item) => item.id === fabric.id);
     if (index == -1) {
@@ -171,7 +171,11 @@ class TableData {
       return;
     }
     log.debug("Updating fabric  in state with ", fabric);
-    this.fabrics[index] = fabric;
+    if (!remove) {
+      this.fabrics[index] = fabric;
+    } else {
+      this.fabrics.splice(index, 1);
+    }
   }
 
   update_tube_by_id(tube: Tube) {

@@ -106,7 +106,6 @@ export class LocationController {
       <h1>Ubicacion</h1>
     </div>
 
-    <input> </input>
   </div>
 `);
 
@@ -158,6 +157,7 @@ export class LocationController {
     return b;
   }
 
+  //TODO FIX THIS MONSTROSITY
   filter_slots(tags_id: Array<string>) {
     if (tags_id.length <= 0) {
       for (const slot of this.slots) {
@@ -474,7 +474,7 @@ export class LocationController {
         text: display,
       });
 
-      log.debug({ value: item.id, text: display });
+      // log.debug({ value: item.id, text: display });
     });
 
     this.searchBarTom.refreshOptions();

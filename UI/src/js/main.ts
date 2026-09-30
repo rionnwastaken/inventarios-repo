@@ -40,7 +40,8 @@ tableController.events.on("tube:dblclick", (...args) => {
 });
 
 tableController.events.on("fabric:dblclick", (...args) => {
-  tubeOverview.cb_open_modal_fabric(...args);
+  // tubeOverview.cb_open_modal_fabric(...args);
+  deductionKardex.cb_show_kardex(...args);
 });
 
 state.events.on("catalago:loaded", () => {
@@ -59,6 +60,16 @@ tubeOverview.events.on("fabric:edited", (...args) => {
   tableController.update_tube(...args);
 });
 
+tubeOverview.events.on("fabric:created", (...args) => {
+  state.tableData.fabrics.push(...args);
+  tableController.update_fabric(...args);
+});
+
+tubeOverview.events.on("fabric:deleted", (...args) => {
+  state.tableData.update_fabric_by_id(...args, true);
+  tableController.update_fabric(...args);
+});
+
 tubeOverview.events.on("tubo_overview:dblclick_fabric", (...args) => {
   deductionKardex.cb_show_kardex(...args);
 });
@@ -69,6 +80,7 @@ tubeOverview.events.on("tube:updated", (...args) => {
 });
 
 deductionKardex.events.on("deduction:modified", (...args) => {
+  tableController.update_fabric(...args);
   tubeOverview.cb_update_fabric_data(...args);
 });
 
@@ -77,8 +89,14 @@ deductionKardex.events.on(
   (fabric: Fabric, deduction_id) => {
     state.tableData.update_fabric_by_id(fabric);
     tubeOverview.cb_update_fabric_data(fabric);
+
+    tableController.update_fabric(fabric);
   },
 );
+
+deductionKardex.events.on("kardex:closing", (...args) => {
+  tubeOverview.cb_open_modal_tube(...args);
+});
 
 deductionKardex.events.on(
   "comment:edited",

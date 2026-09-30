@@ -32,6 +32,7 @@ export class ModalDialog {
 
   bodyContainer: HTMLElement;
   titleContainer: HTMLElement;
+  opened: boolean;
 
   constructor(options: ModalDialogOptions = {}) {
     this.options = {
@@ -61,6 +62,7 @@ export class ModalDialog {
 
   private _init(): void {
     // 1. Create native <dialog> element
+    this.opened = false;
     this.dialogEl = document.createElement("dialog");
     this.dialogEl.className = "modal";
 
@@ -219,12 +221,15 @@ export class ModalDialog {
   }
 
   public show(): void {
+    this.opened = true;
     document.body.appendChild(this.dialogEl);
     this.dialogEl.showModal();
   }
 
   public close(): void {
+    this.opened = false;
     if (this.dialogEl && this.dialogEl.open) {
+      log.debug("Modal Dialog closing");
       this.dialogEl.close();
     }
   }

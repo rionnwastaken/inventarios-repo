@@ -35,6 +35,7 @@ export interface DeductionKardexEvents {
   "deduction:deleted": (fabric: Fabric, deduction_id) => void;
   "comment:edited": (fabric: Fabric, comment: FabricComment) => void;
   "comment:deleted": (fabric: Fabric, comment: FabricComment) => void;
+  "kardex:closing": (tube: Tube) => void;
 }
 
 class DeductionKardex {
@@ -249,17 +250,17 @@ class DeductionKardex {
       width: "w-full min-w-7xl", // Custom Tailwind classes
       container_tailwind_class: a_tw,
       height: "h-auto max-h-[80vh]",
-      cancelText: "Volver",
-      cancelClass: "btn",
-      confirmText: "Deducir",
-      confirmClass: "btn-error",
-      footerContainer_tailwind_class: "flex justify-left",
 
       showCancel: false,
       showConfirm: false,
 
       onClose: () => {
         this.table.data().clear();
+
+        let tube = state.tableData.tubes.find(
+          (el) => el.id == this.fabric.tube_id,
+        );
+        this.events.emit("kardex:closing", tube);
       },
     });
 
@@ -267,7 +268,7 @@ class DeductionKardex {
 
     let buttons = createElementFromHTML(`
 	<div class="flex justify-left"> 
-	    <button class="btn" id="kardex-goback">Volver</button>
+	    <button class="btn" id="kardex-goback">Vista Tubo</button>
 	    <button class="btn" id="kardex-deduct">Crear Salida</button>
 	    <button class="btn" id="kardex-comments">Ver comentarios</button>
 	</div>

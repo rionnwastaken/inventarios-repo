@@ -46,6 +46,8 @@ export interface RowModalEvents {
   "catalog_item:added": (catalogItem: CatalogItem) => void;
   "tubo_overview:dblclick_fabric": (fabric: Fabric) => void;
   "fabric:edited": (fabrics: Fabric) => void;
+  "fabric:created": (fabric: Fabric) => void;
+  "fabric:deleted": (fabric: Fabric) => void;
   "hierarchy-button-pressed": (fabric: Fabric) => void;
   "tube:updated": (tube: Tube) => void;
 }
@@ -413,8 +415,9 @@ class TubeOverview {
             log.debug(temp_id);
             return;
           }
-          state.tableData.fabrics.push(fabric_data_response);
+
           row.original_fabric = fabric_data_response;
+          this.events.emit("fabric:created", fabric_data_response);
         }
 
         arr.every(function (row) {
@@ -472,6 +475,7 @@ class TubeOverview {
           obj.original_fabric = updated_obj;
           obj.modified_fabric = null;
           this.events.emit("fabric:edited", updated_obj);
+          //TODO FIX HERE
         }
 
         rows.every(function () {
@@ -552,6 +556,10 @@ class TubeOverview {
   }
 
   cb_open_modal_tube(tube_data: Tube) {
+    if (this.modal_dialog.opened) {
+      return;
+    }
+
     this.tube_title.textContent = `Tubo ${tube_data.id}`;
     this.tube = tube_data;
 
@@ -585,6 +593,10 @@ class TubeOverview {
   cb_open_modal_fabric(fabric_data: Fabric) {}
 
   cb_update_fabric_data(fabric: Fabric) {
+    if (!this.modal_dialog.opened) {
+      return;
+    }
+
     log.debug("cb_update_fabric_data(fabric: Fabric)");
     let row = this.table.row((index, data, node) => {
       if (data.original_fabric.id == fabric.id) {

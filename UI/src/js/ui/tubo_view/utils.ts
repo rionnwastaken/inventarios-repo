@@ -81,6 +81,7 @@ export async function request_to_create_value_on_table(
   } else {
     tom.removeOption(value);
     tom.clear();
+    tom.close();
     console.log("User cancelled or closed the modal");
   }
 
