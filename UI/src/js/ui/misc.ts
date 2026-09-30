@@ -9,5 +9,5 @@ export let tube_title_id = [
   ["Tubo ID", "id"],
   ["Cantidad Telas", "fabric_count"],
   ["Ubicacion ID", "location_id"],
-  ["Retificado", "rectified"],
+  ["Verificado", "verified"],
 ];

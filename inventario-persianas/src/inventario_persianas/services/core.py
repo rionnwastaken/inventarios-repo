@@ -22,7 +22,7 @@ from inventario_persianas.services.utils import (
 )
 from pydantic import ValidationError
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 from sqlmodel import desc, select
 
 log = logging.getLogger(__name__)
@@ -105,7 +105,6 @@ def recent_tubes_and_fabrics():
             selectinload(Tube.fabrics).options(
                 selectinload(Fabric.deductions), selectinload(Fabric.comments)
             ),
-            joinedload(Tube.tube_rectified),
         )
         .order_by(desc(Tube.updated_at))
         .limit(100)
@@ -120,7 +119,6 @@ def recent_tubes_and_fabrics():
 
         tube_dict = tube.model_dump()
         tube_dict["fabric_count"] = len(fabrics_list)
-        tube_dict["rectified"] = True if tube.tube_rectified else False
 
         last_update = tube_dict["updated_at"]
         print(type(last_update), last_update)

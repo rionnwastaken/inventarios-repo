@@ -94,6 +94,8 @@ class TubeOverview {
   change_location: HTMLButtonElement;
   locationController: LocationController;
   location_par: HTMLParagraphElement;
+  verified_p: HTMLParagraphElement;
+  verified_container: HTMLDivElement;
 
   public events = new TypedEventEmitter<RowModalEvents>();
 
@@ -254,8 +256,40 @@ class TubeOverview {
       </div>
 	</div>
 
+    <div class="rectificado-container flex justify-center items-center gap-2.5 border-black border-2 rounded-3xl p-4">
+        <p class="font-bold select-none">Verificado</p>
+    </div
     </div>
     `);
+
+    let a_tw = "gap-2.5 border-4 rounde  ";
+
+    this.verified_p = element.querySelector(".rectificado-container p");
+    this.verified_container = element.querySelector(".rectificado-container");
+
+    this.verified_container.addEventListener("click", async () => {
+      let payload: Partial<Tube> = {
+        verified: !this.tube.verified,
+      };
+      let res = await CoreAPI.update_tube(this.tube.id, payload);
+
+      if (!res.success) {
+        log.debug(res.data);
+        return;
+      }
+      this.tube = res.data.tube;
+      this.events.emit("tube:updated", this.tube);
+
+      if (this.tube.verified) {
+        this.verified_p.textContent = "Verificado";
+        this.verified_p.classList.remove("text-red-500");
+        this.verified_p.classList.add("text-green-500");
+      } else {
+        this.verified_p.textContent = "No Verificado";
+        this.verified_p.classList.add("text-red-500");
+        this.verified_p.classList.remove("text-green-500");
+      }
+    });
 
     this.location_par = element.querySelector(".location-paragraph");
     this.change_location = element.querySelector("#change-location-btn");
@@ -300,6 +334,14 @@ class TubeOverview {
 
   update_display() {
     this.location_par.textContent = `Ubicación: ${this.tube.location_id ?? "No asignado"}`;
+
+    if (this.tube.verified) {
+      this.verified_p.classList.add("text-green-500");
+      this.verified_p.classList.remove("text-red-500");
+    } else {
+      this.verified_p.classList.remove("text-green-500");
+      this.verified_p.classList.add("text-red-500");
+    }
   }
 
   // create_

@@ -46,7 +46,7 @@ def update_tube():
     payload = data.get("payload")
 
     if tube_id == None or payload == None:
-        return Error(f"tube id or payload are None {tube_id} {payload}", 400)
+        return Error(f"tube id or payload are None {tube_id} {payload}", 400).returnIt()
 
     return core.update_tube(tube_id, payload)
 

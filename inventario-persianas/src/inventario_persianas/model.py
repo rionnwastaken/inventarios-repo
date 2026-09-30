@@ -140,9 +140,9 @@ class Tube(TimestampMixin, table=True):
     legacy_location_1: Optional[str] = Field(default=None, max_length=100)
     legacy_location_2: Optional[str] = Field(default=None, max_length=100)
 
+    verified: bool = Field(default=False, index=True)
     location: Optional[Location] = Relationship(back_populates="tubes")
     fabrics: List["Fabric"] = Relationship(back_populates="tube")
-    tube_rectified: Optional["TubeRectified"] = Relationship(back_populates="tube")
 
     def payload(self):
         tube = self.model_dump(mode="json")
@@ -160,14 +160,6 @@ When a fabric was not in the rectification it should be deleted
 In this step of the process, the person in the software must be wise to determine
 where the discrenpacies occur in the fabrics and do the corresponding modifications
 """
-
-
-class TubeRectified(TimestampMixin, table=True):
-    __tablename__ = "tube_verified"  # type:ignore
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    tube_id: int = Field(foreign_key="tube.id", sa_column_kwargs={"unique": True})
-    tube: Optional[Tube] = Relationship(back_populates="tube_rectified")
 
 
 """So many attributes are optional, but thats what it is currently """

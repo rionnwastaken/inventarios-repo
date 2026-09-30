@@ -16,7 +16,6 @@ export interface TableView {
 
 export interface Tube extends SchemaTube {
   fabric_count: number;
-  rectified: boolean;
 }
 
 export interface FabricExData extends Fabric {}
