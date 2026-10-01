@@ -39,17 +39,11 @@ export class Actions {
       return;
     }
 
-    //We are passing data by reference
     if (data.mode == "created") {
       await this.fabricCraft.show(data, "editing_created");
-    }
-
-    if (data.mode == "normal") {
+    } else if (data.mode == "normal") {
       await this.fabricCraft.show(data, "editing");
-      // this.events.emit("tubo_overview:dblclick_fabric",data.original_fabric)
-    }
-
-    if (data.mode == "edited") {
+    } else if (data.mode == "edited") {
       await this.fabricCraft.show(data, "editing");
     }
 
