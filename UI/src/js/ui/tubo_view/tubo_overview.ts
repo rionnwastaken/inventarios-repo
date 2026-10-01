@@ -202,19 +202,20 @@ class TubeOverview {
       container_tailwind_class: a_tw,
       confirmText: "Guardar",
       cancelText: "Cerrar",
-      onConfirm: () => {
+      onConfirm: async () => {
         const mods = get_type_modifications_arrays(this.table);
         log.debug(
           `Count of the arrays. Created ${mods.created_arr.data().length}, edited ${mods.edited_arr.data().length}, deleted ${mods.deleted_arr.data().length}`,
         );
         this.handle_saving_edited_fabrics(mods.edited_arr);
         this.handle_saving_created_fabrics(mods.created_arr);
+        return false;
       },
       onCancel: () => {
-        return this.clean_before_closing();
+        return this.handle_unsaved_changes();
       },
       onClose: () => {
-        return this.clean_before_closing();
+        this.table.data().clear();
       },
     });
 
@@ -348,21 +349,25 @@ class TubeOverview {
 
   // create_
 
-  async clean_before_closing() {
+  async handle_unsaved_changes() {
     log.debug("clean_before_closing()");
     const mods = get_type_modifications_arrays(this.table);
     let display_message = "";
 
-    if (mods.created_arr.data().length > 0) {
-      display_message += `Telas creadas: ${mods.created_arr.length}<br>`;
+    let created_length = mods.created_arr.data().length;
+    let deleted_length = mods.deleted_arr.data().length;
+    let edited_length = mods.edited_arr.data().length;
+
+    if (created_length > 0) {
+      display_message += `Telas creadas: ${created_length}<br>`;
     }
 
-    if (mods.edited_arr.data().length > 0) {
-      display_message += `Telas Editadas: ${mods.edited_arr.length}<br>`;
+    if (edited_length > 0) {
+      display_message += `Telas Editadas: ${edited_length}<br>`;
     }
 
-    if (mods.deleted_arr.data().length > 0) {
-      display_message += `Telas eliminado: ${mods.deleted_arr.length}<br>`;
+    if (deleted_length > 0) {
+      display_message += `Telas eliminado: ${deleted_length}<br>`;
     }
 
     if (display_message != "") {
@@ -378,8 +383,6 @@ class TubeOverview {
 
     log.debug("closing");
     shortLivedDialog.close();
-    this.modal_dialog.close();
-    this.table.data().clear();
     return true;
   }
 
