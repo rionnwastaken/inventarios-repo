@@ -97,7 +97,7 @@ class DeductionKardex {
       },
     });
     this.kardexTable.init(this.table_element);
-    this.table = this.kardexTable.dt;
+    this.table = this.kardexTable.table;
 
     this.kardexTable.actionOverlay.cb_samerow_2clicks = async (data, row) => {
       log.debug("deleting deductionn");

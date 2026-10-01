@@ -19,7 +19,7 @@ import { CatalogApi } from "../../api/catalog.ts";
 import { TypedEventEmitter } from "../../emitter.ts";
 import { CoreAPI } from "../../api/core.ts";
 import { FabricCraft, ItemState } from "./fabricCraft.ts";
-import { InitTable } from "./init_table.ts";
+import { TubeOverviewTable } from "./table.ts";
 import { ApiRow, ApiRowMethods, ApiRowsMethods } from "datatables.net";
 
 export class Actions {

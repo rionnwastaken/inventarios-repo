@@ -66,7 +66,7 @@ export class Comments {
     this.create_dialog();
 
     this.commentsTable.init(this.table_element);
-    this.table = this.commentsTable.dt as Api<FabricComment>;
+    this.table = this.commentsTable.table as Api<FabricComment>;
   }
 
   body(): HTMLElement {

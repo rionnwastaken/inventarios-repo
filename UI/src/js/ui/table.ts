@@ -8,7 +8,7 @@ import { ActionOverlay } from "./misc/ActionOverlay";
 
 export abstract class Table {
   table_element: HTMLTableElement;
-  dt: Api<unknown>;
+  table: Api<unknown>;
   tbody: HTMLTableElement;
 
   overlay_container: HTMLDivElement;
@@ -53,14 +53,14 @@ export abstract class Table {
       ],
     };
 
-    this.dt = new DataTable(tbl_element, finalOptions);
+    this.table = new DataTable(tbl_element, finalOptions);
 
-    this.actionOverlay.init(this.dt);
+    this.actionOverlay.init(this.table);
     this.bind_row_click();
   }
 
   bind_row_click() {
-    this.dt
+    this.table
       .table()
       .body()
       .addEventListener("click", async (event) => {
@@ -69,8 +69,8 @@ export abstract class Table {
   }
 
   clear() {
-    this.dt.data().clear();
-    this.dt.draw();
+    this.table.data().clear();
+    this.table.draw();
   }
 
   abstract create_action_overlay(): HTMLDivElement;

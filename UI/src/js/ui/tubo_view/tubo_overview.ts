@@ -15,13 +15,13 @@ import "tom-select/dist/css/tom-select.css";
 import { TypedEventEmitter } from "../../emitter.ts";
 import { CoreAPI } from "../../api/core.ts";
 import { FabricCraft, ItemState } from "./fabricCraft.ts";
-import { InitTable } from "./init_table.ts";
+import { TubeOverviewTable } from "./table.ts";
 import { ApiRowsMethods } from "datatables.net";
 import { ModalDialog } from "../dialogs/modalDialog.ts";
 import edit_icon from "../../../assets/icons/edit.png";
 import archive_icon from "../../../assets/icons/archive.png";
 import { Actions } from "./actions.ts";
-import { ActionOverlay } from "../misc/ActionOverlay.ts";
+// import { ActionOverlay } from "../misc/ActionOverlay.ts";
 import { createIconHTML } from "../renderUtils.ts";
 import { shortLivedDialog } from "../shortLiveDialog.ts";
 import arrow_icon from "../../../assets/icons/arrow.svg";
@@ -59,28 +59,23 @@ const temporalID = new TemporalID();
 class TubeOverview {
   table: Api<FabricData>;
   tube: Tube;
-  fabricColumns: (ColumnsConfig & { data: keyof FabricData })[];
   fabricCraft: FabricCraft;
   actions: Actions;
-  initTable: InitTable;
+  tubeOverviewTable: TubeOverviewTable;
   modal_dialog: ModalDialog;
 
   tbl_element: HTMLTableElement;
   add_btn: HTMLButtonElement;
   edit_btn: HTMLButtonElement;
-  hierarchy_btn: HTMLButtonElement;
   archive_btn: HTMLButtonElement;
   tube_title: HTMLParagraphElement;
-  selected_rows: Set<number>;
-  single_select_btns: Array<HTMLButtonElement>;
 
   overlay_action_container: HTMLDivElement;
   edit_action_btn: HTMLButtonElement;
   archive_action_btn: HTMLButtonElement;
 
-  selected_row: ApiRowMethods<FabricData> | null;
-  actionOverlay: ActionOverlay;
-  change_location: HTMLButtonElement;
+  // actionOverlay: ActionOverlay;
+  change_location_btn: HTMLButtonElement;
   locationController: LocationController;
   location_par: HTMLParagraphElement;
   verified_p: HTMLParagraphElement;
@@ -91,94 +86,29 @@ class TubeOverview {
   constructor() {
     this.create_dialog();
 
-    this.initTable = new InitTable(this.tbl_element, this.selected_rows);
-    this.table = this.initTable.table;
-    this.fabricCraft = new FabricCraft(this.events);
-    this.actions = new Actions(this.fabricCraft, this.table);
-    this.init_bindings();
-    this.selected_rows = new Set();
-    this.locationController = new LocationController();
-
-    this.actionOverlay = new ActionOverlay({
-      container: this.create_action_on_row_elements(),
-      cb_samerow_2clicks: async (data: FabricData, row) => {
+    this.tubeOverviewTable = new TubeOverviewTable({
+      tbl_element: this.tbl_element,
+      edit_callback: async (data, row) => {
+        await this.actions.open_form_editing(row);
+      },
+      archive_callback: async (data, row) => {},
+      row_selected_callback: async (data, row) => {
         await this.handle_fabric_selection(row);
       },
     });
-    this.actionOverlay.init(this.table);
-    this.single_select_btns = new Array();
-    // this.single_select_btns.push(this.edit_btn, this.hierarchy_btn);
-
-    this.create_action_on_row_elements();
+    this.table = this.tubeOverviewTable.table;
+    this.fabricCraft = new FabricCraft(this.events);
+    this.actions = new Actions(this.fabricCraft, this.table);
+    this.init_bindings();
+    this.locationController = new LocationController();
   }
 
   init_bindings() {
     this.bind_add_btn();
-    // this.bind_row_double_click();
     inspect_row(this.table.table().body(), this.table);
     this.bind_row_right_click();
-    this.bind_row_click();
-  }
-
-  private create_action_on_row_elements() {
-    this.overlay_action_container = createElementFromHTML(`
-
-      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
-      ${createIconHTML({
-        src: edit_icon,
-        id: "edit-action",
-        title: "Editar Tela",
-      })}
-      ${createIconHTML({
-        src: archive_icon,
-        id: "archive-action",
-        title: "Archivar Tela",
-      })}
-      </div>
-`);
-
-    this.edit_action_btn =
-      this.overlay_action_container.querySelector("#edit-action");
-    this.archive_action_btn =
-      this.overlay_action_container.querySelector("#archive-action");
-
-    this.edit_action_btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.remove_actions_overlay();
-      this.actions.open_form_editing(this.actionOverlay.selected_row);
-    });
-    return this.overlay_action_container;
-  }
-
-  private update_row_actions_overlay(row: ApiRowMethods<FabricData>) {
-    this.remove_actions_overlay(row);
-    this.render_actions_overlay(row);
-  }
-
-  /**
-   * Renders and attaches the overlay to the target row's last cell.
-   */
-  private render_actions_overlay(row: any) {
-    let node = row.node();
-    let lastCell = node.cells[node.cells.length - 1];
-
-    if (!lastCell) return;
-
-    lastCell.classList.add("relative");
-
-    lastCell.appendChild(this.overlay_action_container);
-    log.debug("image data ", edit_icon);
-  }
-
-  /**
-   * Removes all active overlays from the table DOM.
-   */
-  public remove_actions_overlay() {
-    // Direct O(1) removal: check if the container is currently mounted anywhere
-    if (this.overlay_action_container.parentElement) {
-      this.overlay_action_container.parentElement.classList.remove("relative");
-      this.overlay_action_container.remove();
-    }
+    this.handle_verify_click();
+    this.handle_location_click();
   }
 
   create_dialog() {
@@ -265,34 +195,14 @@ class TubeOverview {
     this.verified_p = e.querySelector(".rectificado-container p");
     this.verified_container = e.querySelector(".rectificado-container");
 
-    this.verified_container.addEventListener("click", async () => {
-      let payload: Partial<Tube> = {
-        verified: !this.tube.verified,
-      };
-      let res = await CoreAPI.update_tube(this.tube.id, payload);
-
-      if (!res.success) {
-        log.debug(res.data);
-        return;
-      }
-      this.tube = res.data.tube;
-      this.events.emit("tube:updated", this.tube);
-
-      if (this.tube.verified) {
-        this.verified_p.textContent = "Verificado";
-        this.verified_p.classList.remove("text-red-500");
-        this.verified_p.classList.add("text-green-500");
-      } else {
-        this.verified_p.textContent = "No Verificado";
-        this.verified_p.classList.add("text-red-500");
-        this.verified_p.classList.remove("text-green-500");
-      }
-    });
-
     this.location_par = e.querySelector(".location-paragraph");
-    this.change_location = e.querySelector("#change-location-btn");
+    this.change_location_btn = e.querySelector("#change-location-btn");
 
-    this.change_location.addEventListener("click", async () => {
+    return e;
+  }
+
+  handle_location_click() {
+    this.change_location_btn.addEventListener("click", async () => {
       let location = null;
 
       if (this.tube.location_id != null) {
@@ -326,8 +236,32 @@ class TubeOverview {
 
       log.debug("click");
     });
+  }
 
-    return e;
+  handle_verify_click() {
+    this.verified_container.addEventListener("click", async () => {
+      let payload: Partial<Tube> = {
+        verified: !this.tube.verified,
+      };
+      let res = await CoreAPI.update_tube(this.tube.id, payload);
+
+      if (!res.success) {
+        log.debug(res.data);
+        return;
+      }
+      this.tube = res.data.tube;
+      this.events.emit("tube:updated", this.tube);
+
+      if (this.tube.verified) {
+        this.verified_p.textContent = "Verificado";
+        this.verified_p.classList.remove("text-red-500");
+        this.verified_p.classList.add("text-green-500");
+      } else {
+        this.verified_p.textContent = "No Verificado";
+        this.verified_p.classList.add("text-red-500");
+        this.verified_p.classList.remove("text-green-500");
+      }
+    });
   }
 
   update_display() {
@@ -341,8 +275,6 @@ class TubeOverview {
       this.verified_p.classList.add("text-red-500");
     }
   }
-
-  // create_
 
   async handle_unsaved_changes() {
     log.debug("clean_before_closing()");
@@ -517,15 +449,6 @@ class TubeOverview {
         this.actions.open_form_editing(row_obj);
       }
     });
-  }
-
-  bind_row_click() {
-    this.table
-      .table()
-      .body()
-      .addEventListener("click", async (event) => {
-        this.actionOverlay.handle_row_click(event);
-      });
   }
 
   async handle_fabric_selection(row: ApiRowMethods<FabricData>) {

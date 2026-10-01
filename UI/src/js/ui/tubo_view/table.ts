@@ -4,11 +4,12 @@ import { CatalogItem, FabricData, Tube } from "../../typeObj.ts";
 import {
   column,
   column2,
+  createElementFromHTML,
   fabricDataColumn,
   num,
   RenderingInfo,
 } from "../utils.ts";
-import { Api, ColumnsConfig } from "datatables.net-dt";
+import { Api, ApiRowMethods, ColumnsConfig } from "datatables.net-dt";
 
 import DataTable from "datatables.net-dt";
 import "datatables.net-dt/css/dataTables.dataTables.css";
@@ -22,6 +23,7 @@ import { TypedEventEmitter } from "../../emitter.ts";
 import { FabricCraft, ItemState } from "./fabricCraft.ts";
 import { state } from "../../state.ts";
 import {
+  createIconHTML,
   format_measurement,
   getDiffValue,
   render_datecell,
@@ -29,26 +31,87 @@ import {
 } from "../renderUtils.ts";
 import { fabric_catalago_title_id } from "../misc.ts";
 import { fabric_column_name_from_tablename } from "./utils.ts";
+import { Table } from "../table.ts";
+
+import edit_icon from "../../../assets/icons/edit.png";
+import archive_icon from "../../../assets/icons/archive.png";
 
 let log = getLogger("app");
 
-export class InitTable {
+type callback = (
+  data: unknown,
+  row: ApiRowMethods<unknown>,
+) => Promise<unknown>;
+
+export class TubeOverviewTable extends Table {
   table: Api<FabricData>;
   tube: Tube;
   fabricColumns: (ColumnsConfig & { data: keyof FabricData })[];
   fabricCraft: FabricCraft;
   tbl_element: HTMLTableElement;
-  selected_rows: Set<number>;
 
-  constructor(tbl_element: HTMLTableElement, selected_rows) {
-    this.tbl_element = tbl_element;
+  edit_action_btn: HTMLButtonElement;
+  archive_action_btn: HTMLButtonElement;
+
+  edit_callback: callback;
+  archive_callback: callback;
+  row_selected_callback: callback;
+
+  constructor(data: {
+    edit_callback: callback;
+    archive_callback: callback;
+    row_selected_callback: callback;
+    tbl_element: HTMLTableElement;
+  }) {
+    super();
+    this.tbl_element = data.tbl_element;
+    this.edit_callback = data.edit_callback;
+    ((this.archive_callback = data.archive_callback),
+      (this.row_selected_callback = data.row_selected_callback));
     this.init_columns();
-    this.init_table();
-    // this.selected_rows = selected_rows
+
+    this.init(this.tbl_element, {
+      order: { name: "original_fabric.updated_at", dir: "desc" },
+      rowCallback: render_row,
+    });
+
+    this.actionOverlay.cb_samerow_2clicks = async (data, row) => {
+      this.row_selected_callback(data, row);
+    };
+
+    // this.actionOverlay.init(this.dt)
+  }
+
+  create_action_overlay(): HTMLDivElement {
+    let container = createElementFromHTML(`
+
+      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
+      ${createIconHTML({
+        src: edit_icon,
+        id: "edit-action",
+        title: "Editar Tela",
+      })}
+      ${createIconHTML({
+        src: archive_icon,
+        id: "archive-action",
+        title: "Archivar Tela",
+      })}
+      </div>
+`);
+
+    this.edit_action_btn = container.querySelector("#edit-action");
+    this.archive_action_btn = container.querySelector("#archive-action");
+
+    this.edit_action_btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevents triggering card click event
+      let row = this.actionOverlay.selected_row;
+      this.edit_callback(row.data(), row);
+    });
+    return container;
   }
 
   init_columns() {
-    this.fabricColumns = [
+    return [
       // @ts-ignore
       ...fabric_catalago_title_id.map(([column_name, schema_column_name]) =>
         column2({
@@ -99,27 +162,27 @@ export class InitTable {
     ];
   }
 
-  init_table() {
-    this.table = new DataTable(this.tbl_element, {
-      columns: this.fabricColumns,
-      paging: false,
-      autoWidth: true,
-      searching: false,
-      order: { name: "original_fabric.updated_at", dir: "desc" },
-      rowCallback: render_row,
-
-      info: false,
-      select: {
-        blurable: true,
-      },
-      columnDefs: [
-        {
-          targets: "_all", // Zero-based index of the columns you want to left-align
-          className: "dt-left", // Applies left-alignment to both header and body cells
-        },
-      ],
-    });
-  }
+  // init_table() {
+  //   this.table = new DataTable(this.tbl_element, {
+  //     columns: this.fabricColumns,
+  //     paging: false,
+  //     autoWidth: true,
+  //     searching: false,
+  //     order: { name: "original_fabric.updated_at", dir: "desc" },
+  //     rowCallback: render_row,
+  //
+  //     info: false,
+  //     select: {
+  //       blurable: true,
+  //     },
+  //     columnDefs: [
+  //       {
+  //         targets: "_all", // Zero-based index of the columns you want to left-align
+  //         className: "dt-left", // Applies left-alignment to both header and body cells
+  //       },
+  //     ],
+  //   });
+  // }
 
   //Data is litterally the the value of a column, like an id
   render_plain(fabricData: FabricData, type, row, meta, table_name, column_id) {
