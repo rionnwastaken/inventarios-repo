@@ -57,7 +57,7 @@ tubeOverview.events.on("catalog_item:added", (...args) => {
 tubeOverview.events.on("fabric:edited", (...args) => {
   state.tableData.update_fabric_by_id(...args);
   tableController.update_fabric(...args);
-  tableController.update_tube(...args);
+  //TODO maybe get the tube here and update it because its updated_at attribute has changed
 });
 
 tubeOverview.events.on("fabric:created", (...args) => {
@@ -94,7 +94,7 @@ deductionKardex.events.on(
   },
 );
 
-deductionKardex.events.on("kardex:closing", (...args) => {
+deductionKardex.events.on("open:vista-tubos", (...args) => {
   tubeOverview.cb_open_modal_tube(...args);
 });
 

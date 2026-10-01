@@ -1,5 +1,11 @@
 // import { FabricDeduction } from "../../schema";
-import { FabricData, Fabric, ModalState, FabricDeduction } from "../../typeObj";
+import {
+  FabricData,
+  Fabric,
+  ModalState,
+  FabricDeduction,
+  Tube,
+} from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog";
 import {
   column2,
@@ -36,6 +42,7 @@ export interface DeductionKardexEvents {
   "comment:edited": (fabric: Fabric, comment: FabricComment) => void;
   "comment:deleted": (fabric: Fabric, comment: FabricComment) => void;
   "kardex:closing": (tube: Tube) => void;
+  "open:vista-tubos": (tube: Tube) => void;
 }
 
 class DeductionKardex {
@@ -281,6 +288,14 @@ class DeductionKardex {
     boco.prepend(buttons);
 
     this.goback.addEventListener("click", () => {
+      this.kardexTable.clear();
+      this.modalDialog.close();
+      this.recent_comment_p.textContent = "";
+
+      let tube = state.tableData.tubes.find(
+        (el) => el.id == this.fabric.tube_id,
+      );
+      this.events.emit("open:vista-tubos", tube);
       this.close();
     });
 
