@@ -3,19 +3,15 @@ import { Fabric, Location } from "../../typeObj.ts";
 import { CatalogItem, FabricData, Tube } from "../../typeObj.ts";
 import {
   createElementFromHTML,
-  fabricDataColumn,
   get_partial_data,
   inspect_row,
 } from "../utils.ts";
 import { Api, ApiRowMethods, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
 
-import DataTable from "datatables.net-dt";
 import "datatables.net-select-dt";
 
-import TomSelect from "tom-select";
 import "tom-select/dist/css/tom-select.css";
-import { CatalogApi } from "../../api/catalog.ts";
 import { TypedEventEmitter } from "../../emitter.ts";
 import { CoreAPI } from "../../api/core.ts";
 import { FabricCraft, ItemState } from "./fabricCraft.ts";
@@ -30,14 +26,6 @@ import { createIconHTML } from "../renderUtils.ts";
 import { shortLivedDialog } from "../shortLiveDialog.ts";
 import arrow_icon from "../../../assets/icons/arrow.svg";
 import { LocationController } from "./location/location.ts";
-
-const add_id = "add-btn";
-const edit_id = "edit-btn";
-const archive_id = "archive-btn";
-const tube_id = "tube-id";
-const hierachy_id = "hierachy-id";
-
-const tbl_id = "tube-overview-table";
 
 let log = getLogger("app");
 
@@ -78,7 +66,6 @@ class TubeOverview {
   modal_dialog: ModalDialog;
 
   tbl_element: HTMLTableElement;
-  tbody: HTMLBodyElement;
   add_btn: HTMLButtonElement;
   edit_btn: HTMLButtonElement;
   hierarchy_btn: HTMLButtonElement;
@@ -128,7 +115,7 @@ class TubeOverview {
   init_bindings() {
     this.bind_add_btn();
     // this.bind_row_double_click();
-    inspect_row(this.tbody, this.table);
+    inspect_row(this.table.table().body(), this.table);
     this.bind_row_right_click();
     this.bind_row_click();
   }
@@ -220,15 +207,12 @@ class TubeOverview {
     });
 
     const d = this.modal_dialog.dialogEl;
-    this.tube_title = d.querySelector(`#${tube_id}`);
-    this.tbl_element = d.querySelector(`#${tbl_id}`);
-    this.add_btn = d.querySelector(`#${add_id}`);
-    this.tbody = d.querySelector(`#${tbl_id} tbody`);
   }
   body() {
-    return `
+    let e = createElementFromHTML(`
+ <div>
       <div class="mr-20">
-	<table id="${tbl_id}" class="display">
+	<table  class="display">
 	  <thead></thead>
 	  <tbody></tbody>
 	</table>
@@ -238,17 +222,26 @@ class TubeOverview {
 
 
 	<div class="flex gap-4">
-	  <button id="${add_id}" class="w-fit  btn" type="">
+	  <button id="add" class="w-fit  btn" type="">
 	    Agregar
 	  </button>
 	</div>
-    `;
+
+    </div>
+    `);
+
+    this.add_btn = e.querySelector("#add");
+    this.tbl_element = e.querySelector(`table`);
+
+    console.log("add btn ", this.add_btn);
+
+    return e;
   }
   title() {
-    const element = createElementFromHTML(`
+    const e = createElementFromHTML(`
     <div class="flex justify-between"> 
 	<div class="flex gap-2.5  flex-col">
-	  <h3 id="${tube_id}" class="text-lg font-bold"></h3>
+	  <h3 id="title" class="text-lg font-bold"></h3>
       <div class="flex gap-2 items-center"> 
       <p class="location-paragraph">Ubicacion: No asignado</p>
       ${createIconHTML({
@@ -267,8 +260,10 @@ class TubeOverview {
 
     let a_tw = "gap-2.5 border-4 rounde  ";
 
-    this.verified_p = element.querySelector(".rectificado-container p");
-    this.verified_container = element.querySelector(".rectificado-container");
+    this.tube_title = e.querySelector(`#title`);
+
+    this.verified_p = e.querySelector(".rectificado-container p");
+    this.verified_container = e.querySelector(".rectificado-container");
 
     this.verified_container.addEventListener("click", async () => {
       let payload: Partial<Tube> = {
@@ -294,8 +289,8 @@ class TubeOverview {
       }
     });
 
-    this.location_par = element.querySelector(".location-paragraph");
-    this.change_location = element.querySelector("#change-location-btn");
+    this.location_par = e.querySelector(".location-paragraph");
+    this.change_location = e.querySelector("#change-location-btn");
 
     this.change_location.addEventListener("click", async () => {
       let location = null;
@@ -332,7 +327,7 @@ class TubeOverview {
       log.debug("click");
     });
 
-    return element;
+    return e;
   }
 
   update_display() {
@@ -509,14 +504,15 @@ class TubeOverview {
 
   bind_row_right_click() {
     // Listen for clicks
-    this.tbody.addEventListener("contextmenu", async (event) => {
+    let body = this.table.table().body();
+    body.addEventListener("contextmenu", async (event) => {
       event.preventDefault();
       log.debug("right clieck");
 
       const row = event.target.closest("tr");
       log.debug(row);
 
-      if (row && this.tbody.contains(row)) {
+      if (row && body.contains(row)) {
         const row_obj = this.table.row(row);
         this.actions.open_form_editing(row_obj);
       }
@@ -524,9 +520,12 @@ class TubeOverview {
   }
 
   bind_row_click() {
-    this.tbody.addEventListener("click", async (event) => {
-      this.actionOverlay.handle_row_click(event);
-    });
+    this.table
+      .table()
+      .body()
+      .addEventListener("click", async (event) => {
+        this.actionOverlay.handle_row_click(event);
+      });
   }
 
   async handle_fabric_selection(row: ApiRowMethods<FabricData>) {
