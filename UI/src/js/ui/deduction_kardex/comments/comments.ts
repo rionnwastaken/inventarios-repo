@@ -116,14 +116,15 @@ export class Comments {
       confirmClass: "btn",
       footerContainer_tailwind_class: "flex justify-left",
 
-      onCancel: () => {
-        this.close();
-      },
+      onCancel: () => {},
       onConfirm: () => {
         this.openFormCreating();
+        return false;
       },
 
-      onClose: () => {},
+      onClose: () => {
+        this.clear();
+      },
     });
   }
 
@@ -179,8 +180,7 @@ export class Comments {
     this.table.draw(false);
   }
 
-  close() {
-    this.modalDialog.close();
+  clear() {
     this.table.data().clear();
     this.table.draw();
   }
@@ -258,10 +258,10 @@ class CommentForm {
       footerContainer_tailwind_class: "flex justify-left",
 
       onCancel: () => {
-        this.close();
+        return true;
       },
       onConfirm: () => {
-        this.submit();
+        return this.submit();
       },
 
       onClose: () => {
@@ -285,11 +285,6 @@ class CommentForm {
         this.modalDialog.show();
       },
     );
-  }
-
-  close() {
-    this.modalDialog.close();
-    this.comment_input.value = "";
   }
 
   clear() {
@@ -319,17 +314,17 @@ class CommentForm {
 
   submit() {
     if (this.mode == "creating") {
-      this.new_comment();
+      return this.new_comment();
     }
 
     if (this.mode == "editing") {
-      this.update_comment();
+      return this.update_comment();
     }
   }
   async new_comment() {
     let value = this.validate();
     if (!value) {
-      return;
+      return false;
     }
 
     let fabricComment: FabricComment = {
@@ -340,14 +335,13 @@ class CommentForm {
     let res = await CoreAPI.fabricComment_new(fabricComment);
 
     if (res.success) {
-      this.close();
       this.resolve_promise(res.data);
     }
   }
   async update_comment() {
     let value = this.validate();
     if (!value) {
-      return;
+      return false;
     }
 
     let partial_payload: FabricComment = {
@@ -361,7 +355,6 @@ class CommentForm {
 
     if (res.success) {
       this.resolve_promise(res.data);
-      this.close();
     }
   }
 }

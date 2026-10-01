@@ -7,6 +7,8 @@ import { Api, ColumnsConfig } from "datatables.net-dt";
 import { FabricData, TableView, Tube as Tube, ViewMode } from "../typeObj.ts";
 import { TypedEventEmitter } from "../emitter.ts";
 
+import { getLogger } from "loglevel";
+
 import DataTable from "datatables.net-dt";
 
 import "datatables.net-dt/css/dataTables.dataTables.css";
@@ -241,4 +243,19 @@ export function calc_available_cubic_meters(fabric: Fabric) {
 export function num(val: string | number | null | undefined): number {
   if (val === null || val === undefined) return 0;
   return typeof val === "number" ? val : parseFloat(val) || 0;
+}
+
+export function createPrefixedLogger(name, level = "DEBUG") {
+  const logger = getLogger(name);
+
+  const originalFactory = logger.methodFactory;
+  logger.methodFactory = function (methodName, logLevel, loggerName) {
+    const rawMethod = originalFactory(methodName, logLevel, loggerName);
+    return function (...args) {
+      rawMethod(`[${loggerName}]`, ...args);
+    };
+  };
+
+  logger.setLevel(level); // Must re-apply level to rebuild methods with factory
+  return logger;
 }

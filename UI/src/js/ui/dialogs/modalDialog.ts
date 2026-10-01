@@ -1,4 +1,6 @@
-import { createElementFromHTML } from "../utils";
+import { createElementFromHTML, createPrefixedLogger } from "../utils";
+
+const log = createPrefixedLogger("ModalDialog", "DEBUG");
 
 export type DialogCallback = (
   instance: ModalDialog,
@@ -21,6 +23,7 @@ export interface ModalDialogOptions {
   container_tailwind_class?: string | null;
   footerContainer_tailwind_class?: string | null;
   footer?: string | null;
+  id?: string | null;
 }
 
 export class ModalDialog {
@@ -55,6 +58,7 @@ export class ModalDialog {
       onCancel: options.onCancel ?? null,
       onClose: options.onClose ?? null,
       footer: options.footer ?? null,
+      id: options.id,
     };
 
     this._init();
@@ -205,14 +209,16 @@ export class ModalDialog {
   }
 
   public async handleConfirm(): Promise<void> {
+    log.debug(`Modal Dialog handle confirm ${this.options.id}`);
     if (typeof this.options.onConfirm === "function") {
       const result = await this.options.onConfirm(this);
       if (result === false) return;
     }
-    // this.close();
+    this.close();
   }
 
   public async handleCancel(): Promise<void> {
+    log.debug(`Modal Dialog handle cancel ${this.options.id}`);
     if (typeof this.options.onCancel === "function") {
       const result = await this.options.onCancel(this);
       if (result === false) return;
@@ -221,6 +227,7 @@ export class ModalDialog {
   }
 
   public show(): void {
+    log.debug(`Opening dialog ${this.options.id ?? ""}`);
     this.opened = true;
     document.body.appendChild(this.dialogEl);
     this.dialogEl.showModal();
@@ -228,7 +235,7 @@ export class ModalDialog {
 
   public close(): void {
     this.opened = false;
-    if (this.dialogEl && this.dialogEl.open) {
+    if (this.dialogEl) {
       log.debug("Modal Dialog closing");
       this.dialogEl.close();
     }

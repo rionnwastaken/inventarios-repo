@@ -24,6 +24,11 @@ import {
 
 import { ModalState, ItemState } from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog.ts";
+import { createPrefixedLogger } from "../utils";
+
+let ID = "FabricCraft";
+
+const log = createPrefixedLogger(ID, "DEBUG");
 
 export class FabricCraft {
   public events = new TypedEventEmitter<RowModalEvents>();
@@ -47,16 +52,15 @@ export class FabricCraft {
       body: this.body(),
       cancelText: "Cancelar",
       confirmText: "Guardar",
+      id: ID,
 
       onCancel: () => {
         this.resolvePromise(null);
         this.resolvePromise = null;
-        // this.modalDialog.close()
-        // return true;
       },
 
-      onConfirm: () => {
-        this.handle_save();
+      onConfirm: async () => {
+        return await this.handle_save();
       },
 
       onClose: () => {
@@ -153,11 +157,11 @@ export class FabricCraft {
               </label>`;
   }
 
-  handle_save() {
+  async handle_save() {
     let result = this.get_data_from_form();
 
     if (!result.correct) {
-      return;
+      return false;
     }
 
     log.debug(`Mode when saving ${this.mode}`);
@@ -198,10 +202,9 @@ export class FabricCraft {
 
     log.debug(`Correct ${result.correct}`);
     this.resolveIt(result.data);
-    this.modalDialog.close();
   }
 
-  resolveIt(data) {
+  async resolveIt(data) {
     if (this.resolvePromise) {
       // log.debug(`Data after saving row `, data);
       this.resolvePromise(data); // Resolves the awaiting Promise
@@ -220,6 +223,9 @@ export class FabricCraft {
       this.resolvePromise(null); // Resolves the awaiting Promise
       this.resolvePromise = undefined; // Clean up reference
     }
+
+    this.width_data.input.value = "";
+    this.height_data.input.value = "";
   }
 
   get_data_from_form() {
@@ -258,7 +264,7 @@ export class FabricCraft {
       );
       if (fabric_column_name) {
         data[fabric_column_name] = item_option ? item_option.value : null;
-        log.debug(`Column name ${fabric_column_name} and item `, item_option);
+        // log.debug(`Column name ${fabric_column_name} and item `, item_option);
       }
 
       // row_data[table_name] = item_option ? item_option : null;
@@ -306,6 +312,7 @@ export class FabricCraft {
     extra?: { tube_id: number },
   ): Promise<any> {
     return new Promise((resolve) => {
+      log.debug(`Opening with mode ${actionState} `);
       this.resolvePromise = resolve;
       this.fabricData = fabricData;
       this.mode = actionState;
