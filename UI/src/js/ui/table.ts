@@ -1,4 +1,4 @@
-import { Api, ColumnsConfig } from "datatables.net-dt";
+import { Api, ColumnsConfig, Options } from "datatables.net-dt";
 
 import DataTable from "datatables.net-dt";
 import "datatables.net-select-dt";
@@ -20,27 +20,40 @@ export abstract class Table {
     });
   }
 
-  init(tbl_element) {
-    this.dt = new DataTable(tbl_element, {
+  default_options(): Options {
+    return {
       columns: this.init_columns(),
       paging: false,
       autoWidth: true,
-
+      info: false,
+      searching: false,
       order: { name: "updated_at", dir: "desc" },
       select: {
         blurable: true,
       },
-
-      info: false,
-      searching: false,
-      order: { name: "updated_at", dir: "desc" },
       columnDefs: [
         {
-          targets: "_all", // Zero-based index of the columns you want to left-align
-          className: "dt-left", // Applies left-alignment to both header and body cells
+          targets: "_all",
+          className: "dt-left",
         },
       ],
-    });
+    };
+  }
+
+  init(tbl_element: HTMLElement | string, userOptions: Options = {}): void {
+    const baseOptions = this.default_options();
+
+    const finalOptions: Options = {
+      ...baseOptions,
+      ...userOptions,
+      // For arrays/objects that need explicit merging rather than replacement:
+      columnDefs: [
+        ...(baseOptions.columnDefs || []),
+        ...(userOptions.columnDefs || []),
+      ],
+    };
+
+    this.dt = new DataTable(tbl_element, finalOptions);
 
     this.actionOverlay.init(this.dt);
     this.bind_row_click();
