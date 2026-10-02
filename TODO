@@ -8,6 +8,9 @@ Features
   implement filtering logic and UI
   view to toggle fabric and tubes done
   Last update should update the fabric last update when a deduction is created or updated done
+  move fabric from tube done
+  TableController to use Table class
+  Delete tube without any fabric 
 
 
 

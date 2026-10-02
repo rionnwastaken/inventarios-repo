@@ -206,7 +206,7 @@ class TubeOverview {
 	</div>
 
     <div class="rectificado-container flex justify-center items-center gap-2.5 border-black border-2 rounded-3xl p-4">
-        <p class="font-bold select-none">Verificado</p>
+        <p class="font-bold select-none"></p>
     </div
     </div>
     `);
@@ -295,12 +295,12 @@ class TubeOverview {
 
       if (this.tube.verified) {
         this.verified_p.textContent = "Verificado";
-        this.verified_p.classList.remove("text-red-500");
-        this.verified_p.classList.add("text-green-500");
+        this.verified_p.classList.remove("!text-red-500");
+        this.verified_p.classList.add("!text-green-500");
       } else {
         this.verified_p.textContent = "No Verificado";
-        this.verified_p.classList.add("text-red-500");
-        this.verified_p.classList.remove("text-green-500");
+        this.verified_p.classList.add("!text-red-500");
+        this.verified_p.classList.remove("!text-green-500");
       }
     });
   }
@@ -309,11 +309,13 @@ class TubeOverview {
     this.location_par.textContent = `Ubicación: ${this.tube.location_id ?? "No asignado"}`;
 
     if (this.tube.verified) {
-      this.verified_p.classList.add("text-green-500");
-      this.verified_p.classList.remove("text-red-500");
+      this.verified_p.textContent = "Verificado";
+      this.verified_p.classList.add("!text-green-500");
+      this.verified_p.classList.remove("!text-red-500");
     } else {
-      this.verified_p.classList.remove("text-green-500");
-      this.verified_p.classList.add("text-red-500");
+      this.verified_p.textContent = "No Verificado";
+      this.verified_p.classList.remove("!text-green-500");
+      this.verified_p.classList.add("!text-red-500");
     }
   }
 

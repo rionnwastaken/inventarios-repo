@@ -192,6 +192,7 @@ class TableController {
   }
 
   update_tube(tube: Tube) {
+    log.debug("Updating tube in tube_controller");
     if (state.active_view === "tube") {
       const row = this.table.row((idx, data) => data.id === tube.id);
       if (row.any()) {

@@ -12,10 +12,9 @@ core_bp = Blueprint("core", __name__)
 
 @core_bp.post("/new/tube/")
 def new_tube():
-    tube_json, log_json = core.new_tube()
+    tube_json = core.new_tube()
     return {
         "tube": tube_json,
-        "log": log_json,
     }, 201
 
 

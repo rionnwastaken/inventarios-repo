@@ -1,4 +1,5 @@
 import logging
+
 from typing import List, Optional
 import json
 from decimal import Decimal
@@ -57,17 +58,13 @@ def new_tube():
     tube = Tube()
     db.session.add(tube)
     db.session.flush()
-
-    tube_json = tube.model_dump(mode="json")
-    tube_json["fabric_count"] = 0
-    tube_json["rectified"] = False
-
-    log_json = AuditLogger.log("Insert", "tube", tube.id, new_values=tube_json)
     db.session.commit()
 
+    tube_json = tube.payload()
+    AuditLogger.log("Insert", "tube", tube.id, new_values=tube_json)
     log.debug(tube_json)
 
-    return tube_json, log_json
+    return tube_json
 
 
 @handle_db_exceptions

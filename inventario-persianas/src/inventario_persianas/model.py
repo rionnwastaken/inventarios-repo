@@ -140,7 +140,7 @@ class Tube(TimestampMixin, table=True):
     legacy_location_1: Optional[str] = Field(default=None, max_length=100)
     legacy_location_2: Optional[str] = Field(default=None, max_length=100)
 
-    verified: bool = Field(default=False, index=True)
+    verified: bool = Field(default=True, index=True)
     location: Optional[Location] = Relationship(back_populates="tubes")
     fabrics: List["Fabric"] = Relationship(back_populates="tube")
 
