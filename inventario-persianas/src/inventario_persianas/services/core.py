@@ -282,6 +282,70 @@ def update_fabrics(data: list[dict]) -> tuple[List[dict], int]:
         return updated_fabrics, 200
 
 
+def prevent_fabric_invalid_measurement_update(fabric: Fabric, payload: dict):
+    if len(fabric.deductions) > 0 and (
+        payload.get("original_width" or payload.get("original_height"))
+    ):
+        raise ValidationError(
+            "No se puede actualizar las medidas de la tela mienstras que tenga deducciones"
+        )
+
+
+@handle_db_exceptions
+def update_fabric(id: int, payload: dict):
+    with db.session.begin():
+        fabric = db.session.get(
+            Fabric,
+            id,
+            options=[
+                selectinload(Fabric.deductions),
+                selectinload(Fabric.comments),
+                selectinload(Fabric.tube),
+            ],
+        )
+        if not fabric:
+            raise ValueError(f"Fabric with id {id} not found.")
+
+        tube = fabric.tube
+
+        if not tube:
+            raise ValueError(f"Fabric does not belong to a tube {id}")
+
+        prevent_fabric_invalid_measurement_update(fabric, payload)
+
+        fabric_old_json = fabric.model_dump(mode="json")
+        update_payload = FabricUpdate.model_validate(payload).model_dump(
+            exclude_unset=True
+        )
+
+        log.debug("Partial_data here is %s", update_payload)
+
+        if not update_payload or len(update_payload) <= 0:
+            raise ValueError(
+                f"Fabric id {id}: 'partial_data' contains no valid update fields. {payload}"
+            )
+
+        fabric.sqlmodel_update(update_payload)
+        db.session.add(fabric)
+        db.session.flush()
+        db.session.refresh(fabric)
+        db.session.refresh(tube)
+
+        AuditLogger.log(
+            "Update",
+            "fabric",
+            id,
+            old_values=fabric_old_json,
+            new_values=payload,
+        )
+
+        log.debug("Updated fabric: %s", fabric)
+        return {
+            "fabric": fabric.payload(),
+            "tube": tube.payload(),
+        }, 200
+
+
 def validate_fabric_deduction_limits(
     fabric: Fabric,
     width: Decimal,
