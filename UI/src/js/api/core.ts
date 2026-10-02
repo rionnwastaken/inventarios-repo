@@ -21,6 +21,9 @@ export const CoreAPI = {
   fabric_delete: async (fabric_id: number) =>
     await api.post("/fabric/delete/", { id: fabric_id }),
 
+  fabric_move: async (fabric_id: number, payload: Partial<Fabric>) =>
+    await api.post("/fabric/move/", { fabric_id: fabric_id, payload: payload }),
+
   fabric_update_many: async (fabrics: Array<Object>) =>
     await api.post("/fabric/edit/many/", { data: fabrics }),
 

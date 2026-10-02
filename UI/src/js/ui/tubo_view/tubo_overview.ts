@@ -5,6 +5,7 @@ import {
   createElementFromHTML,
   get_partial_data,
   inspect_row,
+  num,
 } from "../utils.ts";
 import { Api, ApiRowMethods, ColumnsConfig } from "datatables.net-dt";
 import { state } from "../../state.ts";
@@ -26,6 +27,7 @@ import { createIconHTML } from "../renderUtils.ts";
 import { shortLivedDialog } from "../shortLiveDialog.ts";
 import arrow_icon from "../../../assets/icons/arrow.svg";
 import { LocationController } from "./location/location.ts";
+import TomSelect from "tom-select";
 
 let log = getLogger("app");
 
@@ -81,10 +83,13 @@ class TubeOverview {
   verified_p: HTMLParagraphElement;
   verified_container: HTMLDivElement;
 
+  moveFabric: MoveFabric;
+
   public events = new TypedEventEmitter<RowModalEvents>();
 
   constructor() {
     this.create_dialog();
+    this.moveFabric = new MoveFabric();
 
     this.tubeOverviewTable = new TubeOverviewTable({
       tbl_element: this.tbl_element,
@@ -94,6 +99,21 @@ class TubeOverview {
       archive_callback: async (data, row) => {},
       delete_callback: async (data, row) => {
         await this.handle_delete_fabric(data as FabricData, row);
+      },
+
+      move_callback: async (fdata: FabricData, row) => {
+        let data = await this.moveFabric.show(fdata.original_fabric as Fabric);
+
+        if (data == null) {
+          return;
+        }
+        log.debug("Data: ", data);
+        this.events.emit("fabric:edited", data.fabric);
+        this.events.emit("tube:updated", data.tube);
+        this.events.emit("tube:updated", data.previous_tube);
+
+        row.remove();
+        this.table.draw(false);
       },
       row_selected_callback: async (data, row) => {
         await this.handle_fabric_selection(row);
@@ -561,6 +581,101 @@ class TubeOverview {
     log.debug(data);
     row.data(data);
     this.table.draw(false);
+  }
+}
+
+class MoveFabric {
+  modalDialog: ModalDialog;
+  tom: TomSelect;
+  // resolve: (Fabric | null) => void;
+  resolve: (
+    data: { fabric: Fabric; tube: Tube; previous_tube: Tube } | null,
+  ) => void;
+  fabric: Fabric;
+
+  constructor() {
+    this.modalDialog = new ModalDialog({
+      onConfirm: async () => {
+        let tube_id = this.tom.getValue() as String;
+
+        if (!tube_id || tube_id == "") {
+          return false;
+        }
+
+        log.debug("id is ", tube_id);
+
+        let payload: Partial<Fabric> = {
+          tube_id: Number(tube_id),
+        };
+
+        let res = await CoreAPI.fabric_move(this.fabric.id, payload);
+
+        if (!res.success) {
+          log.debug(res.data);
+          return;
+        }
+        this.resolve(res.data);
+        this.resolve = null;
+      },
+      onCancel: () => {
+        this.resolve(null);
+        this.resolve = null;
+      },
+      body: this.body(),
+    });
+  }
+
+  body() {
+    const e = createElementFromHTML(`
+    <label class="form-control w-full" >
+      <select
+        class="w-full input-lowercase"
+      ></select>
+    </label> `);
+
+    this.tom = new TomSelect(e.querySelector("select"), {
+      selectOnTab: true,
+      refreshThrottle: 0,
+      maxItems: 1,
+
+      valueField: "id", // What gets submitted in forms
+      labelField: "text", // What gets displayed in the dropdown
+      searchField: "text",
+
+      load: function (query, callback) {
+        var url = "/core/tubes?q=" + encodeURIComponent(query);
+        fetch(url)
+          .then((response) => response.json())
+          .then((ids) => {
+            const items = ids.map((id) => ({
+              id: id, // Property named "id" holding the numeric value (e.g. 1)
+              text: `Tubo ${String(id)}`, // Property named "text" holding the string version (e.g. "1")
+            }));
+
+            // 2. Pass the created objects to Tom Select
+            callback(items);
+          })
+          .catch(() => {
+            callback();
+          });
+      },
+    });
+
+    return e;
+  }
+
+  show(fabric: Fabric) {
+    return new Promise<{
+      fabric: Fabric;
+      tube: Tube;
+      previous_tube: Tube;
+    } | null>((resolve) => {
+      this.resolve = resolve;
+      this.fabric = fabric;
+      this.modalDialog.show();
+
+      this.tom.clear();
+    });
   }
 }
 

@@ -37,6 +37,19 @@ def recent_tubes():
     }, 200
 
 
+@core_bp.get("/tubes")
+def tubes():
+    log.info("recent_tubes()")
+    query = request.args.get("q")
+
+    if not query:
+        return Error("Query parameter not passed", 400).returnIt()
+    return core.tubes(query)
+
+
+# If q is empty or not digits, return an empty list immediately
+
+
 @core_bp.post("/tube/update/")
 def update_tube():
     log.info("updat_tube()")
@@ -86,6 +99,19 @@ def fabric_delete():
         return Error(f"Id was not found {fabric_id}", 400).returnIt()
 
     return core.delete_fabric(fabric_id)
+
+
+@core_bp.post("/fabric/move/")
+def fabric_move():
+    data = request.get_json() or {}
+    fabric_id = data.get("fabric_id")
+    payload = data.get("payload")
+    if not fabric_id or not payload:
+        return Error(
+            f"'fabric_id' or 'payload' was not found {fabric_id} {payload}", 400
+        ).returnIt()
+
+    return core.move_fabric(fabric_id, payload)
 
 
 @core_bp.post("/fabric/deduction/update/")

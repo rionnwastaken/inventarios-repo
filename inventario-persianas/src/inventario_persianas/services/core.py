@@ -23,7 +23,7 @@ from inventario_persianas.services.utils import (
 from pydantic import ValidationError
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import selectinload
-from sqlmodel import desc, select
+from sqlmodel import String, cast, desc, select
 
 log = logging.getLogger(__name__)
 
@@ -219,6 +219,51 @@ def delete_fabric(id: int):
 
         log.debug("returning data ", data)
         return data
+
+
+@handle_db_exceptions
+def move_fabric(fabric_id: int, payload: dict):
+    log.debug("move_fabric")
+
+    retval = update_fabric(fabric_id, payload)
+    with db.session.begin():
+        data = retval[0]
+        log.debug("data ", data)
+        data["previous_tube"] = data.pop("tube")
+
+        tube = db.session.get(Tube, data["fabric"]["tube_id"])
+        if not tube:
+            raise ValueError("Tube not found")
+        data["tube"] = tube.payload()
+
+        return retval
+
+
+@handle_db_exceptions
+def tubes(query):
+    if not query or not query.isdigit():
+        raise ValueError("")
+
+    target_id = int(query)
+
+    # Search for IDs starting with or containing the typed numbers
+    log.debug(f"query {query} {target_id} ")
+    stmt = (
+        select(Tube.id)
+        .where(cast(Tube.id, String).like(f"%{query}%"))
+        .order_by(
+            (Tube.id == target_id).desc(),  # Exact match at index 0
+            Tube.id.asc(),
+        )
+        .limit(20)
+    )
+
+    # .scalars().all() returns [12, 120, 121] directly
+    tube_ids = db.session.execute(stmt).scalars().all()
+
+    log.debug(f"Tubes found are {tube_ids} ")
+
+    return tube_ids, 200
 
 
 @handle_db_exceptions

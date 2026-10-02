@@ -53,10 +53,12 @@ export class TubeOverviewTable extends Table {
   edit_action_btn: HTMLButtonElement;
   archive_action_btn: HTMLButtonElement;
   delete_fabric_btn: HTMLButtonElement;
+  move_fabric_btn: HTMLButtonElement;
 
   edit_callback: callback;
   archive_callback: callback;
   delete_callback: callback;
+  move_callback: callback;
   row_selected_callback: callback;
 
   constructor(data: {
@@ -64,6 +66,7 @@ export class TubeOverviewTable extends Table {
     archive_callback: callback;
     row_selected_callback: callback;
     delete_callback: callback;
+    move_callback: callback;
     tbl_element: HTMLTableElement;
   }) {
     super();
@@ -72,6 +75,7 @@ export class TubeOverviewTable extends Table {
     ((this.archive_callback = data.archive_callback),
       (this.row_selected_callback = data.row_selected_callback));
     this.delete_callback = data.delete_callback;
+    this.move_callback = data.move_callback;
 
     this.init_columns();
 
@@ -114,12 +118,19 @@ export class TubeOverviewTable extends Table {
         id: "delete-action",
         title: "Eliminar Tela",
       })}
+
+      ${createIconHTML({
+        src: archive_icon,
+        id: "move-action",
+        title: "Mover Tela",
+      })}
       </div>
 `);
 
     this.edit_action_btn = container.querySelector("#edit-action");
     this.archive_action_btn = container.querySelector("#archive-action");
     this.delete_fabric_btn = container.querySelector("#delete-action");
+    this.move_fabric_btn = container.querySelector("#move-action");
 
     this.edit_action_btn.addEventListener("click", (e) => {
       e.stopPropagation(); // Prevents triggering card click event
@@ -137,6 +148,12 @@ export class TubeOverviewTable extends Table {
       e.stopPropagation(); // Prevents triggering card click event
       let row = this.actionOverlay.selected_row;
       this.delete_callback(row.data(), row);
+    });
+
+    this.move_fabric_btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevents triggering card click event
+      let row = this.actionOverlay.selected_row;
+      this.move_callback(row.data(), row);
     });
 
     return container;
