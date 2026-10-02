@@ -117,11 +117,7 @@ def recent_tubes_and_fabrics():
     for tube in tubes_al:
         fabrics_list = tube.fabrics or []
 
-        tube_dict = tube.model_dump()
-        tube_dict["fabric_count"] = len(fabrics_list)
-
-        last_update = tube_dict["updated_at"]
-        print(type(last_update), last_update)
+        tube_dict = tube.payload()
 
         tubes_obj.append(tube_dict)
         for fabric in fabrics_list:
@@ -129,6 +125,7 @@ def recent_tubes_and_fabrics():
             fabrics_obj.append(fabric_obj)
 
     log.debug("Fabrics loaded %s", json.dumps(fabrics_obj, default=str, indent=4))
+    log.debug("Tubes loaded %s", json.dumps(tubes_obj, default=str, indent=4))
 
     return tubes_obj, fabrics_obj, len(tubes_obj)
 

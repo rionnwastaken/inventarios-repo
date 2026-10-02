@@ -146,6 +146,8 @@ class Tube(TimestampMixin, table=True):
 
     def payload(self):
         tube = self.model_dump(mode="json")
+        tube["fabric_count"] = len(self.fabrics)
+
         return tube
 
 
