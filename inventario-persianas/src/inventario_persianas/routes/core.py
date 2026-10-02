@@ -78,6 +78,16 @@ def update_fabrics():
     return data
 
 
+@core_bp.post("/fabric/delete/")
+def fabric_delete():
+    data = request.get_json() or {}
+    fabric_id = data.get("id")
+    if not fabric_id:
+        return Error(f"Id was not found {fabric_id}", 400).returnIt()
+
+    return core.delete_fabric(fabric_id)
+
+
 @core_bp.post("/fabric/deduction/update/")
 def update_deduction():
     log.debug("update_deductions():")

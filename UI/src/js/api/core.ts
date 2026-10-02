@@ -18,6 +18,9 @@ export const CoreAPI = {
   fabric_add_many: async (fabrics: Array<Fabric>) =>
     await api.post("/fabric/add_many", { fabrics: fabrics }),
 
+  fabric_delete: async (fabric_id: number) =>
+    await api.post("/fabric/delete/", { id: fabric_id }),
+
   fabric_update_many: async (fabrics: Array<Object>) =>
     await api.post("/fabric/edit/many/", { data: fabrics }),
 

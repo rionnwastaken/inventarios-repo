@@ -173,6 +173,55 @@ def add_fabric(payload: dict):
 
 
 @handle_db_exceptions
+def delete_fabric(id: int):
+    log.debug("delete_fabric")
+
+    with db.session.begin():
+        fabric = db.session.get(
+            Fabric,
+            id,
+            options=[
+                selectinload(Fabric.comments),
+                selectinload(Fabric.deductions),
+                selectinload(Fabric.tube),
+            ],
+        )
+
+        if not fabric:
+            raise ValueError(f"fabric not found with id {id}")
+
+        if len(fabric.comments) > 0:
+            raise ValueError("No se puede borrar tela con comentarios")
+
+        if len(fabric.deductions) > 0:
+            raise ValueError("No se puede borrar tela con deducciones")
+        tube = fabric.tube
+        fabric_json = fabric.payload()
+
+        db.session.delete(fabric)
+        db.session.flush()
+
+        if tube:
+            db.session.refresh(tube)
+            tube_json = tube.payload()
+        else:
+            tube_json = {}
+
+        AuditLogger.log("Delete", "fabric", fabric.id, old_values=fabric_json)
+
+        data = (
+            {
+                "fabric": fabric_json,
+                "tube": tube_json,
+            },
+            200,
+        )
+
+        log.debug("returning data ", data)
+        return data
+
+
+@handle_db_exceptions
 def update_fabrics(data: list[dict]) -> tuple[List[dict], int]:
     updated_fabrics = []
     with db.session.begin():

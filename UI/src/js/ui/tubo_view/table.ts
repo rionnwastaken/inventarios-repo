@@ -52,15 +52,18 @@ export class TubeOverviewTable extends Table {
 
   edit_action_btn: HTMLButtonElement;
   archive_action_btn: HTMLButtonElement;
+  delete_fabric_btn: HTMLButtonElement;
 
   edit_callback: callback;
   archive_callback: callback;
+  delete_callback: callback;
   row_selected_callback: callback;
 
   constructor(data: {
     edit_callback: callback;
     archive_callback: callback;
     row_selected_callback: callback;
+    delete_callback: callback;
     tbl_element: HTMLTableElement;
   }) {
     super();
@@ -68,6 +71,8 @@ export class TubeOverviewTable extends Table {
     this.edit_callback = data.edit_callback;
     ((this.archive_callback = data.archive_callback),
       (this.row_selected_callback = data.row_selected_callback));
+    this.delete_callback = data.delete_callback;
+
     this.init_columns();
 
     this.init(this.tbl_element, {
@@ -77,6 +82,13 @@ export class TubeOverviewTable extends Table {
 
     this.actionOverlay.cb_samerow_2clicks = async (data, row) => {
       this.row_selected_callback(data, row);
+    };
+
+    this.actionOverlay.callback_row_click = (data: FabricData, row) => {
+      let deductions = data.original_fabric.deductions;
+      if (deductions.length > 1) {
+        //TODO hide deletebutton when more
+      }
     };
 
     // this.actionOverlay.init(this.dt)
@@ -96,17 +108,37 @@ export class TubeOverviewTable extends Table {
         id: "archive-action",
         title: "Archivar Tela",
       })}
+
+      ${createIconHTML({
+        src: archive_icon,
+        id: "delete-action",
+        title: "Eliminar Tela",
+      })}
       </div>
 `);
 
     this.edit_action_btn = container.querySelector("#edit-action");
     this.archive_action_btn = container.querySelector("#archive-action");
+    this.delete_fabric_btn = container.querySelector("#delete-action");
 
     this.edit_action_btn.addEventListener("click", (e) => {
       e.stopPropagation(); // Prevents triggering card click event
       let row = this.actionOverlay.selected_row;
       this.edit_callback(row.data(), row);
     });
+
+    this.archive_action_btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevents triggering card click event
+      let row = this.actionOverlay.selected_row;
+      this.archive_callback(row.data(), row);
+    });
+
+    this.delete_fabric_btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevents triggering card click event
+      let row = this.actionOverlay.selected_row;
+      this.delete_callback(row.data(), row);
+    });
+
     return container;
   }
 

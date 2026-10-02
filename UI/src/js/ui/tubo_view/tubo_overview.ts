@@ -92,6 +92,9 @@ class TubeOverview {
         await this.actions.open_form_editing(row);
       },
       archive_callback: async (data, row) => {},
+      delete_callback: async (data, row) => {
+        await this.handle_delete_fabric(data as FabricData, row);
+      },
       row_selected_callback: async (data, row) => {
         await this.handle_fabric_selection(row);
       },
@@ -199,6 +202,24 @@ class TubeOverview {
     this.change_location_btn = e.querySelector("#change-location-btn");
 
     return e;
+  }
+
+  async handle_delete_fabric(data: FabricData, row) {
+    let res = await CoreAPI.fabric_delete(data.original_fabric.id);
+
+    if (!res.success) {
+      log.debug(res.data);
+
+      shortLivedDialog.titleContainer.innerHTML = res.data.error;
+      const confirm = await shortLivedDialog.open();
+      return;
+    }
+
+    row.remove();
+    this.table.draw(false);
+
+    this.events.emit("fabric:deleted", res.data.fabric);
+    this.events.emit("tube:updated", res.data.tube);
   }
 
   handle_location_click() {
