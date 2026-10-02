@@ -54,17 +54,18 @@ def handle_db_exceptions(func):
     return wrapper
 
 
+@handle_db_exceptions
 def new_tube():
-    tube = Tube()
-    db.session.add(tube)
-    db.session.flush()
-    db.session.commit()
+    with db.session.begin():
+        tube = Tube()
+        db.session.add(tube)
+        db.session.flush()
 
-    tube_json = tube.payload()
-    AuditLogger.log("Insert", "tube", tube.id, new_values=tube_json)
-    log.debug(tube_json)
+        tube_json = tube.payload()
+        AuditLogger.log("Insert", "tube", tube.id, new_values=tube_json)
+        log.debug(f"new tube json {tube_json} {len(tube_json)} ")
 
-    return tube_json
+        return tube_json
 
 
 @handle_db_exceptions
