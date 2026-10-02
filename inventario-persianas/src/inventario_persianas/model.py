@@ -6,7 +6,7 @@ from pydantic import field_serializer
 import decimal
 
 
-from sqlalchemy import JSON, Column, DateTime, event, update
+from sqlalchemy import JSON, Column, DateTime, Engine, event, update
 from sqlmodel import Field, Relationship, SQLModel
 from flask_sqlalchemy import SQLAlchemy
 from decimal import Decimal
@@ -384,6 +384,15 @@ def update_fabric_and_tube_on_comment_change(mapper, connection, target: FabricC
 
     # 3. Update grandparent Tube
     connection.execute(update(Tube).where(Tube.id == tube_id).values(updated_at=now))
+
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    # Only execute for SQLite databases
+    if db.engine.dialect.name == "sqlite":
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 catalago_models = [
