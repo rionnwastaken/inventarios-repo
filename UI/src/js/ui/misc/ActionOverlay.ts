@@ -9,15 +9,18 @@ export class ActionOverlay {
   selected_row: ApiRowMethods<unknown> | null;
   table: Api<unknown>;
   tbody: HTMLElement;
+  callback_row_click?: cb_row_2clicks_type;
 
   constructor(data: {
     container: HTMLDivElement;
     // table: Api<unknown>;
     cb_samerow_2clicks?: cb_row_2clicks_type;
+    callback_row_click?: cb_row_2clicks_type;
   }) {
     this.container = data.container;
     this.cb_samerow_2clicks = data?.cb_samerow_2clicks ?? (() => {});
     this.selected_row = null;
+    this.callback_row_click = data?.callback_row_click ?? (() => {});
   }
 
   init(table: Api<unknown>) {
@@ -64,6 +67,8 @@ export class ActionOverlay {
         log.debug("click row undefined");
         return;
       }
+
+      this.callback_row_click(data, row);
 
       const hasMoreThanOneSelected = this.table.rows(".selected").count() > 1;
       if (hasMoreThanOneSelected) {
