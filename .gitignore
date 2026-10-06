@@ -3,6 +3,8 @@ out/
 *.pyc
 static/
 
+!webpack.config.js
+
 schema.ts
 query.sql
 icons/

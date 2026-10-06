@@ -152,7 +152,7 @@ class TableController {
   }
 
   init_bindings() {
-    inspect_row(tbody, this.table);
+    inspect_row(this.table.table().body(), this.table);
     this.bind_row_double_click();
   }
 

@@ -1,19 +1,46 @@
 Features
-  mark/unmark tube as rectified
-  assign location to tube (opens dialog that displays locanio name with the image lay in a grid)
-  selection fo rows to be able to mark as  deleted
   button to mark fabric as archived
   button to show only archived fabrics in tube view
   tab to be able to edit items in catalago, maybe rename and delete ( lets you know that all that have it will become null now)
   implement filtering logic and UI
-  view to toggle fabric and tubes done
-  Last update should update the fabric last update when a deduction is created or updated done
-  move fabric from tube done
   TableController to use Table class
   Delete tube without any fabric 
 
 
 
-TODO synchronize data between tablecontroller and state 
+synchronize data between tablecontroller and state 
 
+
+  Delete fabric without any deduductions done
+  mark/unmark tube as rectified done
+  assign location to tube (opens dialog that displays locanio name with the image lay in a grid) done
+  selection fo rows to be able to mark as  deleted done
+  Last update should update the fabric last update when a deduction is created or updated done
+  view to toggle fabric and tubes done
+  move fabric from tube done
 display in tube overview when changing measurement done
+
+
+
+
+filtro]
+filter by measurements, by percent available of measurement
+
+    blind_model_id: Optional[int] = Field(foreign_key="blind_model.id")
+    color_id: Optional[int] = Field(foreign_key="color.id")
+    fabric_classification_id: int = Field(foreign_key="fabric_classification.id")
+    supplier_id: Optional[int] = Field(default=None, foreign_key="supplier.id")
+
+
+widht > 1.60 and (Fernando or Karla) and blackout
+
+
+
+Fernando
+Karla
+
+
+
+Blackout
+
+

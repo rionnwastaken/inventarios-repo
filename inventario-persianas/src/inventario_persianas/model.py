@@ -181,7 +181,7 @@ class Fabric(TimestampMixin, table=True):
     original_width: Decimal
     original_height: Decimal
     is_archived: bool = Field(default=False)  # Fabrics runs out of fabric to be used
-    remaining_percent: Decimal = Field(default=Decimal(100))
+    remaining_percent: Decimal = Field(default=Decimal(100),index=True)
 
     # Relationships
     tube: Optional[Tube] = Relationship(back_populates="fabrics")
