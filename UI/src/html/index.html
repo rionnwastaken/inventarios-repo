@@ -15,7 +15,7 @@
       </div>
       <div class="flex-none">
         <button class="btn btn-square btn-ghost">
-          <%= require('../assets/icons/gear.svg') %>
+          <%= require('../assets/icons/gear.svg?raw') %>
         </button>
       </div>
     </div>
@@ -25,33 +25,12 @@
     <div class="grid grid-rows-[auto_1fr] gap-4 w-full h-screen">
       <!-- Takes up 25% width (3 out of 12 columns) -->
 
-      <div class="flex col-span-3 data-name-control-panel">
-        <div id="btn-new-tube" class="flex bg-green-900 p-2 btn">
-          <p class="text-lg">Tubo</p>
-          <span type="" class="btn w-7 h-7 btn-circle border-none bg-green-600">
-            <%= require('../assets/icons/plus.svg') %>
-          </span>
-        </div>
+      <div
+        class="flex col-span-3 data-name-control-panel"
+        id="panel-control-container"
+      ></div>
 
-        <div>
-          <!-- <select id="select-beast" placeholder="Select a person..." autocomplete="off"> -->
-          <!-- 		</select> -->
-        </div>
-
-        <p id="test" class="text-lg btn">click me</p>
-
-        <div class="flex gap-2">
-          <p id="tipo-tabla-vista-text">Vista Tabla</p>
-          <input
-            id="tipo-tabla-vista-toggler"
-            type="checkbox"
-            class="toggle border-none bg-yellow-900 checked:bg-purple-900"
-          />
-        </div>
-      </div>
-
-      <!-- Takes up 75% width (9 out of 12 columns) -->
-      <div class="col-span-9 overflow-auto">
+      <div class="overflow-auto">
         <table id="myTable" class="display">
           <thead></thead>
           <tbody></tbody>
@@ -86,8 +65,6 @@
         </div>
       </div>
     </dialog>
-
-    <div class="bg-red-500 w-full">hello</div>
 
     <script type="module" src="/static/bundle.js"></script>
   </body>

@@ -523,19 +523,19 @@ class TubeOverview {
     this.fabricCraft.cb_initModalDropdowns();
   }
 
-  cb_open_modal_tube(tube_data: Tube) {
+  cb_open_modal_tube(tube: Tube, fabrics: Fabric[]) {
     if (this.modal_dialog.opened) {
       return;
     }
 
-    this.tube_title.textContent = `Tubo ${tube_data.id}`;
-    this.tube = tube_data;
+    this.tube_title.textContent = `Tubo ${tube.id}`;
+    this.tube = tube;
 
     this.update_display();
 
-    let fabrics = state.tableData.get_fabrics_by_tube_id(
-      this.tube.id,
-    ) as Fabric[];
+    // let fabrics = state.tableData.get_fabrics_by_tube_id(
+    //   this.tube.id,
+    // ) as Fabric[];
 
     let fabrics_data = [];
     for (let fabric of fabrics) {
@@ -553,7 +553,7 @@ class TubeOverview {
     this.table.rows.add(fabrics_data);
     this.table.draw();
 
-    log.debug(tube_data, fabrics);
+    log.debug(tube, fabrics);
 
     this.modal_dialog.show();
   }

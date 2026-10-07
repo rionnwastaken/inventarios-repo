@@ -1,7 +1,6 @@
 import logging
 
 from typing import List, Optional
-import json
 from decimal import Decimal
 from functools import wraps
 
@@ -24,9 +23,21 @@ from inventario_persianas.services.utils import (
 from pydantic import ValidationError
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import selectinload
-from sqlmodel import String, cast, desc, select
+from sqlmodel import desc, select
+from sqlalchemy import distinct
+from sqlalchemy import func
 
 log = logging.getLogger(__name__)
+
+
+# Mapping orientation keys to Python/SQLAlchemy comparison operators
+OPERATORS = {
+    "greater": lambda col, val: col >= val,
+    "greater_than": lambda col, val: col > val,
+    "less": lambda col, val: col <= val,
+    "less_than": lambda col, val: col < val,
+    "equal": lambda col, val: col == val,
+}
 
 
 def handle_db_exceptions(func):
@@ -68,6 +79,68 @@ def new_tube():
         return tube_json
 
 
+# @handle_db_exceptions
+# def tubes_and_fabrics(filters):
+#     with db.session.begin():
+#         # 1. Base query with eager loading for Tube
+#         stmt = select(Fabric).options(joinedload(Fabric.tube))
+#
+#         # 2. Filter out archived fabrics by default (or adjust per business logic)
+#         stmt = stmt.where(Fabric.is_archived == False)
+#
+#         # --- Array / List Filters (IN Clause) ---
+#         if filters.get("blind_model"):
+#             stmt = stmt.where(Fabric.blind_model_id.in_(filters["blind_model"]))
+#
+#         if filters.get("color"):
+#             stmt = stmt.where(Fabric.color_id.in_(filters["color"]))
+#
+#         if filters.get("fabric_classification"):
+#             stmt = stmt.where(
+#                 Fabric.fabric_classification_id.in_(filters["fabric_classification"])
+#             )
+#
+#         if filters.get("supplier"):
+#             stmt = stmt.where(Fabric.supplier_id.in_(filters["supplier"]))
+#
+#         # --- Object Range Filters (Value + Orientation) ---
+#         # Width
+#         width_filter = filters.get("width")
+#         if width_filter and width_filter.get("value") is not None:
+#             orient = width_filter.get("orientation", "greater")
+#             op = OPERATORS.get(orient, lambda col, val: col >= val)
+#             stmt = stmt.where(op(Fabric.original_width, width_filter["value"]))
+#
+#         # Height
+#         height_filter = filters.get("height")
+#         if height_filter and height_filter.get("value") is not None:
+#             orient = height_filter.get("orientation", "greater")
+#             op = OPERATORS.get(orient, lambda col, val: col >= val)
+#             stmt = stmt.where(op(Fabric.original_height, height_filter["value"]))
+#
+#         # Availability (remaining_percent)
+#         avail_filter = filters.get("availability")
+#         if avail_filter and avail_filter.get("value") is not None:
+#             orient = avail_filter.get("orientation", "greater")
+#             op = OPERATORS.get(orient, lambda col, val: col >= val)
+#             stmt = stmt.where(op(Fabric.remaining_percent, avail_filter["value"]))
+#
+#         # 3. Execute query
+#         fabrics = db.session.scalars(stmt).all()
+#         fabrics_obj = [fabric.payload() for fabric in fabrics]
+#
+#         # 4. Extract unique tubes from returned fabrics
+#         tubes_dict = {
+#             f.tube.id: f.tube.payload() for f in fabrics if f.tube is not None
+#         }
+#         tubes_obj = list(tubes_dict.values())
+#
+#         return {
+#             "tubes": tubes_obj,
+#             "fabrics": fabrics_obj,
+#         }, 200
+
+
 @handle_db_exceptions
 def update_tube(tube_id: int, payload: dict):
     with db.session.begin():
@@ -95,37 +168,211 @@ def update_tube(tube_id: int, payload: dict):
         return {"tube": tube_json}, 200
 
 
-def recent_tubes_and_fabrics():
-    log.info("recent_tubes_and_fabrics()")
-    stmt_tubes = (
-        select(Tube)
+# def recent_tubes_and_fabrics(offset=0, limit=50, draw=1):
+#     log.info(f"recent_tubes_and_fabrics(offset={offset}, limit={limit}, draw={draw})")
+#
+#     # Convert to integers safely
+#     offset = int(offset) if offset else 0
+#     limit = int(limit) if limit else 50
+#     draw = int(draw) if draw else 1
+#
+#     # 1. Query Total Records in the Database (Mandatory for DataTables Scroller)
+#     total_tubes_count = db.session.scalar(select(func.count(Tube.id)))
+#
+#     # 2. Query recently updated Fabrics with OFFSET & LIMIT
+#     stmt_fabrics = (
+#         select(Fabric)
+#         .options(
+#             selectinload(Fabric.deductions),
+#             selectinload(Fabric.comments),
+#             selectinload(Fabric.tube),
+#         )
+#         .order_by(desc(Fabric.updated_at))
+#         .offset(offset)  # <-- APPLIED OFFSET
+#         .limit(limit)    # <-- APPLIED LIMIT
+#     )
+#     recent_fabrics = db.session.scalars(stmt_fabrics).all()
+#
+#     # 3. Query recently updated Tubes with OFFSET & LIMIT
+#     stmt_tubes = (
+#         select(Tube)
+#         .order_by(desc(Tube.updated_at))
+#         .offset(offset)  # <-- APPLIED OFFSET
+#         .limit(limit)    # <-- APPLIED LIMIT
+#     )
+#     recent_tubes = db.session.scalars(stmt_tubes).all()
+#
+#     # 4. Deduplicate tubes
+#     tubes_map = {
+#         tube.id: tube.payload() for tube in recent_tubes if tube.id is not None
+#     }
+#
+#     for fabric in recent_fabrics:
+#         if fabric.tube and fabric.tube.id not in tubes_map:
+#             tubes_map[fabric.tube.id] = fabric.tube.payload()
+#
+#     fabrics_obj = [fabric.payload() for fabric in recent_fabrics]
+#     tubes_obj = list(tubes_map.values())
+#
+#     return {
+#         "draw": draw,
+#         "recordsTotal": total_tubes_count,      # Controls scrollbar total range
+#         "recordsFiltered": total_tubes_count,   # Adjust if applying search filters
+#         "tubes": tubes_obj,
+#         "fabrics": fabrics_obj,
+#         "size": len(tubes_obj),
+#     }, 200
+
+
+def get_recent_tubes(offset=0, limit=50, draw=1):
+    offset = max(0, int(offset) if offset else 0)
+    limit = max(1, int(limit) if limit else 50)
+    draw = int(draw) if draw else 1
+
+    # 1. Total count of Tubes in database
+    total_count = db.session.scalar(select(func.count(Tube.id))) or 0
+
+    stmt = select(Tube).order_by(desc(Tube.updated_at)).offset(offset).limit(limit)
+    tubes = db.session.scalars(stmt).all()
+
+    return {
+        "draw": draw,
+        "total_records": total_count,
+        "data": [tube.payload() for tube in tubes],
+    }, 200
+
+
+def get_recent_fabrics(offset=0, limit=50, draw=1):
+    offset = max(0, int(offset) if offset else 0)
+    limit = max(1, int(limit) if limit else 50)
+    draw = int(draw) if draw else 1
+
+    # 1. Total count of Fabrics in database
+    total_count = db.session.scalar(select(func.count(Fabric.id))) or 0
+
+    # 2. Query Fabrics with parent tube, deductions, and comments
+    stmt = (
+        select(Fabric)
         .options(
-            selectinload(Tube.fabrics).options(
-                selectinload(Fabric.deductions), selectinload(Fabric.comments)
-            ),
+            selectinload(Fabric.deductions),
+            selectinload(Fabric.comments),
+        )
+        .order_by(desc(Fabric.updated_at))
+        .offset(offset)
+        .limit(limit)
+    )
+    fabrics = db.session.scalars(stmt).all()
+
+    return {
+        "draw": draw,
+        "recordsTotal": total_count,
+        "data": [fabric.payload() for fabric in fabrics],
+    }, 200
+
+
+def get_tubes(offset=0, limit=50, draw=1, filters=None):
+    offset = max(0, int(offset) if offset else 0)
+    limit = max(1, int(limit) if limit else 50)
+    draw = int(draw) if draw else 1
+
+    # Avoid mutable default argument pitfalls
+    if filters is None:
+        filters = {}
+
+    # 1. Unfiltered total count of Tubes in database
+    total_count = db.session.scalar(select(func.count(Tube.id))) or 0
+
+    # 2. Build base query joining Tube -> Fabric
+    # We query Tube, but JOIN Fabric so we can filter by fabric fields
+    stmt = select(Tube).join(Tube.fabrics)
+
+    # Filter out archived fabrics
+    # stmt = stmt.where(Fabric.is_archived == False)
+
+    # --- Fabric IN Clause Filters ---
+    if filters.get("blind_model"):
+        stmt = stmt.where(Fabric.blind_model_id.in_(filters["blind_model"]))
+
+    if filters.get("color"):
+        stmt = stmt.where(Fabric.color_id.in_(filters["color"]))
+
+    if filters.get("fabric_classification"):
+        stmt = stmt.where(
+            Fabric.fabric_classification_id.in_(filters["fabric_classification"])
+        )
+
+    if filters.get("supplier"):
+        stmt = stmt.where(Fabric.supplier_id.in_(filters["supplier"]))
+
+    # --- Fabric Range Filters ---
+    width_filter = filters.get("width")
+    if width_filter and width_filter.get("value") is not None:
+        orient = width_filter.get("orientation", "greater")
+        op = OPERATORS.get(orient, lambda col, val: col >= val)
+        stmt = stmt.where(op(Fabric.original_width, width_filter["value"]))
+
+    height_filter = filters.get("height")
+    if height_filter and height_filter.get("value") is not None:
+        orient = height_filter.get("orientation", "greater")
+        op = OPERATORS.get(orient, lambda col, val: col >= val)
+        stmt = stmt.where(op(Fabric.original_height, height_filter["value"]))
+
+    avail_filter = filters.get("availability")
+    if avail_filter and avail_filter.get("value") is not None:
+        orient = avail_filter.get("orientation", "greater")
+        op = OPERATORS.get(orient, lambda col, val: col >= val)
+        stmt = stmt.where(op(Fabric.remaining_percent, avail_filter["value"]))
+
+    # 3. Calculate filtered total count (unique Tube IDs after applying filters)
+    count_stmt = (
+        select(func.count(distinct(Tube.id))).select_from(Tube).join(Tube.fabrics)
+    )
+    # Re-apply the same WHERE clauses to the count statement
+    if stmt.whereclause is not None:
+        count_stmt = count_stmt.where(stmt.whereclause)
+
+    filtered_count = db.session.scalar(count_stmt) or 0
+
+    # 4. Fetch paginated distinct Tubes with eager-loaded relationships
+    paginated_stmt = (
+        stmt.distinct()
+        .options(
+            selectinload(Tube.fabrics).selectinload(Fabric.deductions),
+            selectinload(Tube.fabrics).selectinload(Fabric.comments),
         )
         .order_by(desc(Tube.updated_at))
-        .limit(100)
+        .offset(offset)
+        .limit(limit)
     )
-    tubes_al = db.session.scalars(stmt_tubes).all()
 
-    tubes_obj = []
-    fabrics_obj = []
+    tubes = db.session.scalars(paginated_stmt).all()
 
-    for tube in tubes_al:
-        fabrics_list = tube.fabrics or []
+    # 5. Return standardized DataTables payload
+    return {
+        "draw": draw,
+        "recordsTotal": total_count,
+        "recordsFiltered": filtered_count,
+        "data": [tube.payload() for tube in tubes],
+    }, 200
 
-        tube_dict = tube.payload()
 
-        tubes_obj.append(tube_dict)
-        for fabric in fabrics_list:
-            fabric_obj = fabric.payload()
-            fabrics_obj.append(fabric_obj)
+@handle_db_exceptions
+def get_fabrics_from_tube(id: int):
+    with db.session.begin():
+        tube = db.session.get(
+            Tube,
+            id,
+            options=[
+                selectinload(Tube.fabrics).selectinload(Fabric.comments),
+                selectinload(Tube.fabrics).selectinload(Fabric.deductions),
+            ],
+        )
+        if not tube:
+            raise ValueError(f"Tube not found with id {id}")
 
-    log.debug("Fabrics loaded %s", json.dumps(fabrics_obj, default=str, indent=4))
-    log.debug("Tubes loaded %s", json.dumps(tubes_obj, default=str, indent=4))
+        fabrics = [fabric.payload() for fabric in tube.fabrics]
 
-    return tubes_obj, fabrics_obj, len(tubes_obj)
+        return {"tube": tube.payload(), "fabrics": fabrics}
 
 
 @handle_db_exceptions
@@ -237,31 +484,31 @@ def move_fabric(fabric_id: int, payload: dict):
         return retval
 
 
-@handle_db_exceptions
-def tubes(query):
-    if not query or not query.isdigit():
-        raise ValueError("")
-
-    target_id = int(query)
-
-    # Search for IDs starting with or containing the typed numbers
-    log.debug(f"query {query} {target_id} ")
-    stmt = (
-        select(Tube.id)
-        .where(cast(Tube.id, String).like(f"%{query}%"))
-        .order_by(
-            (Tube.id == target_id).desc(),  # Exact match at index 0
-            Tube.id.asc(),
-        )
-        .limit(20)
-    )
-
-    # .scalars().all() returns [12, 120, 121] directly
-    tube_ids = db.session.execute(stmt).scalars().all()
-
-    log.debug(f"Tubes found are {tube_ids} ")
-
-    return tube_ids, 200
+# @handle_db_exceptions
+# def tubes(query):
+#     if not query or not query.isdigit():
+#         raise ValueError("")
+#
+#     target_id = int(query)
+#
+#     # Search for IDs starting with or containing the typed numbers
+#     log.debug(f"query {query} {target_id} ")
+#     stmt = (
+#         select(Tube.id)
+#         .where(cast(Tube.id, String).like(f"%{query}%"))
+#         .order_by(
+#             (Tube.id == target_id).desc(),  # Exact match at index 0
+#             Tube.id.asc(),
+#         )
+#         .limit(20)
+#     )
+#
+#     # .scalars().all() returns [12, 120, 121] directly
+#     tube_ids = db.session.execute(stmt).scalars().all()
+#
+#     log.debug(f"Tubes found are {tube_ids} ")
+#
+#     return tube_ids, 200
 
 
 @handle_db_exceptions

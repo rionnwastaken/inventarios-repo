@@ -27,3 +27,14 @@ table.dataTable td.dt-left {
 .input-lowercase {
   text-transform: lowercase;
 }
+
+#myTable tbody tr {
+  height: 45px; /* Must match the rowHeight setting in Scroller */
+}
+
+#myTable tbody td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 45px;
+}

@@ -13,7 +13,12 @@ export const CoreAPI = {
     });
   },
 
-  recentTubes: async () => await api.get("/recent_tubes"),
+  get_tubes: async (data) => await api.post("/tubes", data),
+  get_fabrics: async (data) => await api.post("/fabrics", data),
+  get_fabrics_from_tube: async (tube_id) =>
+    await api.post("/tube/fabrics", {
+      id: tube_id,
+    }),
 
   fabric_add_many: async (fabrics: Array<Fabric>) =>
     await api.post("/fabric/add_many", { fabrics: fabrics }),
@@ -74,6 +79,13 @@ export const CoreAPI = {
     const res = await api.post("/fabric/comment/delete/", {
       comment_id: comment_id,
       fabric_id: fabric_id,
+    });
+    return res;
+  },
+
+  get_tube_and_fabrics: async (filters) => {
+    const res = await api.post("/data", {
+      filters: filters,
     });
     return res;
   },

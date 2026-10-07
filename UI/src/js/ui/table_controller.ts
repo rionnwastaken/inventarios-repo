@@ -7,6 +7,7 @@ import { TableView, Tube as Tube, ViewMode } from "../typeObj.ts";
 import { TypedEventEmitter } from "../emitter.ts";
 
 import DataTable from "datatables.net-dt";
+import "datatables.net-scroller-dt";
 
 import "datatables.net-dt/css/dataTables.dataTables.css";
 import {
@@ -32,7 +33,7 @@ type TubeColumns = ColumnsConfig & { data: keyof Tube };
 
 export interface TableControllerEvents {
   // "row:dblclick": (tube_data: TubeExtraD, fabrics: Fabric[]) => void;
-  "tube:dblclick": (tube_data: Tube) => void;
+  "tube:dblclick": (tube_data: Tube, fabrics: Fabric[]) => void;
   "fabric:dblclick": (fabric: Fabric) => void;
 }
 
@@ -41,11 +42,14 @@ class TableController {
   columns: (ColumnsConfig & { data: keyof Tube })[];
   public events = new TypedEventEmitter<TableControllerEvents>();
 
+  filters: Object;
+
   constructor() {
     this.init_columns();
     this.init_table();
     this.init_visible_group();
     this.init_bindings();
+    this.filters = null;
   }
 
   init_columns() {
@@ -117,10 +121,21 @@ class TableController {
   init_table() {
     this.table = new DataTable("#myTable", {
       columns: this.columns,
-      ajax: this.load_data,
-      paging: false,
+      ajax: this.load_data.bind(this),
+      paging: true,
       autoWidth: true,
+      serverSide: true,
 
+      scroller: {
+        loadingIndicator: true,
+        // Forces Scroller to render extra rows above/below viewport to prevent blank spaces on scroll-up
+        displayBuffer: 10,
+        // Set explicit row height (in px) if your table rows contain thumbnails/badges
+        rowHeight: 45,
+      },
+      scrollY: "500px",
+
+      deferRender: true,
       order: { name: "updated_at", dir: "desc" },
       columnDefs: [
         {
@@ -133,22 +148,49 @@ class TableController {
 
   async load_data(data, cb, settings) {
     try {
-      let res = await CoreAPI.recentTubes();
+      console.debug("load_data ", data);
+
+      let uhh = {
+        offset: data.start,
+        limit: data.length,
+        draw: data.draw,
+        filters: this.filters,
+      };
+
+      console.debug("Sending data ", uhh);
+
+      let res;
+      if (state.active_view == "tube") {
+        res = await CoreAPI.get_tubes(uhh);
+      } else if (state.active_view == "fabric") {
+        res = await CoreAPI.get_fabrics(uhh);
+      }
 
       if (res.success) {
-        state.tableData.tubes = res.data.tubes;
-        state.tableData.fabrics = res.data.fabrics;
-        state.tableData.size = res.data.size;
-
-        log.debug("Data loaded in main table ", res.data);
+        log.debug("Data loaded in main table ", res.data.data);
 
         cb({
-          data: state.tableData.tubes,
+          draw: data.draw,
+          recordsTotal: res.data.total_records, // Total rows in DB
+          recordsFiltered: res.data.total_records, // Filtered rows in DB
+          data: res.data.data,
         });
       }
     } catch (error) {
       console.error("Fetch failed:", error);
     }
+  }
+
+  async get_data(filters) {
+    log.debug("Table controller reloading data");
+    this.filters = filters;
+    this.table.ajax.reload();
+  }
+
+  update_data(tubes: Tube[], fabrics: Fabric[]) {
+    this.table.data().clear();
+    this.insert_data_to_table(state.active_view);
+    this.table.draw();
   }
 
   init_bindings() {
@@ -158,7 +200,7 @@ class TableController {
 
   bind_row_double_click() {
     // Listen for clicks
-    tbody.addEventListener("dblclick", (event) => {
+    tbody.addEventListener("dblclick", async (event) => {
       const row = event.target.closest("tr");
 
       // Ensure click is inside a valid row
@@ -174,8 +216,15 @@ class TableController {
         log.debug(`Data of row `, data);
         if (state.active_view == "tube") {
           log.info("Double click on tube");
-          let tube = state.tableData.tubes.find((el) => el.id == data.id);
-          this.events.emit("tube:dblclick", tube as Tube);
+          let tube = data as Tube;
+          let res = await CoreAPI.get_fabrics_from_tube(tube.id);
+
+          if (!res.success) {
+            log.debug(res.data);
+            return;
+          }
+          let fabrics = res.data.fabrics;
+          this.events.emit("tube:dblclick", tube, fabrics);
           return;
         }
 

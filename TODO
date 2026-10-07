@@ -5,6 +5,8 @@ Features
   implement filtering logic and UI
   TableController to use Table class
   Delete tube without any fabric 
+  original tube number for tubes that come from the excel
+
 
 
 

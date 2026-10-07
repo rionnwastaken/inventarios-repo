@@ -25,25 +25,79 @@ from the tube and i query once tube click? fuck knows
 """
 
 
-@core_bp.get("/recent_tubes")
-def recent_tubes():
-    log.info("recent_tubes()")
-    tubes, fabrics, size = core.recent_tubes_and_fabrics()
-    return {
-        "tubes": tubes,
-        "fabrics": fabrics,
-        "size": size,
-    }, 200
-
-
-@core_bp.get("/tubes")
+@core_bp.post("/tubes")
 def tubes():
-    log.info("recent_tubes()")
-    query = request.args.get("q")
+    log.info("tubes()")
+    data = request.get_json()
 
-    if not query:
-        return Error("Query parameter not passed", 400).returnIt()
-    return core.tubes(query)
+    offset = data.get("offset")
+    limit = data.get("limit")
+    draw = data.get("draw")
+    filters = data.get("filters")
+
+    log.debug(f"Data received {data}")
+
+    if not data:
+        return Error("No data ppase", 400).returnIt()
+
+    if filters == None:
+        return core.get_recent_tubes(offset, limit, draw)
+    else:
+        return core.get_tubes(offset, limit, draw, filters)
+
+
+@core_bp.post("/fabrics")
+def fabrics():
+    log.info("fabrics()")
+    data = request.get_json()
+
+    offset = data.get("offset")
+    limit = data.get("limit")
+    draw = data.get("draw")
+    filters = data.get("filters")
+
+    log.debug(f"Data received {data}")
+
+    if not data:
+        return Error("No data ppase", 400).returnIt()
+
+    if filters == None:
+        return core.get_recent_fabrics(offset, limit, draw)
+
+    else:
+        return core.get_tubes(offset, limit, draw, filters)
+
+
+@core_bp.post("/tube/fabrics")
+def fabrics_from_tube():
+    log.info("fabrics_from_tube()")
+    data = request.get_json() or {}
+    id = data.get("id")
+    if not id:
+        return Error(f"No id passed {data}", 400).returnIt()
+
+    return core.get_fabrics_from_tube(id)
+
+
+# @core_bp.post("/data")
+# def tubes_and_fabrics():
+#     data = request.get_json()
+#     filters = data.get("filters")
+#
+#     if filters == None:
+#         return core.recent_tubes_and_fabrics()
+#
+#     return core.tubes_and_fabrics(filters)
+
+
+# @core_bp.get("/tubes")
+# def tubes():
+#     log.info("recent_tubes()")
+#     query = request.args.get("q")
+#
+#     if not query:
+#         return Error("Query parameter not passed", 400).returnIt()
+#     return core.tubes(query)
 
 
 # If q is empty or not digits, return an empty list immediately

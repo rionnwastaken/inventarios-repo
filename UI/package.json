@@ -39,6 +39,7 @@
     "@types/d3-org-chart": "^3.1.2",
     "axios": "^1.18.1",
     "datatables.net-dt": "^2.2.0",
+    "datatables.net-scroller-dt": "^3.1.1",
     "datatables.net-select-dt": "^4.0.1",
     "loglevel": "^1.9.2",
     "tom-select": "^2.6.2"
