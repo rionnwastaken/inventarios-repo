@@ -350,7 +350,7 @@ export class Form {
         if (this.modal_state == "creating") {
           data = await this.create_deduction();
           if (!data) {
-            return;
+            return false;
           }
           log.debug("Data here before resolving", data, this.modal_state);
         }
@@ -358,11 +358,11 @@ export class Form {
         if (this.modal_state == "editing") {
           data = await this.update_deduction();
           if (!data) {
-            return;
+            return false;
           }
         }
         if (!data) {
-          return;
+          return false;
         }
         this.resolve_promise({
           deduction: data.deduction,
