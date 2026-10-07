@@ -69,14 +69,14 @@ def fabrics():
 
 
 @core_bp.post("/tube/fabrics")
-def fabrics_from_tube():
+def tube_data():
     log.info("fabrics_from_tube()")
     data = request.get_json() or {}
     id = data.get("id")
     if not id:
         return Error(f"No id passed {data}", 400).returnIt()
 
-    return core.get_fabrics_from_tube(id)
+    return core.get_tube_data(id)
 
 
 # @core_bp.post("/data")

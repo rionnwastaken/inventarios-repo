@@ -17,7 +17,7 @@ import TomSelect from "tom-select";
 //TODO EVENT WHEN TUBO IS CREATED
 
 export interface ControlPanelEvents {
-  "view:changed": (view: TableView) => void;
+  "view:changed": (filters: Object) => void;
   "tube:new": (tube: Tube) => void;
   "data:change": (tubes: Tube[], fabrics: Fabric[]) => void;
   "search-btn:clicked": (filters: null | Object) => void;
@@ -379,7 +379,7 @@ class ControlPanel {
         new_view: state.active_view,
       };
       console.log(view);
-      this.events.emit("view:changed", view);
+      this.events.emit("view:changed", this.get_active_filters());
     });
   }
 

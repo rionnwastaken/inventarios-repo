@@ -41,8 +41,8 @@ export interface DeductionKardexEvents {
   "deduction:deleted": (fabric: Fabric, deduction_id) => void;
   "comment:edited": (fabric: Fabric, comment: FabricComment) => void;
   "comment:deleted": (fabric: Fabric, comment: FabricComment) => void;
-  "kardex:closing": (tube: Tube) => void;
-  "open:vista-tubos": (tube: Tube) => void;
+  "kardex:closing": (tube: Tube, fabrics: Fabric[]) => void;
+  "open:vista-tubos": (tube: Tube, fabrics: Fabric[]) => void;
 }
 
 class DeductionKardex {
@@ -233,7 +233,6 @@ class DeductionKardex {
       row.data(result.deduction);
     }
 
-    state.tableData.update_fabric_by_id(result.fabric);
     console.log("result here in kardex:", result);
     this.table.draw();
     this.events.emit("deduction:modified", this.fabric);
@@ -261,13 +260,21 @@ class DeductionKardex {
       showCancel: false,
       showConfirm: false,
 
-      onClose: () => {
+      onClose: async () => {
         this.table.data().clear();
 
-        let tube = state.tableData.tubes.find(
-          (el) => el.id == this.fabric.tube_id,
-        );
-        this.events.emit("kardex:closing", tube);
+        //TODO maybe check if tube is not null else search in db
+        let res = await CoreAPI.get_tube_data(this.fabric.tube_id);
+
+        if (!res.success) {
+          log.debug(res.data);
+          return;
+        }
+
+        let tube = res.data.tube;
+        let fabrics = res.data.fabrics;
+
+        this.events.emit("kardex:closing", tube, fabrics);
       },
     });
 
@@ -287,15 +294,21 @@ class DeductionKardex {
 
     boco.prepend(buttons);
 
-    this.goback.addEventListener("click", () => {
+    this.goback.addEventListener("click", async () => {
       this.kardexTable.clear();
       this.modalDialog.close();
       this.recent_comment_p.textContent = "";
 
-      let tube = state.tableData.tubes.find(
-        (el) => el.id == this.fabric.tube_id,
-      );
-      this.events.emit("open:vista-tubos", tube);
+      //TODO IF kardex is open, there is a changce it was opened from a tube
+      let res = await CoreAPI.get_tube_data(this.fabric.tube_id);
+      if (!res.success) {
+        log.debug(res.data);
+        return;
+      }
+      let tube = res.data.tube;
+      let fabrics = res.data.fabrics;
+
+      this.events.emit("open:vista-tubos", tube, fabrics);
       this.close();
     });
 

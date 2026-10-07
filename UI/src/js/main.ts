@@ -25,14 +25,13 @@ import { deductionKardex } from "./ui/deduction_kardex/deduction_kardex.ts";
 deductionKardex.init();
 state.init();
 
-controlPanel.events.on("view:changed", (...args) => {
+controlPanel.events.on("view:changed", (filters: Object) => {
   console.log("hey?");
-  tableController.cb_toggle_group_colums(...args);
+  tableController.cb_toggle_group_colums(filters);
 });
 
 controlPanel.events.on("tube:new", (...args) => {
   tableController.cb_insert_tube_to_table(...args);
-  state.tableData.cb_insert_new_tube(...args);
 });
 
 controlPanel.events.on("search-btn:clicked", (filters: Object | null) => {
@@ -60,18 +59,15 @@ tubeOverview.events.on("catalog_item:added", (...args) => {
   state.cb_catalog_item_added(...args);
 });
 tubeOverview.events.on("fabric:edited", (...args) => {
-  state.tableData.update_fabric_by_id(...args);
   tableController.update_fabric(...args);
   //TODO maybe get the tube here and update it because its updated_at attribute has changed
 });
 
 tubeOverview.events.on("fabric:created", (...args) => {
-  state.tableData.fabrics.push(...args);
   tableController.update_fabric(...args);
 });
 
 tubeOverview.events.on("fabric:deleted", (...args) => {
-  state.tableData.update_fabric_by_id(...args, true);
   tableController.update_fabric(...args);
 });
 
@@ -80,7 +76,6 @@ tubeOverview.events.on("tubo_overview:dblclick_fabric", (...args) => {
 });
 
 tubeOverview.events.on("tube:updated", (...args) => {
-  state.tableData.update_tube_by_id(...args);
   tableController.update_tube(...args);
 });
 
@@ -92,21 +87,22 @@ deductionKardex.events.on("deduction:modified", (...args) => {
 deductionKardex.events.on(
   "deduction:deleted",
   (fabric: Fabric, deduction_id) => {
-    state.tableData.update_fabric_by_id(fabric);
     tubeOverview.cb_update_fabric_data(fabric);
 
     tableController.update_fabric(fabric);
   },
 );
 
-deductionKardex.events.on("open:vista-tubos", (...args) => {
-  tubeOverview.cb_open_modal_tube(...args);
-});
+deductionKardex.events.on(
+  "open:vista-tubos",
+  (tube: Tube, fabrics: Fabric[]) => {
+    tubeOverview.cb_open_modal_tube(tube, fabrics);
+  },
+);
 
 deductionKardex.events.on(
   "comment:edited",
   (fabric: Fabric, comment: FabricComment) => {
-    state.tableData.update_fabric_by_id(fabric);
     tubeOverview.cb_update_fabric_data(fabric);
     deductionKardex.cb_update_fabric_data(fabric);
   },
@@ -115,7 +111,6 @@ deductionKardex.events.on(
 deductionKardex.events.on(
   "comment:deleted",
   (fabric: Fabric, comment: FabricComment) => {
-    state.tableData.update_fabric_by_id(fabric);
     tubeOverview.cb_update_fabric_data(fabric);
     deductionKardex.cb_update_fabric_data(fabric);
   },

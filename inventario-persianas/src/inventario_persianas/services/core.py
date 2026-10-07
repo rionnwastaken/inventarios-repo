@@ -357,7 +357,7 @@ def get_tubes(offset=0, limit=50, draw=1, filters=None):
 
 
 @handle_db_exceptions
-def get_fabrics_from_tube(id: int):
+def get_tube_data(id: int):
     with db.session.begin():
         tube = db.session.get(
             Tube,

@@ -189,7 +189,7 @@ class TableController {
 
   update_data(tubes: Tube[], fabrics: Fabric[]) {
     this.table.data().clear();
-    this.insert_data_to_table(state.active_view);
+    // this.insert_data_to_table(state.active_view);
     this.table.draw();
   }
 
@@ -217,7 +217,7 @@ class TableController {
         if (state.active_view == "tube") {
           log.info("Double click on tube");
           let tube = data as Tube;
-          let res = await CoreAPI.get_fabrics_from_tube(tube.id);
+          let res = await CoreAPI.get_tube_data(tube.id);
 
           if (!res.success) {
             log.debug(res.data);
@@ -263,28 +263,18 @@ class TableController {
     }
   }
 
-  cb_toggle_group_colums(view: TableView) {
+  cb_toggle_group_colums(filters: Object) {
+    this.filters = filters;
     console.log("called?");
     this.table.columns().every(function () {
       const config = this.init();
       const v =
-        config && (config.group === view.new_view || config.group === "both");
+        config &&
+        (config.group === state.active_view || config.group === "both");
       this.visible(v);
     });
 
-    this.table.data().clear();
-    this.insert_data_to_table(view.new_view);
-    this.table.draw();
-  }
-
-  insert_data_to_table(mode: ViewMode) {
-    if (mode == "tube") {
-      this.table.rows.add(state.tableData.tubes);
-    }
-
-    if (mode == "fabric") {
-      this.table.rows.add(state.tableData.fabrics);
-    }
+    this.table.ajax.reload();
   }
 
   init_visible_group() {

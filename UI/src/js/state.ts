@@ -20,7 +20,6 @@ export interface StateEvents {
 class State {
   active_view: ViewMode;
   catalagoData: CatalagoData;
-  tableData: TableData;
 
   public events = new TypedEventEmitter<StateEvents>();
 
@@ -29,7 +28,6 @@ class State {
   init() {
     this.active_view = "tube";
     this.catalagoData = new CatalagoData(this.events);
-    this.tableData = new TableData(this.events);
   }
 
   cb_catalog_item_added(catalogItem: CatalogItem) {
@@ -138,62 +136,5 @@ class CatalagoData {
   }
 }
 
-class TableData {
-  tubes: Array<Tube>;
-  fabrics: Array<Fabric>;
-  size: number;
-  public events = new TypedEventEmitter<StateEvents>();
-
-  constructor(events) {
-    this.tubes = [];
-    this.fabrics = [];
-    this.size = -1;
-    this.events = events;
-  }
-
-  get_fabrics_by_tube_id(tube_id: number): Array<unknown> {
-    if (!this.fabrics) {
-      log.error("fabrics is undefined");
-      return [];
-    }
-    log.debug("fabrics here in getting them by filter ", this.fabrics);
-    return this.fabrics.filter((el) => el.tube_id == tube_id);
-  }
-
-  update_fabric_by_id(fabric: Fabric, remove = false) {
-    //TODO MAKE SURE WHEN YOU UPDATE, THAT IT ALSO REFLECTS IN THE TABLE VIEW XD
-    const index = this.fabrics.findIndex((item) => item.id === fabric.id);
-    if (index == -1) {
-      log.error(
-        `Not able to find fabric with id ${fabric.id}, obj is `,
-        fabric,
-      );
-      return;
-    }
-    log.debug("Updating fabric  in state with ", fabric);
-    if (!remove) {
-      this.fabrics[index] = fabric;
-    } else {
-      this.fabrics.splice(index, 1);
-    }
-  }
-
-  update_tube_by_id(tube: Tube) {
-    const index = this.tubes.findIndex((item) => item.id === tube.id);
-    if (index == -1) {
-      log.error(`Not able to find fabric with id ${tube.id}, obj is `, tube);
-      return;
-    }
-    log.debug("Updating tube  in state with ", tube);
-    this.tubes[index] = tube;
-  }
-
-  cb_insert_new_tube(tube: Tube) {
-    log.debug("cb_insert_new_tube(tube:Tube)");
-    this.tubes.push(tube);
-  }
-}
-
 const state = new State();
-
 export { state };

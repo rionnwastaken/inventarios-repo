@@ -15,10 +15,15 @@ export const CoreAPI = {
 
   get_tubes: async (data) => await api.post("/tubes", data),
   get_fabrics: async (data) => await api.post("/fabrics", data),
-  get_fabrics_from_tube: async (tube_id) =>
+  get_tube_data: async (tube_id) =>
     await api.post("/tube/fabrics", {
       id: tube_id,
     }),
+
+  // get_tube: async (tube_id) =>
+  //   await api.post("/tube/get", {
+  //     id: tube_id,
+  //   }),
 
   fabric_add_many: async (fabrics: Array<Fabric>) =>
     await api.post("/fabric/add_many", { fabrics: fabrics }),
