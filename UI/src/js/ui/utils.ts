@@ -259,3 +259,29 @@ export function createPrefixedLogger(name, level = "DEBUG") {
   logger.setLevel(level); // Must re-apply level to rebuild methods with factory
   return logger;
 }
+
+export function input_only_allow_numbers(input: HTMLInputElement) {
+  input.addEventListener("keydown", (e) => {
+    if (["e", "E", "+", "-"].includes(e.key)) {
+      e.preventDefault();
+    }
+  });
+}
+
+export function input_allow_numbers_min_max(
+  input: HTMLInputElement,
+  min: number,
+  max: number,
+) {
+  input.addEventListener("keydown", (e) => {
+    // 1. Block standard exponent and sign keys
+    if (["e", "E", "+", "-"].includes(e.key)) {
+      e.preventDefault();
+      return;
+    }
+    const nextValue = Number(input.value + e.key);
+    if (nextValue < min || nextValue > max) {
+      e.preventDefault();
+    }
+  });
+}

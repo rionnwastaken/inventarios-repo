@@ -6,7 +6,7 @@ globalThis.log = log;
 import { CatalogApi } from "./api/catalog.ts";
 
 import { CoreAPI } from "./api/core.ts";
-import { FabricComment, Tube } from "./schema.ts";
+import { FabricComment } from "./schema.ts";
 import { Fabric } from "./typeObj.ts";
 
 // import {ColumnsConfig} from 'datatables.net-dt';
@@ -35,6 +35,10 @@ controlPanel.events.on("tube:new", (...args) => {
   state.tableData.cb_insert_new_tube(...args);
 });
 
+controlPanel.events.on("search-btn:clicked", (filters: Object | null) => {
+  tableController.get_data(filters);
+});
+
 tableController.events.on("tube:dblclick", (...args) => {
   tubeOverview.cb_open_modal_tube(...args);
 });
@@ -49,6 +53,7 @@ state.events.on("catalago:loaded", () => {
   tubeOverview.cb_initModalDropdowns();
   tubeOverview.locationController.loadSlots();
   tubeOverview.locationController.loadTags();
+  controlPanel.cb_initModalDropdowns();
 });
 
 tubeOverview.events.on("catalog_item:added", (...args) => {
