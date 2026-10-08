@@ -38,3 +38,22 @@ table.dataTable td.dt-left {
   text-overflow: ellipsis;
   max-height: 45px;
 }
+
+/* Disables both vertical and horizontal scrolling */
+.disable-scrolling {
+  overflow: hidden;
+}
+
+/* Disables only horizontal scrolling */
+.disable-horizontal {
+  overflow-x: hidden;
+}
+
+/* Disables only vertical scrolling */
+.disable-vertical {
+  overflow-y: hidden;
+}
+
+div.dt-paging {
+  display: none;
+}

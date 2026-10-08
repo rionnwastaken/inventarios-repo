@@ -8,7 +8,7 @@
 
     <title></title>
   </head>
-  <body>
+  <body class="disable-scrolling disable-vertical disable-horizontal">
     <div class="navbar bg-base-100 shadow-sm">
       <div class="flex-1">
         <a class="btn btn-ghost text-xl">Horvert Persianas</a>
@@ -30,41 +30,10 @@
         id="panel-control-container"
       ></div>
 
-      <div class="overflow-auto">
-        <table id="myTable" class="display">
-          <thead></thead>
-          <tbody></tbody>
-        </table>
-      </div>
+
+    <div id="table-controller-container">
     </div>
 
-    <dialog id="dialog-recycle" class="modal">
-      <div
-        class="modal-box w-11/12 max-w-3xl flex flex-col gap-4 relative overflow-visible"
-      >
-        <!-- Header -->
-        <h3 id="dialog-header" class="text-lg font-bold"></h3>
-
-        <p id="dialog-recycle-message"></p>
-
-        <!-- Modal Footer Actions -->
-        <div class="modal-action flex justify-end gap-2 mt-4">
-          <form method="dialog">
-            <button id="dialog-recycle-cancel-btn" class="btn btn-ghost">
-              No crear nuevo objeto
-            </button>
-          </form>
-          <button
-            id="dialog-recycle-accept-btn"
-            form="dialog-recycle"
-            type="submit"
-            class="btn btn-primary"
-          >
-            Crear nuevo objecto
-          </button>
-        </div>
-      </div>
-    </dialog>
 
     <script type="module" src="/static/bundle.js"></script>
   </body>

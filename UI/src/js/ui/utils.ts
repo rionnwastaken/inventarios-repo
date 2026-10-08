@@ -285,3 +285,29 @@ export function input_allow_numbers_min_max(
     }
   });
 }
+
+export class TruthyColorer {
+  bg_true: boolean;
+  bg_false: boolean;
+  el: HTMLElement;
+
+  constructor(bg_true, bg_false, el: HTMLElement) {
+    this.bg_true = bg_true;
+    this.bg_false = bg_false;
+    this.el = el;
+  }
+
+  color(state: boolean) {
+    let color_add;
+    let color_remove;
+    if (state) {
+      color_add = this.bg_true;
+      color_remove = this.bg_false;
+    } else {
+      color_remove = this.bg_true;
+      color_add = this.bg_false;
+    }
+    this.el.classList.remove(color_remove);
+    this.el.classList.add(color_add);
+  }
+}

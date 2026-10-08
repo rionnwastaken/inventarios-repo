@@ -9,6 +9,7 @@ import {
   createElementFromHTML,
   input_allow_numbers_min_max,
   input_only_allow_numbers,
+  TruthyColorer,
 } from "./utils.ts";
 
 import save_icon from "../../assets/icons/plus.svg?raw";
@@ -38,7 +39,6 @@ let catalago = [
 class ControlPanel {
   public events = new TypedEventEmitter<ControlPanelEvents>();
 
-  btn_new_tube: HTMLButtonElement;
   view_text: HTMLButtonElement;
   view_toggler: HTMLInputElement;
 
@@ -53,6 +53,8 @@ class ControlPanel {
   block_send_filters: Boolean;
 
   search_btn: HTMLButtonElement;
+  verified_btn: HTMLButtonElement;
+  verified_btn_active: boolean;
 
   constructor() {
     this.tom_selects = new Array();
@@ -68,48 +70,42 @@ class ControlPanel {
 
   body() {
     const e = createElementFromHTML(`
-      <div class="flex  justify-between w-full">
+    <div class="flex flex-col gap-3 w-full">
 
-        <div id="btn-new-tube" class="flex bg-green-900 p-2 btn">
-          <p class="text-lg">Tubo</p>
-          <span type="" class="btn w-7 h-7 btn-circle border-none bg-green-600">
-            ${save_icon}
-          </span>
+      <!-- Row 1: primary action + search + view toggle -->
+        <div class="flex flex-row-reverse items-center gap-4">
+          <input class="input input-bordered w-64" placeholder="Buscar Tubo" />
+
+          <label class="flex items-center gap-2 cursor-pointer">
+            <span id="tipo-tabla-vista-text">Vista Tabla</span>
+            <input
+              id="tipo-tabla-vista-toggler"
+              type="checkbox"
+              class="toggle border-none bg-yellow-900 checked:bg-purple-900"
+            />
+          </label>
         </div>
 
+      <!-- Row 2: filters (wrap) + actions -->
+      <div class="flex flex-wrap items-end justify-between gap-3">
 
+        <div class="flex flex-wrap items-end gap-3">
+          ${this.input_number("Ancho", "Ancho")}
+          ${this.input_number("Alto", "Alto")}
+          ${this.input_percent("Disponibilidad %", "disponibilidad")}
+          ${catalago.map((obj) => this.select_catalago(obj.tablename, obj.label)).join("")}
+        </div>
 
-      <div class="flex flex-col items-end"> 
-          <div class="flex"> 
+        <div class="flex items-center gap-2">
+          <button id="clear-filters-btn" class="btn">Borrar Filtros</button>
+          <button id="verified-btn" class="btn">Tubos Verificados</button>
+          <button id="buscar-btn" class="btn btn-primary">Buscar</button>
+        </div>
 
-             <input placeholder="Buscar Tubo">
-             </input>
-              <div class="flex flex-col gap-2">
-                  <p id="tipo-tabla-vista-text">Vista Tabla</p>
-                  <input
-                    id="tipo-tabla-vista-toggler"
-                    type="checkbox"
-                    class="toggle border-none bg-yellow-900 checked:bg-purple-900"
-                  />
-                </div>
-          </div>
-
-          <div class="flex">
-           <button id="clear-filters-btn">Borrar Filtros </button>
-              ${this.input_number("Ancho", "Ancho")}
-              ${this.input_number("Alto", "Alto")}
-              ${this.input_percent("Disponibilidad %", "disponibilidad")}
-              
-             ${catalago.map((obj) => this.select_catalago(obj.tablename, obj.label)).join("")}
-
-             <button id="buscar-btn" class="button">Buscar</button>
-         </div>
-
-     </div>
-
+      </div>
     </div>
-                                      
-                                      `);
+  `);
+    // ...rest unchanged
 
     // tube searcher
     // measurements  2 num valid
@@ -121,7 +117,6 @@ class ControlPanel {
     let container = document.querySelector("#panel-control-container");
     container.replaceWith(e);
 
-    this.btn_new_tube = e.querySelector("#btn-new-tube");
     this.view_text = e.querySelector("#tipo-tabla-vista-text");
     this.view_toggler = e.querySelector("#tipo-tabla-vista-toggler");
 
@@ -132,6 +127,14 @@ class ControlPanel {
     );
 
     this.search_btn = e.querySelector("#buscar-btn");
+    this.verified_btn = e.querySelector("#verified-btn");
+    let verified_colorer = new TruthyColorer(
+      "bg-green-200",
+      "bg-red-200",
+      this.verified_btn,
+    );
+    this.verified_btn_active = true;
+    verified_colorer.color(this.verified_btn_active);
 
     input_allow_numbers_min_max(this.availability_data.input, 0, 100);
 
@@ -139,6 +142,11 @@ class ControlPanel {
 
     this.clear_filters_btn.addEventListener("click", () => {
       this.clear_filters();
+    });
+
+    this.verified_btn.addEventListener("click", () => {
+      this.verified_btn_active = !this.verified_btn_active;
+      verified_colorer.color(this.verified_btn_active);
     });
 
     for (let obj of catalago) {
@@ -338,7 +346,6 @@ class ControlPanel {
 
   init_bindings() {
     this.bind_vista_toggler();
-    this.bind_new_tube();
   }
 
   init_input(input: HTMLInputElement) {
@@ -380,17 +387,6 @@ class ControlPanel {
       };
       console.log(view);
       this.events.emit("view:changed", this.get_active_filters());
-    });
-  }
-
-  bind_new_tube() {
-    this.btn_new_tube.addEventListener("click", async () => {
-      const res = await CoreAPI.newTube();
-      console.log(res);
-
-      if (res.success) {
-        this.events.emit("tube:new", res.data.tube);
-      }
     });
   }
 

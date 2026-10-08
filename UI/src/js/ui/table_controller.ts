@@ -8,11 +8,13 @@ import { TypedEventEmitter } from "../emitter.ts";
 
 import DataTable from "datatables.net-dt";
 import "datatables.net-scroller-dt";
+import save_icon from "../../assets/icons/plus.svg?raw";
 
 import "datatables.net-dt/css/dataTables.dataTables.css";
 import {
   column,
   column2,
+  createElementFromHTML,
   fabricColumn,
   fcolumn,
   inspect_row,
@@ -26,8 +28,6 @@ import { render_datecell, render_plain2 } from "./renderUtils.ts";
 import { fabric_catalago_title_id, tube_title_id } from "./misc.ts";
 //TODO ON TUBO ADD BUTTON, add tube to table and refresh it
 //TODO WHEN A NEW FABRIC IS ADDED, MAKE SURE IT IS REFLECTED IN THE VIEW, so it increments in tota lof the tube
-
-const tbody = document.querySelector("#myTable tbody");
 
 type TubeColumns = ColumnsConfig & { data: keyof Tube };
 
@@ -43,8 +43,11 @@ class TableController {
   public events = new TypedEventEmitter<TableControllerEvents>();
 
   filters: Object;
+  tbl_element: HTMLTableElement;
+  btn_new_tube: HTMLButtonElement;
 
   constructor() {
+    this.body();
     this.init_columns();
     this.init_table();
     this.init_visible_group();
@@ -118,14 +121,48 @@ class TableController {
     this.columns = [...tube_columns, ...fabric_columns, ...shared_columns];
   }
 
+  body() {
+    const e = createElementFromHTML(`
+      <div class="overflow-auto">
+        <table id="myTable" class="display ">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+
+        <div id="btn-new-tube" class="flex items-center gap-2 bg-green-900 p-2 btn w-fit">
+          <p class="text-lg text-white">Tubo</p>
+          <span class="btn w-7 h-7 btn-circle border-none text-white bg-green-600">
+            ${save_icon}
+          </span>
+        </div>
+
+    </div>
+
+      `);
+
+    const container = document.querySelector("#table-controller-container");
+    this.tbl_element = e.querySelector("table");
+    this.btn_new_tube = e.querySelector("#btn-new-tube");
+    container.replaceWith(e);
+
+    this.btn_new_tube.addEventListener("click", async () => {
+      const res = await CoreAPI.newTube();
+      console.log(res);
+      if (res.success) {
+        this.cb_insert_tube_to_table(res.data.tube);
+      }
+    });
+  }
+
   init_table() {
-    this.table = new DataTable("#myTable", {
+    this.table = new DataTable(this.tbl_element, {
       columns: this.columns,
       ajax: this.load_data.bind(this),
       paging: true,
       autoWidth: true,
       serverSide: true,
 
+      pageLength: 100,
       scroller: {
         loadingIndicator: true,
         // Forces Scroller to render extra rows above/below viewport to prevent blank spaces on scroll-up
@@ -133,7 +170,7 @@ class TableController {
         // Set explicit row height (in px) if your table rows contain thumbnails/badges
         rowHeight: 45,
       },
-      scrollY: "500px",
+      scrollY: "800px",
 
       deferRender: true,
       order: { name: "updated_at", dir: "desc" },
@@ -172,7 +209,7 @@ class TableController {
         cb({
           draw: data.draw,
           recordsTotal: res.data.total_records, // Total rows in DB
-          recordsFiltered: res.data.total_records, // Filtered rows in DB
+          recordsFiltered: res.data.total_filtered, // Filtered rows in DB
           data: res.data.data,
         });
       }
@@ -200,6 +237,7 @@ class TableController {
 
   bind_row_double_click() {
     // Listen for clicks
+    let tbody = this.table.table().body();
     tbody.addEventListener("dblclick", async (event) => {
       const row = event.target.closest("tr");
 
