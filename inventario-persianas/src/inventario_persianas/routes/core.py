@@ -65,7 +65,7 @@ def fabrics():
         return core.get_recent_fabrics(offset, limit, draw)
 
     else:
-        return core.get_tubes(offset, limit, draw, filters)
+        return core.get_fabrics(offset, limit, draw, filters)
 
 
 @core_bp.post("/tube/fabrics")

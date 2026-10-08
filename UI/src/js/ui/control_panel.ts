@@ -13,9 +13,16 @@ import {
 } from "./utils.ts";
 
 import save_icon from "../../assets/icons/plus.svg?raw";
+
+import greater_than_icon from "../../assets/icons/greater-than.svg?raw";
+import less_than_icon from "../../assets/icons/less-than.svg?raw";
+import equal_icon from "../../assets/icons/equal-sign.svg?raw";
 import TomSelect from "tom-select";
 
 //TODO EVENT WHEN TUBO IS CREATED
+
+let operation_symbol_labels = ["greater", "less", "equal"];
+let operation_symbols = [greater_than_icon, less_than_icon, equal_icon];
 
 export interface ControlPanelEvents {
   "view:changed": (filters: Object) => void;
@@ -27,6 +34,7 @@ export interface ControlPanelEvents {
 type input_data = {
   input: HTMLInputElement;
   previous_value: String;
+  operation_index: number;
 };
 
 let catalago = [
@@ -120,10 +128,10 @@ class ControlPanel {
     this.view_text = e.querySelector("#tipo-tabla-vista-text");
     this.view_toggler = e.querySelector("#tipo-tabla-vista-toggler");
 
-    this.width_data = this.init_input(e.querySelector("#Ancho input"));
-    this.height_data = this.init_input(e.querySelector("#Alto input"));
+    this.width_data = this.init_input(e.querySelector("#Ancho"));
+    this.height_data = this.init_input(e.querySelector("#Alto"));
     this.availability_data = this.init_input(
-      e.querySelector("#disponibilidad input"),
+      e.querySelector("#disponibilidad"),
     );
 
     this.search_btn = e.querySelector("#buscar-btn");
@@ -190,21 +198,22 @@ class ControlPanel {
     if (this.width_data.input.value != "") {
       obj["width"] = {
         value: Number(this.width_data.input.value),
-        orientation: "greater",
+        orientation: operation_symbol_labels[this.width_data.operation_index],
       };
     }
 
     if (this.height_data.input.value != "") {
       obj["height"] = {
         value: Number(this.height_data.input.value),
-        orientation: "greater",
+        orientation: operation_symbol_labels[this.height_data.operation_index],
       };
     }
 
     if (this.availability_data.input.value != "") {
       obj["availability"] = {
         value: Number(this.availability_data.input.value),
-        orientation: "greater",
+        orientation:
+          operation_symbol_labels[this.availability_data.operation_index],
       };
     }
 
@@ -279,22 +288,36 @@ class ControlPanel {
   }
 
   input_number(labelName, id) {
-    let max_width_tw = `max-w-20`;
+    let max_width_tw = `w-fit`;
     let no_arrows_tw =
       "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
     return `
     <div class="flex flex-col items-start gap-1 ${max_width_tw}" id="${id}">
-      <label class="text-sm font-medium text-gray-700">${labelName}</label>
-      <input type="number" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${no_arrows_tw}" />
+      <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">${labelName}</label>
+          ${this.math_operation_image()}
+        
+      </div>
+      <input type="number" class="h-10  w-20 px-3 py-2 border  focus:outline-none focus:ring-2 focus:ring-blue-500 ${no_arrows_tw}" />
     </div>
   `;
+  }
+
+  math_operation_image() {
+    return `
+      <div class="w-8 h-8 rounded-4xl p-1.5 bg-yellow-500 border border-4  border-white text-black math-operation-container">
+      </div>
+      `;
   }
 
   input_percent(label, id) {
     return `
     <div class="flex flex-col items-start gap-1" id="${id}">
-      <label class="text-sm font-medium text-gray-700">${label}</label>
-      <input type="number" min="0" max="100" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">${label}</label>
+          ${this.math_operation_image()}
+      </div>
+      <input type="number" min="0" max="100" class="w-full h-10 px-3 py-2 border  focus:outline-none focus:ring-2 focus:ring-blue-500" />
     </div>
   `;
   }
@@ -303,7 +326,7 @@ class ControlPanel {
     return `
     <div id="${table_name}"> 
         <span class="label-text font-semibold">${label_name}</span>
-        <select class="w-full input-lowercase" ></select>
+        <select class="w-full h-10 input-lowercase" ></select>
     </div>`;
   }
 
@@ -348,11 +371,25 @@ class ControlPanel {
     this.bind_vista_toggler();
   }
 
-  init_input(input: HTMLInputElement) {
-    let data = {
+  init_input(container: HTMLElement) {
+    let input = container.querySelector("input");
+    let data: input_data = {
       input: input,
       previous_value: "",
+      operation_index: 0,
     };
+
+    let operation_container = container.querySelector(
+      ".math-operation-container",
+    );
+
+    operation_container.innerHTML = greater_than_icon;
+    operation_container.addEventListener("click", () => {
+      let index = (data.operation_index + 1) % 3;
+      let icon = operation_symbols[index];
+      operation_container.innerHTML = icon;
+      data.operation_index = index;
+    });
 
     input_only_allow_numbers(input);
 
@@ -363,7 +400,6 @@ class ControlPanel {
     input.addEventListener("focusout", () => {
       if (input.value !== data.previous_value) {
         data.previous_value = input.value; // Update stored value
-        // this.send_filters();
       }
     });
     return data;

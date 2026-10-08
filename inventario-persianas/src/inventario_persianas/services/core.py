@@ -4,6 +4,8 @@ from typing import List, Optional
 from decimal import Decimal
 from functools import wraps
 
+from sqlalchemy import select, desc
+
 
 from inventario_persianas.exceptions import OverDrawing
 from inventario_persianas.model import (
@@ -23,8 +25,6 @@ from inventario_persianas.services.utils import (
 from pydantic import ValidationError
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import selectinload
-from sqlmodel import desc, select
-from sqlalchemy import distinct
 from sqlalchemy import func
 
 log = logging.getLogger(__name__)
@@ -118,6 +118,7 @@ def get_recent_tubes(offset=0, limit=50, draw=1):
     return {
         "draw": draw,
         "total_records": total_count,
+        "total_filtered": total_count,
         "data": [tube.payload() for tube in tubes],
     }, 200
 
@@ -145,95 +146,112 @@ def get_recent_fabrics(offset=0, limit=50, draw=1):
 
     return {
         "draw": draw,
-        "recordsTotal": total_count,
+        "total_records": total_count,
+        "total_filtered": total_count,
         "data": [fabric.payload() for fabric in fabrics],
     }, 200
 
 
-def get_tubes(offset=0, limit=50, draw=1, filters=None):
+FABRIC_IN_FILTERS = {
+    "blind_model": Fabric.blind_model_id,
+    "color": Fabric.color_id,
+    "fabric_classification": Fabric.fabric_classification_id,
+    "supplier": Fabric.supplier_id,
+}
+
+FABRIC_RANGE_FILTERS = {
+    "width": Fabric.original_width,
+    "height": Fabric.original_height,
+    "availability": Fabric.remaining_percent,
+}
+
+DEFAULT_OP = lambda col, val: col >= val  # noqa
+
+
+def parse_datatable_params(offset, limit, draw):
     offset = max(0, int(offset) if offset else 0)
     limit = max(1, int(limit) if limit else 50)
     draw = int(draw) if draw else 1
+    return offset, limit, draw
 
-    # Avoid mutable default argument pitfalls
-    if filters is None:
-        filters = {}
 
-    # 1. Unfiltered total count of Tubes in database
-    total_count = db.session.scalar(select(func.count(Tube.id))) or 0
+def apply_fabric_filters(stmt, filters):
+    """Adds the fabric WHERE clauses to any statement that includes Fabric."""
+    filters = filters or {}
 
-    # 2. Build base query joining Tube -> Fabric
-    # We query Tube, but JOIN Fabric so we can filter by fabric fields
-    stmt = select(Tube).join(Tube.fabrics)
+    log.debug(f"apply_fabric_filters() received filters are {filters} ")
 
-    # Filter out archived fabrics
-    # stmt = stmt.where(Fabric.is_archived == False)
+    for key, column in FABRIC_IN_FILTERS.items():
+        values = filters.get(key)
+        if values:
+            stmt = stmt.where(column.in_(values))
 
-    # --- Fabric IN Clause Filters ---
-    if filters.get("blind_model"):
-        stmt = stmt.where(Fabric.blind_model_id.in_(filters["blind_model"]))
+    for key, column in FABRIC_RANGE_FILTERS.items():
+        f = filters.get(key)
+        if f and f.get("value") is not None:
+            op = OPERATORS.get(f.get("orientation", "greater"), DEFAULT_OP)
+            stmt = stmt.where(op(column, f["value"]))
 
-    if filters.get("color"):
-        stmt = stmt.where(Fabric.color_id.in_(filters["color"]))
+    return stmt
 
-    if filters.get("fabric_classification"):
-        stmt = stmt.where(
-            Fabric.fabric_classification_id.in_(filters["fabric_classification"])
-        )
 
-    if filters.get("supplier"):
-        stmt = stmt.where(Fabric.supplier_id.in_(filters["supplier"]))
+def datatable_response(model, stmt, *, offset, limit, draw, order_by, options=()):
+    """
+    Runs the count + pagination for any filtered select(model) statement
+    and returns the DataTables payload.
+    """
+    total_count = db.session.scalar(select(func.count(model.id))) or 0
 
-    # --- Fabric Range Filters ---
-    width_filter = filters.get("width")
-    if width_filter and width_filter.get("value") is not None:
-        orient = width_filter.get("orientation", "greater")
-        op = OPERATORS.get(orient, lambda col, val: col >= val)
-        stmt = stmt.where(op(Fabric.original_width, width_filter["value"]))
+    # Count unique ids of the filtered statement (joins and wheres are kept)
+    ids_subq = stmt.with_only_columns(model.id).distinct().subquery()
+    filtered_count = db.session.scalar(select(func.count()).select_from(ids_subq)) or 0
 
-    height_filter = filters.get("height")
-    if height_filter and height_filter.get("value") is not None:
-        orient = height_filter.get("orientation", "greater")
-        op = OPERATORS.get(orient, lambda col, val: col >= val)
-        stmt = stmt.where(op(Fabric.original_height, height_filter["value"]))
-
-    avail_filter = filters.get("availability")
-    if avail_filter and avail_filter.get("value") is not None:
-        orient = avail_filter.get("orientation", "greater")
-        op = OPERATORS.get(orient, lambda col, val: col >= val)
-        stmt = stmt.where(op(Fabric.remaining_percent, avail_filter["value"]))
-
-    # 3. Calculate filtered total count (unique Tube IDs after applying filters)
-    count_stmt = (
-        select(func.count(distinct(Tube.id))).select_from(Tube).join(Tube.fabrics)
-    )
-    # Re-apply the same WHERE clauses to the count statement
-    if stmt.whereclause is not None:
-        count_stmt = count_stmt.where(stmt.whereclause)
-
-    filtered_count = db.session.scalar(count_stmt) or 0
-
-    # 4. Fetch paginated distinct Tubes with eager-loaded relationships
     paginated_stmt = (
-        stmt.distinct()
-        .options(
-            selectinload(Tube.fabrics).selectinload(Fabric.deductions),
-            selectinload(Tube.fabrics).selectinload(Fabric.comments),
-        )
-        .order_by(desc(Tube.updated_at))
-        .offset(offset)
-        .limit(limit)
+        stmt.distinct().options(*options).order_by(order_by).offset(offset).limit(limit)
     )
+    rows = db.session.scalars(paginated_stmt).all()
 
-    tubes = db.session.scalars(paginated_stmt).all()
-
-    # 5. Return standardized DataTables payload
     return {
         "draw": draw,
-        "recordsTotal": total_count,
-        "recordsFiltered": filtered_count,
-        "data": [tube.payload() for tube in tubes],
+        "total_records": total_count,
+        "total_filtered": filtered_count,
+        "data": [row.payload() for row in rows],
     }, 200
+
+
+def get_tubes(offset=0, limit=50, draw=1, filters=None):
+    offset, limit, draw = parse_datatable_params(offset, limit, draw)
+
+    # Tube matches if ANY of its fabrics matches
+    stmt = apply_fabric_filters(select(Tube).join(Tube.fabrics), filters)
+
+    return datatable_response(
+        Tube,
+        stmt,
+        offset=offset,
+        limit=limit,
+        draw=draw,
+        order_by=desc(Tube.updated_at),
+    )
+
+
+def get_fabrics(offset=0, limit=50, draw=1, filters=None):
+    offset, limit, draw = parse_datatable_params(offset, limit, draw)
+
+    stmt = apply_fabric_filters(select(Fabric), filters)
+
+    return datatable_response(
+        Fabric,
+        stmt,
+        offset=offset,
+        limit=limit,
+        draw=draw,
+        order_by=desc(Fabric.updated_at),
+        options=(
+            selectinload(Fabric.deductions),
+            selectinload(Fabric.comments),
+        ),
+    )
 
 
 @handle_db_exceptions
