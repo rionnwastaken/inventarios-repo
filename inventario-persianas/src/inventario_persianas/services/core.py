@@ -33,9 +33,7 @@ log = logging.getLogger(__name__)
 # Mapping orientation keys to Python/SQLAlchemy comparison operators
 OPERATORS = {
     "greater": lambda col, val: col >= val,
-    "greater_than": lambda col, val: col > val,
     "less": lambda col, val: col <= val,
-    "less_than": lambda col, val: col < val,
     "equal": lambda col, val: col == val,
 }
 
@@ -79,68 +77,6 @@ def new_tube():
         return tube_json
 
 
-# @handle_db_exceptions
-# def tubes_and_fabrics(filters):
-#     with db.session.begin():
-#         # 1. Base query with eager loading for Tube
-#         stmt = select(Fabric).options(joinedload(Fabric.tube))
-#
-#         # 2. Filter out archived fabrics by default (or adjust per business logic)
-#         stmt = stmt.where(Fabric.is_archived == False)
-#
-#         # --- Array / List Filters (IN Clause) ---
-#         if filters.get("blind_model"):
-#             stmt = stmt.where(Fabric.blind_model_id.in_(filters["blind_model"]))
-#
-#         if filters.get("color"):
-#             stmt = stmt.where(Fabric.color_id.in_(filters["color"]))
-#
-#         if filters.get("fabric_classification"):
-#             stmt = stmt.where(
-#                 Fabric.fabric_classification_id.in_(filters["fabric_classification"])
-#             )
-#
-#         if filters.get("supplier"):
-#             stmt = stmt.where(Fabric.supplier_id.in_(filters["supplier"]))
-#
-#         # --- Object Range Filters (Value + Orientation) ---
-#         # Width
-#         width_filter = filters.get("width")
-#         if width_filter and width_filter.get("value") is not None:
-#             orient = width_filter.get("orientation", "greater")
-#             op = OPERATORS.get(orient, lambda col, val: col >= val)
-#             stmt = stmt.where(op(Fabric.original_width, width_filter["value"]))
-#
-#         # Height
-#         height_filter = filters.get("height")
-#         if height_filter and height_filter.get("value") is not None:
-#             orient = height_filter.get("orientation", "greater")
-#             op = OPERATORS.get(orient, lambda col, val: col >= val)
-#             stmt = stmt.where(op(Fabric.original_height, height_filter["value"]))
-#
-#         # Availability (remaining_percent)
-#         avail_filter = filters.get("availability")
-#         if avail_filter and avail_filter.get("value") is not None:
-#             orient = avail_filter.get("orientation", "greater")
-#             op = OPERATORS.get(orient, lambda col, val: col >= val)
-#             stmt = stmt.where(op(Fabric.remaining_percent, avail_filter["value"]))
-#
-#         # 3. Execute query
-#         fabrics = db.session.scalars(stmt).all()
-#         fabrics_obj = [fabric.payload() for fabric in fabrics]
-#
-#         # 4. Extract unique tubes from returned fabrics
-#         tubes_dict = {
-#             f.tube.id: f.tube.payload() for f in fabrics if f.tube is not None
-#         }
-#         tubes_obj = list(tubes_dict.values())
-#
-#         return {
-#             "tubes": tubes_obj,
-#             "fabrics": fabrics_obj,
-#         }, 200
-
-
 @handle_db_exceptions
 def update_tube(tube_id: int, payload: dict):
     with db.session.begin():
@@ -166,62 +102,6 @@ def update_tube(tube_id: int, payload: dict):
         )
 
         return {"tube": tube_json}, 200
-
-
-# def recent_tubes_and_fabrics(offset=0, limit=50, draw=1):
-#     log.info(f"recent_tubes_and_fabrics(offset={offset}, limit={limit}, draw={draw})")
-#
-#     # Convert to integers safely
-#     offset = int(offset) if offset else 0
-#     limit = int(limit) if limit else 50
-#     draw = int(draw) if draw else 1
-#
-#     # 1. Query Total Records in the Database (Mandatory for DataTables Scroller)
-#     total_tubes_count = db.session.scalar(select(func.count(Tube.id)))
-#
-#     # 2. Query recently updated Fabrics with OFFSET & LIMIT
-#     stmt_fabrics = (
-#         select(Fabric)
-#         .options(
-#             selectinload(Fabric.deductions),
-#             selectinload(Fabric.comments),
-#             selectinload(Fabric.tube),
-#         )
-#         .order_by(desc(Fabric.updated_at))
-#         .offset(offset)  # <-- APPLIED OFFSET
-#         .limit(limit)    # <-- APPLIED LIMIT
-#     )
-#     recent_fabrics = db.session.scalars(stmt_fabrics).all()
-#
-#     # 3. Query recently updated Tubes with OFFSET & LIMIT
-#     stmt_tubes = (
-#         select(Tube)
-#         .order_by(desc(Tube.updated_at))
-#         .offset(offset)  # <-- APPLIED OFFSET
-#         .limit(limit)    # <-- APPLIED LIMIT
-#     )
-#     recent_tubes = db.session.scalars(stmt_tubes).all()
-#
-#     # 4. Deduplicate tubes
-#     tubes_map = {
-#         tube.id: tube.payload() for tube in recent_tubes if tube.id is not None
-#     }
-#
-#     for fabric in recent_fabrics:
-#         if fabric.tube and fabric.tube.id not in tubes_map:
-#             tubes_map[fabric.tube.id] = fabric.tube.payload()
-#
-#     fabrics_obj = [fabric.payload() for fabric in recent_fabrics]
-#     tubes_obj = list(tubes_map.values())
-#
-#     return {
-#         "draw": draw,
-#         "recordsTotal": total_tubes_count,      # Controls scrollbar total range
-#         "recordsFiltered": total_tubes_count,   # Adjust if applying search filters
-#         "tubes": tubes_obj,
-#         "fabrics": fabrics_obj,
-#         "size": len(tubes_obj),
-#     }, 200
 
 
 def get_recent_tubes(offset=0, limit=50, draw=1):
@@ -384,13 +264,8 @@ def add_fabrics(fabrics_to_add: list[dict]) -> list[dict]:
         retval = []
 
         for payload in fabrics_to_add:
-            temp_id = payload.get("temp_id")
-            if temp_id is None:
-                raise NoResultFound("'temp_id' was not found")
-
             retval.append(
                 {
-                    "temp_id": temp_id,
                     "fabric": add_fabric(payload),
                 }
             )
