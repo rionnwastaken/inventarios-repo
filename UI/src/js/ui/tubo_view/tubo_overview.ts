@@ -356,56 +356,37 @@ class TubeOverview {
     return true;
   }
 
-  async handle_saving_created_fabrics(arr: ApiRowsMethods<FabricData>) {
-    if (arr.data().length > 0) {
+  async handle_saving_created_fabrics(rows: ApiRowsMethods<FabricData>) {
+    if (rows.data().length > 0) {
       log.info("handle_saving_created_fabrics()");
-      log.info(`Adding ${arr.count()} created rows`);
+      log.info(`Adding ${rows.count()} created rows`);
 
       // Extract the raw data objects from the rows API instance into an array
-      const data: FabricData[] = arr.data().toArray();
-
-      data.forEach(
-        (row) => (row.original_fabric["temp_id"] = temporalID.get()),
-      );
-
-      log.debug("SEnding data ", data);
+      const fabrics: FabricData[] = rows.data().toArray();
+      log.debug("SEnding data ", fabrics);
       const res = await CoreAPI.fabric_add_many(
-        data.map((row) => row.original_fabric),
+        fabrics.map((row) => row.original_fabric),
       );
 
-      if (res.success) {
-        for (const data_response of res.data["fabrics"]) {
-          const temp_id = data_response["temp_id"];
-          const fabric_data_response = data_response["fabric"];
-
-          const row = data.find((f) => f.original_fabric["temp_id"] == temp_id);
-          if (row == undefined) {
-            for (const row of data) {
-              console.log(row);
-            }
-            log.debug("Row is undeifned");
-            log.debug(data.forEach((f) => f.original_fabric["temp_id"]));
-            log.debug(temp_id);
-            return;
-          }
-
-          row.original_fabric = fabric_data_response;
-          this.events.emit("fabric:created", fabric_data_response);
-        }
-
-        arr.every(function (row) {
-          const rowData = this.data();
-          rowData.mode = "normal";
-          this.data(rowData); // Re-syncs the data and invalidates the row's cache
-
-          log.debug("This data right now after creating is ", this.data());
-        });
-        this.table.draw(false);
-
-        log.info("Creation of rows success");
-      } else {
-        log.error(res);
+      if (!res.success) {
+        log.error(res.data);
+        return;
       }
+      log.debug("rows is ", rows);
+      rows.remove();
+
+      for (const data_response of res.data["fabrics"]) {
+        const fabric_data = data_response["fabric"];
+
+        this.events.emit("fabric:created", fabric_data);
+        let f: FabricData = {
+          original_fabric: fabric_data,
+          mode: "normal",
+        };
+        this.table.row.add(f);
+      }
+      this.table.draw(false);
+      log.info("Creation of rows success");
     }
   }
 
@@ -415,11 +396,20 @@ class TubeOverview {
   async handle_saving_edited_fabrics(rows: ApiRowsMethods<FabricData>) {
     if (rows.data().length > 0) {
       log.info("handle_saving_edited_fabrics()");
-      log.info(`Updating  ${rows.length} rows`);
+      log.info(`Updating ${rows.length} rows`);
 
-      const data: FabricData[] = rows.data().toArray();
+      const fabrics: FabricData[] = rows.data().toArray();
+      console.debug("[DEBUG] Raw fabrics data array from DataTables:", fabrics);
+
       const partial_data = [];
-      for (let fabricData of data) {
+      for (let i = 0; i < fabrics.length; i++) {
+        const fabricData = fabrics[i];
+
+        if (!fabricData || !fabricData.original_fabric) {
+          log.error(`[DEBUG] FabricData at index ${i} is invalid:`, fabricData);
+          continue;
+        }
+
         const p = get_partial_data(
           fabricData.original_fabric,
           fabricData.modified_fabric,
@@ -434,34 +424,62 @@ class TubeOverview {
         });
       }
 
-      console.debug("Sending partial data ", partial_data);
+      console.debug("[DEBUG] Sending partial data to API:", partial_data);
       const res = await CoreAPI.fabric_update_many(partial_data);
-      if (res.success) {
-        log.info("Update of rows success ", res);
 
-        log.debug("data right now here after editing is ", data);
-        const updated_fabrics = res.data;
-        for (const updated_obj of updated_fabrics) {
-          const id = updated_obj["id"];
-          const obj = data.find((obj) => obj.original_fabric.id == id);
+      if (!res.success) {
+        log.error("[DEBUG] CoreAPI.fabric_update_many failed:", res.data);
+        return;
+      }
 
-          obj.original_fabric = updated_obj;
-          obj.modified_fabric = null;
-          this.events.emit("fabric:edited", updated_obj);
-          //TODO FIX HERE
+      log.info("Update of rows success ", res);
+      const updated_fabrics: FabricData[] = res.data;
+      console.debug(
+        "[DEBUG] Updated fabrics received from backend:",
+        updated_fabrics,
+      );
+
+      for (const updated_fabric of updated_fabrics) {
+        const targetId = updated_fabric.id;
+
+        const dtRow = this.table.row((idx, data: FabricData) => {
+          return (
+            data &&
+            data.original_fabric &&
+            String(data.original_fabric.id) === String(targetId)
+          );
+        });
+
+        const currentData = dtRow.data() as FabricData;
+
+        if (!currentData) {
+          log.warn(
+            `[DEBUG] Could not find row in DataTables for ID [${targetId}]`,
+          );
+          continue;
         }
 
-        rows.every(function () {
-          const fabricData = this.data();
-          fabricData.mode = "normal";
-          this.data(fabricData); // Re-syncs the data and invalidates the row's cache
-        });
-        this.table.draw(false);
+        log.debug(
+          `[DEBUG] Successfully found row for ID [${targetId}]:`,
+          currentData,
+        );
 
-        log.debug(res.data);
-      } else {
-        log.error(res);
+        const updatedRowData: FabricData = {
+          ...currentData,
+          original_fabric: updated_fabric,
+          modified_fabric: null,
+          mode: "normal",
+        };
+
+        dtRow.data(updatedRowData);
+
+        if (this.events) {
+          this.events.emit("fabric:edited", updated_fabric);
+        }
       }
+
+      this.table.draw(false);
+      log.debug("[DEBUG] Finished handle_saving_edited_fabrics successfully.");
     }
   }
 
@@ -684,7 +702,7 @@ class MoveFabric {
 // type Mode
 //TODO add context to row
 
-function get_type_modifications_arrays(table: ApiRowsMethods<FabricData>) {
+function get_type_modifications_arrays(table) {
   return {
     created_arr: table.rows((idx, data) => data.mode === "created"),
     edited_arr: table.rows((idx, data) => data.mode === "edited"),
