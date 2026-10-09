@@ -67,6 +67,16 @@ class TableController {
     ];
 
     const fabric_columns = [
+      column2({
+        id: "",
+        column_name: "Tubo ID",
+        group: "fabric",
+        rendering_func: (info: RenderingInfo) => {
+          let data = info.data as Fabric;
+          return `${data.tube_id}`;
+        },
+      }),
+
       ...fabric_catalago_title_id.map(([column_name, schema_column_name]) =>
         fabricColumn({
           id: `${schema_column_name}_id`,

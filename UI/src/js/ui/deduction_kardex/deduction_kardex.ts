@@ -68,6 +68,7 @@ class DeductionKardex {
   comments: HTMLButtonElement;
 
   recent_comment_p: HTMLParagraphElement;
+  tube_p: HTMLParagraphElement;
 
   kardexTable: KardexTable;
 
@@ -131,12 +132,14 @@ class DeductionKardex {
     text = text.slice(0, text.length - 2);
     log.debug(text);
     this.title_catalago_p.textContent = text;
+    this.tube_p.textContent = `Tubo ${this.fabric.tube_id}`;
   }
 
   title(): HTMLElement {
     this.title_el = createElementFromHTML(`
   <div class="flex justify-between"> 
     <div> 
+      <p id="tube_p"> </p>
       <h1>Kardex de Salida de Tela</h1>
       <h2 id="${title_catalago_id}"></h2>
     </div>
@@ -165,6 +168,8 @@ class DeductionKardex {
   </div>
 `);
 
+    this.tube_p = this.title_el.querySelector("#tube_p");
+
     return this.title_el;
   }
 
@@ -182,6 +187,19 @@ class DeductionKardex {
       </div>
 
       <div class="bottom-container flex flex-col"> 
+
+	<div class="flex justify-between"> 
+
+       <div class="flex">
+	    <button class="btn" id="kardex-deduct">Crear Salida</button>
+	    <button class="btn" id="kardex-comments">Ver comentarios</button>
+       </div
+
+        <div>
+            <button class="btn" id="kardex-goback">Vista Tubo</button>
+        </div
+	</div>
+
       <p id='recent-comment'>Comentario reciente:</p>
       </div>
     </div>
@@ -278,21 +296,13 @@ class DeductionKardex {
       },
     });
 
-    let boco = this.modalDialog.dialogEl.querySelector(".bottom-container");
+    let e = this.modalDialog.dialogEl;
 
-    let buttons = createElementFromHTML(`
-	<div class="flex justify-left"> 
-	    <button class="btn" id="kardex-goback">Vista Tubo</button>
-	    <button class="btn" id="kardex-deduct">Crear Salida</button>
-	    <button class="btn" id="kardex-comments">Ver comentarios</button>
-	</div>
-    `);
+    this.goback = e.querySelector("#kardex-goback");
+    this.deduct = e.querySelector("#kardex-deduct");
+    this.comments = e.querySelector("#kardex-comments");
 
-    this.goback = buttons.querySelector("#kardex-goback");
-    this.deduct = buttons.querySelector("#kardex-deduct");
-    this.comments = buttons.querySelector("#kardex-comments");
-
-    boco.prepend(buttons);
+    // boco.prepend(buttons);
 
     this.goback.addEventListener("click", async () => {
       this.kardexTable.clear();
