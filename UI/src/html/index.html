@@ -9,31 +9,33 @@
     <title></title>
   </head>
   <body class="disable-scrolling disable-vertical disable-horizontal">
-    <div class="navbar bg-base-100 shadow-sm">
-      <div class="flex-1">
-        <a class="btn btn-ghost text-xl">Horvert Persianas</a>
+    <div class="flex flex-col h-screen overflow-hidden">
+      <div class="navbar bg-base-100 shadow-sm">
+        <div class="flex-1">
+          <a class="btn btn-ghost text-xl">Horvert Persianas</a>
+        </div>
+        <div class="flex-none">
+          <button class="btn btn-square btn-ghost">
+            <%= require('../assets/icons/gear.svg?raw') %>
+          </button>
+        </div>
       </div>
-      <div class="flex-none">
-        <button class="btn btn-square btn-ghost">
-          <%= require('../assets/icons/gear.svg?raw') %>
-        </button>
-      </div>
-    </div>
 
-    <!-- Container with 12 columns -->
-
-    <div class="grid grid-rows-[auto_1fr] gap-4 w-full h-screen">
-      <!-- Takes up 25% width (3 out of 12 columns) -->
+      <!-- Container with 12 columns -->
 
       <div
-        class="flex col-span-3 data-name-control-panel"
-        id="panel-control-container"
-      ></div>
+        class="grid grid-rows-[auto_1fr] gap-4 w-full flex-1 min-h-0 overflow-hidden "
+      >
+        <!-- Takes up 25% width (3 out of 12 columns) -->
 
+        <div
+          class="flex col-span-3 data-name-control-panel"
+          id="panel-control-container"
+        ></div>
 
-    <div id="table-controller-container">
+        <div id="table-controller-container"></div>
+      </div>
     </div>
-
 
     <script type="module" src="/static/bundle.js"></script>
   </body>

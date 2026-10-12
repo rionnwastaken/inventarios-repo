@@ -113,13 +113,14 @@ export class LocationController {
   }
 
   body(): HTMLElement {
+    let e_tw = "overflow-y-scroll max-h-3/4";
     const b = createElementFromHTML(`
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-4 max-h-[85vh]">
 
       <select
         class="w-full input-lowercase searchbar"
       ></select>
-      <div class="top-container grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 p-4 w-full">
+      <div class="top-container grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 p-4 w-full overflow-y-scroll flex-1 min-h-0">
       </div>
 
       <div class="bottom-container flex flex-col">

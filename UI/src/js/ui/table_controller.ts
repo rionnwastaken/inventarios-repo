@@ -133,22 +133,26 @@ class TableController {
 
   body() {
     const e = createElementFromHTML(`
-      <div class="overflow-auto">
-        <table id="myTable" class="display ">
-          <thead></thead>
-          <tbody></tbody>
-        </table>
+      <div class="flex flex-col h-full max-h-full gap-4 overflow-hidden p-2">
+        
+        <!-- Table container: flex-1 min-h-0 allows it to shrink/grow and scroll -->
+        <div class="flex-1 min-h-0 overflow-auto ">
+          <table id="myTable" class="display w-full">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
 
-        <div id="btn-new-tube" class="flex items-center gap-2 bg-green-900 p-2 btn w-fit">
+        <!-- Button stays fixed at the bottom -->
+        <div id="btn-new-tube" class="flex items-center gap-2 bg-green-900 p-2 btn w-fit flex-shrink-0">
           <p class="text-lg text-white">Tubo</p>
           <span class="btn w-7 h-7 btn-circle border-none text-white bg-green-600">
             ${save_icon}
           </span>
         </div>
 
-    </div>
-
-      `);
+      </div>
+    `);
 
     const container = document.querySelector("#table-controller-container");
     this.tbl_element = e.querySelector("table");
