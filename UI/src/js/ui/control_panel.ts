@@ -60,8 +60,12 @@ class ControlPanel {
   block_send_filters: Boolean;
 
   search_btn: HTMLButtonElement;
-  verified_btn: HTMLButtonElement;
-  verified_btn_active: boolean;
+  verified_data: {
+    el: HTMLElement;
+    colorer: TruthyColorer;
+    state: boolean;
+    color: Function;
+  };
 
   constructor() {
     this.tom_selects = new Array();
@@ -134,14 +138,16 @@ class ControlPanel {
     );
 
     this.search_btn = e.querySelector("#buscar-btn");
-    this.verified_btn = e.querySelector("#verified-btn");
-    let verified_colorer = new TruthyColorer(
-      "bg-green-200",
-      "bg-red-200",
-      this.verified_btn,
-    );
-    this.verified_btn_active = true;
-    verified_colorer.color(this.verified_btn_active);
+    let verified_btn: HTMLElement = e.querySelector("#verified-btn");
+    this.verified_data = {
+      el: verified_btn,
+      colorer: new TruthyColorer("bg-green-200", "bg-red-200", verified_btn),
+      state: true,
+      color: function () {
+        this.colorer.color(this.state);
+      },
+    };
+    this.verified_data.color();
 
     input_allow_numbers_min_max(this.availability_data.input, 0, 100);
 
@@ -151,9 +157,9 @@ class ControlPanel {
       this.clear_filters();
     });
 
-    this.verified_btn.addEventListener("click", () => {
-      this.verified_btn_active = !this.verified_btn_active;
-      verified_colorer.color(this.verified_btn_active);
+    this.verified_data.el.addEventListener("click", () => {
+      this.verified_data.state = !this.verified_data.state;
+      this.verified_data.color();
     });
 
     for (let obj of catalago) {
@@ -216,7 +222,7 @@ class ControlPanel {
       };
     }
 
-    obj["tube_verified"] = this.verified_btn_active;
+    obj["tube_verified"] = this.verified_data.state;
 
     for (let tom of this.tom_selects) {
       let values = tom.getValue();
@@ -247,6 +253,8 @@ class ControlPanel {
     this.block_send_filters = false;
 
     this.events.emit("search-btn:clicked", null);
+    this.verified_data.state = true;
+    this.verified_data.color();
     // this.send_filters()
   }
 
