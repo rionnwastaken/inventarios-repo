@@ -32,7 +32,7 @@ export function render_plain2(info: RenderingInfo) {
     let value = info.data?.[info.column_id] ?? "";
     if (info.format_func) {
       value = info.format_func(value, info.data);
-      log.debug("value here is ", value);
+      // log.debug("value here is ", value);
     }
     return value;
   }

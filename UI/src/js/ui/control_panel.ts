@@ -26,7 +26,6 @@ let operation_symbols = [greater_than_icon, less_than_icon, equal_icon];
 
 export interface ControlPanelEvents {
   "view:changed": (filters: Object) => void;
-  "tube:new": (tube: Tube) => void;
   "data:change": (tubes: Tube[], fabrics: Fabric[]) => void;
   "search-btn:clicked": (filters: null | Object) => void;
 }
@@ -216,6 +215,8 @@ class ControlPanel {
           operation_symbol_labels[this.availability_data.operation_index],
       };
     }
+
+    obj["tube_verified"] = this.verified_btn_active;
 
     for (let tom of this.tom_selects) {
       let values = tom.getValue();

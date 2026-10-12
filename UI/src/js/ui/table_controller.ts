@@ -205,6 +205,7 @@ class TableController {
       };
 
       console.debug("Sending data ", uhh);
+      console.debug("Getting ", state.active_view);
 
       let res;
       if (state.active_view == "tube") {

@@ -30,10 +30,6 @@ controlPanel.events.on("view:changed", (filters: Object) => {
   tableController.cb_toggle_group_colums(filters);
 });
 
-controlPanel.events.on("tube:new", (...args) => {
-  tableController.cb_insert_tube_to_table(...args);
-});
-
 controlPanel.events.on("search-btn:clicked", (filters: Object | null) => {
   tableController.get_data(filters);
 });
