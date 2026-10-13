@@ -34,6 +34,7 @@ type input_data = {
   input: HTMLInputElement;
   previous_value: String;
   operation_index: number;
+  reset: Function;
 };
 
 let catalago = [
@@ -255,6 +256,10 @@ class ControlPanel {
     this.events.emit("search-btn:clicked", null);
     this.verified_data.state = true;
     this.verified_data.color();
+
+    this.width_data.reset();
+    this.height_data.reset();
+    this.availability_data.reset();
     // this.send_filters()
   }
 
@@ -381,16 +386,20 @@ class ControlPanel {
   }
 
   init_input(container: HTMLElement) {
+    let operation_container = container.querySelector(
+      ".math-operation-container",
+    );
     let input = container.querySelector("input");
     let data: input_data = {
       input: input,
       previous_value: "",
       operation_index: 0,
+      reset: () => {
+        data.previous_value = "";
+        data.operation_index = 0;
+        operation_container.innerHTML = greater_than_icon;
+      },
     };
-
-    let operation_container = container.querySelector(
-      ".math-operation-container",
-    );
 
     operation_container.innerHTML = greater_than_icon;
     operation_container.addEventListener("click", () => {
