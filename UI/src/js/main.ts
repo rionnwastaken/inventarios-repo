@@ -14,7 +14,7 @@ import { Fabric } from "./typeObj.ts";
 import TomSelect from "tom-select";
 
 import { controlPanel } from "./ui/control_panel.ts";
-import { tableController } from "./ui/table_controller.ts";
+import { tableController } from "./ui/data_navigator/init.ts";
 import { tubeOverview } from "./ui/tubo_view/tubo_overview.ts";
 
 import "../css/input.css";

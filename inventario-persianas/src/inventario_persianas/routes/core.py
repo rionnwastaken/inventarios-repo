@@ -18,6 +18,16 @@ def new_tube():
     }, 201
 
 
+@core_bp.post("/tube/delete/")
+def delete_tube():
+    data = request.get_json()
+    id = data.get("id")
+    if id == None:
+        return Error(f"id not found in data {data} ", 400).returnIt()
+
+    return core.delete_tube(id)
+
+
 """
 Should be able to get the recent created tubes that got 0 fabrics inside
 but also the more recent  updated fabrics with their tubes, maybe i dont to bring all info

@@ -78,6 +78,28 @@ def new_tube():
 
 
 @handle_db_exceptions
+def delete_tube(id):
+    with db.session.begin():
+        tube = db.session.get(Tube, id, options=[selectinload(Tube.fabrics)])
+        if not tube:
+            raise ValueError(f"Tube with id {id} was not found")
+
+        if len(tube.fabrics) > 0:
+            raise ValueError(
+                f"No se puede borrar tubo con que tiene {len(tube.fabrics)} telas"
+            )
+
+        tube_json = tube.payload()
+
+        db.session.delete(tube)
+        db.session.flush()
+
+        AuditLogger.log("Delete", "tube", tube.id, old_values=tube_json)
+
+        return {"tube": tube_json}
+
+
+@handle_db_exceptions
 def update_tube(tube_id: int, payload: dict):
     with db.session.begin():
         tube = db.session.get(Tube, tube_id)
@@ -192,7 +214,6 @@ def apply_filters(stmt, filters):
             op = OPERATORS.get(f.get("orientation", "greater"), DEFAULT_OP)
             stmt = stmt.where(op(column, f["value"]))
 
-
     stmt = stmt.where(Tube.verified == filters["tube_verified"])
 
     return stmt
@@ -229,8 +250,7 @@ def get_tubes(offset=0, limit=50, draw=1, filters=None):
 
     # Tube matches if ANY of its fabrics matches
     stmt = apply_filters(
-        select(Tube)
-        .join(Tube.fabrics),
+        select(Tube).join(Tube.fabrics),
         filters,
     )
 
@@ -250,8 +270,7 @@ def get_fabrics(offset=0, limit=50, draw=1, filters=None):
     filters = filters or {}
 
     stmt = apply_filters(
-        select(Fabric)
-        .join(Fabric.tube),
+        select(Fabric).join(Fabric.tube),
         filters,
     )
 
