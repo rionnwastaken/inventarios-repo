@@ -69,6 +69,15 @@ class TableController {
     this.table = this.navigationTable.table;
     this.init_visible_group();
     this.init_bindings();
+
+    const bottomRow = document.querySelector(
+      "#myTable_wrapper > div:nth-child(3)",
+    );
+    const mainContainer = document.querySelector("#btn-new-tube").parentNode; // Your main flex container
+    if (bottomRow && mainContainer) {
+      const btnNewTube = document.getElementById("btn-new-tube");
+      mainContainer.prepend(bottomRow);
+    }
   }
 
   body() {

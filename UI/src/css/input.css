@@ -54,6 +54,14 @@ table.dataTable td.dt-left {
   overflow-y: hidden;
 }
 
-div.dt-paging {
+#myTable_wrapper > div.dt-layout-row:first-child {
   display: none;
+}
+
+#myTable_wrapper div:has(> .dt-paging) {
+  display: none;
+}
+
+div.dt-paging {
+  display: none !important;
 }

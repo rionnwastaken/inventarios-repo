@@ -33,7 +33,9 @@ import { fabric_catalago_title_id } from "../misc.ts";
 import { fabric_column_name_from_tablename } from "./utils.ts";
 import { Table } from "../table.ts";
 
-import edit_icon from "../../../assets/icons/edit.png";
+import edit_icon from "../../../assets/icons/edit2.svg?raw";
+import move_icon from "../../../assets/icons/move.svg?raw";
+import delete_icon from "../../../assets/icons/delete.svg?raw";
 import archive_icon from "../../../assets/icons/archive.png";
 
 let log = getLogger("app");
@@ -101,26 +103,21 @@ export class TubeOverviewTable extends Table {
   create_action_overlay(): HTMLDivElement {
     let container = createElementFromHTML(`
 
-      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
+      <div class="dt-row-overlay absolute right-1 top-0 z-[9999]  flex  gap-2    border border-slate-700 whitespace-nowrap">
       ${createIconHTML({
-        src: edit_icon,
+        svg: edit_icon,
         id: "edit-action",
         title: "Editar Tela",
       })}
-      ${createIconHTML({
-        src: archive_icon,
-        id: "archive-action",
-        title: "Archivar Tela",
-      })}
 
       ${createIconHTML({
-        src: archive_icon,
+        svg: delete_icon,
         id: "delete-action",
         title: "Eliminar Tela",
       })}
 
       ${createIconHTML({
-        src: archive_icon,
+        svg: move_icon,
         id: "move-action",
         title: "Mover Tela",
       })}
@@ -128,7 +125,7 @@ export class TubeOverviewTable extends Table {
 `);
 
     this.edit_action_btn = container.querySelector("#edit-action");
-    this.archive_action_btn = container.querySelector("#archive-action");
+    // this.archive_action_btn = container.querySelector("#archive-action");
     this.delete_fabric_btn = container.querySelector("#delete-action");
     this.move_fabric_btn = container.querySelector("#move-action");
 
@@ -138,11 +135,11 @@ export class TubeOverviewTable extends Table {
       this.edit_callback(row.data(), row);
     });
 
-    this.archive_action_btn.addEventListener("click", (e) => {
-      e.stopPropagation(); // Prevents triggering card click event
-      let row = this.actionOverlay.selected_row;
-      this.archive_callback(row.data(), row);
-    });
+    // this.archive_action_btn.addEventListener("click", (e) => {
+    //   e.stopPropagation(); // Prevents triggering card click event
+    //   let row = this.actionOverlay.selected_row;
+    //   this.archive_callback(row.data(), row);
+    // });
 
     this.delete_fabric_btn.addEventListener("click", (e) => {
       e.stopPropagation(); // Prevents triggering card click event

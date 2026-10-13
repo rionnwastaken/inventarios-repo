@@ -10,7 +10,7 @@ import {
 import { FabricDeduction } from "../../schema";
 import { createIconHTML, render_datecell, render_plain2 } from "../renderUtils";
 
-import edit_icon from "../../../assets/icons/edit.png";
+import delete_icon from "../../../assets/icons/delete.svg?raw";
 import { fabric_catalago_title_id, tube_title_id } from "../misc";
 import { Fabric } from "../../typeObj";
 import { state } from "../../state";
@@ -44,6 +44,7 @@ export class NavigationTable extends Table {
       },
       scrollY: "800px",
       deferRender: true,
+      info: true,
     });
 
     this.actionOverlay.cb_samerow_2clicks = async (row_data, row) => {
@@ -55,9 +56,10 @@ export class NavigationTable extends Table {
     this.overlay_container = createElementFromHTML(`
       <div class="dt-row-overlay absolute right-1  top-0 z-[9999]  flex flex-col gap-2  whitespace-nowrap">
       ${createIconHTML({
-        src: edit_icon,
+        svg: delete_icon,
         id: "delete-action",
         title: "Eliminar Deduccion",
+        btnClass: "text-red-800 bg-white w-12 h-12",
       })}
       </div>
 `);
