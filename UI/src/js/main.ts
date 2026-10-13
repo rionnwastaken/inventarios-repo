@@ -54,6 +54,10 @@ state.events.on("catalago:loaded", () => {
 tubeOverview.events.on("catalog_item:added", (...args) => {
   state.cb_catalog_item_added(...args);
 });
+
+tubeOverview.locationController.events.on("catalago:created", (...args) => {
+  state.cb_catalog_item_added(...args);
+});
 tubeOverview.events.on("fabric:edited", (...args) => {
   tableController.update_fabric(...args);
   //TODO maybe get the tube here and update it because its updated_at attribute has changed

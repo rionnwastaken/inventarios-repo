@@ -8,7 +8,7 @@ import { createIconHTML } from "../../renderUtils";
 import { createElementFromHTML, num } from "../../utils";
 import { request_to_create_value_on_table } from "../utils";
 import TomSelect from "tom-select";
-import { Location } from "../../../typeObj";
+import { CatalogItem, Location } from "../../../typeObj";
 
 let slot_in_use_tw = "!bg-purple-500";
 
@@ -16,6 +16,7 @@ export interface LocationEvents {
   "location:created": (location: Location) => {};
   "location:edited": (location: Location) => {};
   "location:deleted": (location: Location) => {};
+  "catalago:created": (tag: CatalogItem) => {};
 }
 
 export class LocationController {
@@ -43,7 +44,7 @@ export class LocationController {
     this.create_dialog();
     this.slots = [];
     this.slotsMap = new Map();
-    this.locationForm = new LocationForm();
+    this.locationForm = new LocationForm(this.events);
 
     this.bindEvents();
   }
@@ -407,10 +408,13 @@ export class LocationController {
         log.debug("locationObj ", locatinoObj);
 
         let data = await this.locationForm.open(locatinoObj, imageCopy);
+        this.reset_searchBarTom();
 
         this.updateSlot(this.selected_slot, data.location);
       }
     });
+
+    //TODO maybe the save button in the form is redundant and any cahnge to the image or tags should just save
 
     // Attach direct listener to Delete button
     this.deletebtn.addEventListener("click", (e: MouseEvent) => {
@@ -467,6 +471,15 @@ export class LocationController {
   }
 
   loadTags() {
+    this.reset_searchBarTom();
+
+    this.searchBarTom.refreshOptions();
+    this.searchBarTom.close();
+
+    this.locationForm.loadTags();
+  }
+
+  reset_searchBarTom() {
     let items: Array<LocationTag> = state.catalagoData.data["location_tag"];
     items.forEach((item) => {
       let display = item.name ? item.name : item.id;
@@ -477,11 +490,6 @@ export class LocationController {
 
       // log.debug({ value: item.id, text: display });
     });
-
-    this.searchBarTom.refreshOptions();
-    this.searchBarTom.close();
-
-    this.locationForm.loadTags();
   }
 }
 class LocationForm {
@@ -497,9 +505,11 @@ class LocationForm {
   img_dimensions: { width: string; height: string };
 
   resolve_promise?: (result: { location: Location } | null) => void;
+  events: TypedEventEmitter<LocationEvents>;
 
-  constructor() {
+  constructor(events: TypedEventEmitter<LocationEvents>) {
     this.create_dialog();
+    this.events = events;
   }
 
   title(): string {
@@ -573,7 +583,12 @@ class LocationForm {
     });
 
     let select = container.querySelector("select");
+    this.createTom(select);
 
+    return container;
+  }
+
+  createTom(select) {
     this.tom = new TomSelect(select, {
       create: true,
       createOnBlur: true,
@@ -588,9 +603,9 @@ class LocationForm {
           value,
           "location_tag",
         );
-        // if (res.created) {
-        //   this.events.emit("catalog_item:added", res.item);
-        // }
+        if (res.created) {
+          this.events.emit("catalago:created", res.item);
+        }
       },
 
       onItemAdd: () => {
@@ -605,16 +620,6 @@ class LocationForm {
       e.target.value = e.target.value.toLowerCase();
       e.target.setSelectionRange(pos, pos);
     });
-
-    // tom.control_input.addEventListener("focus", function (e) {
-    //   if (tom.customData.err_message_active) {
-    //     tom.customData.err_message_active = false;
-    //     let err_mess = document.querySelector(`#error_text_${table_name}`);
-    //     err_mess.textContent = "";
-    //   }
-    // });
-
-    return container;
   }
 
   loadTags() {
