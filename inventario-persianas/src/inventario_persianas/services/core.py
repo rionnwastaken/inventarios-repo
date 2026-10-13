@@ -175,7 +175,7 @@ def parse_datatable_params(offset, limit, draw):
     return offset, limit, draw
 
 
-def apply_fabric_filters(stmt, filters):
+def apply_filters(stmt, filters):
     """Adds the fabric WHERE clauses to any statement that includes Fabric."""
     filters = filters or {}
 
@@ -191,6 +191,9 @@ def apply_fabric_filters(stmt, filters):
         if f and f.get("value") is not None:
             op = OPERATORS.get(f.get("orientation", "greater"), DEFAULT_OP)
             stmt = stmt.where(op(column, f["value"]))
+
+
+    stmt = stmt.where(Tube.verified == filters["tube_verified"])
 
     return stmt
 
@@ -220,11 +223,18 @@ def datatable_response(model, stmt, *, offset, limit, draw, order_by, options=()
 
 
 def get_tubes(offset=0, limit=50, draw=1, filters=None):
+    log.debug("start to get tubes")
     offset, limit, draw = parse_datatable_params(offset, limit, draw)
+    filters = filters or {}
 
     # Tube matches if ANY of its fabrics matches
-    stmt = apply_fabric_filters(select(Tube).join(Tube.fabrics), filters)
+    stmt = apply_filters(
+        select(Tube)
+        .join(Tube.fabrics),
+        filters,
+    )
 
+    log.debug("end get tubes")
     return datatable_response(
         Tube,
         stmt,
@@ -237,8 +247,13 @@ def get_tubes(offset=0, limit=50, draw=1, filters=None):
 
 def get_fabrics(offset=0, limit=50, draw=1, filters=None):
     offset, limit, draw = parse_datatable_params(offset, limit, draw)
+    filters = filters or {}
 
-    stmt = apply_fabric_filters(select(Fabric), filters)
+    stmt = apply_filters(
+        select(Fabric)
+        .join(Fabric.tube),
+        filters,
+    )
 
     return datatable_response(
         Fabric,
