@@ -3,7 +3,6 @@ import { ModalDialog } from "./dialogs/modalDialog";
 class ShortLivedDialog extends ModalDialog {
   resolve: (data: boolean) => void;
   modalDialog: ModalDialog;
-  modal_dialog_show: any;
 
   constructor() {
     super({
@@ -16,21 +15,19 @@ class ShortLivedDialog extends ModalDialog {
         return this.resolve(true);
       },
     });
-
-    this.modal_dialog_show = super.show;
   }
 
   open() {
     return new Promise((resolve) => {
       this.resolve = resolve;
-      this.modal_dialog_show();
+      super.show();
     });
   }
 
   show() {
     return new Promise((resolve) => {
       this.resolve = resolve;
-      this.modal_dialog_show();
+      super.show();
     });
   }
 

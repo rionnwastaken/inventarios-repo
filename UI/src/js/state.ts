@@ -31,7 +31,7 @@ class State {
   }
 
   cb_catalog_item_added(catalogItem: CatalogItem) {
-    log.debug(`Adding item ${catalogItem} to state`);
+    log.debug(`Adding item to state `, catalogItem);
     log.debug(catalogItem);
     this.catalagoData.data[catalogItem.table_name].push(catalogItem);
 

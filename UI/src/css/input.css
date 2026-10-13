@@ -65,3 +65,7 @@ table.dataTable td.dt-left {
 div.dt-paging {
   display: none !important;
 }
+
+div.dts_label {
+  display: none !important;
+}

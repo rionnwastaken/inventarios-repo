@@ -35,6 +35,7 @@ export class ActionOverlay {
   }
 
   public render_actions_overlay(row: unknown) {
+    log.debug("render_actions_overlay");
     let node = row.node();
     let lastCell = node.cells[node.cells.length - 1];
 

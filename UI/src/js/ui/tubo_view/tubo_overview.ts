@@ -349,10 +349,11 @@ class TubeOverview {
       if (!confirm) {
         return false;
       }
+
+      log.debug("closing");
+      shortLivedDialog.close();
     }
 
-    log.debug("closing");
-    shortLivedDialog.close();
     return true;
   }
 
