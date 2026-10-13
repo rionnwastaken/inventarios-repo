@@ -4,7 +4,7 @@ import { column2, createElementFromHTML, RenderingInfo } from "../utils";
 import { FabricDeduction } from "../../schema";
 import { createIconHTML, render_datecell, render_plain2 } from "../renderUtils";
 
-import edit_icon from "../../../assets/icons/edit.png";
+import delete_icon from "../../../assets/icons/delete.svg?raw";
 
 type callback = (
   data: unknown,
@@ -21,9 +21,9 @@ export class KardexTable extends Table {
 
   create_action_overlay(): HTMLDivElement {
     this.overlay_container = createElementFromHTML(`
-      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
+      <div class="dt-row-overlay absolute right-0 top-0 z-[9999]  flex flex-col gap-2     whitespace-nowrap">
       ${createIconHTML({
-        src: edit_icon,
+        svg: delete_icon,
         id: "delete-action",
         title: "Eliminar Deduccion",
       })}
@@ -35,7 +35,7 @@ export class KardexTable extends Table {
 
     delete_action_btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      log.debug("Deleting deduction");
+      log.debug("delete action button clicked in overlay");
 
       let row = this.actionOverlay.selected_row;
       let deduction = row.data() as FabricDeduction;
