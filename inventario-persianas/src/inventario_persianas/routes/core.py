@@ -89,25 +89,14 @@ def tube_data():
     return core.get_tube_data(id)
 
 
-# @core_bp.post("/data")
-# def tubes_and_fabrics():
-#     data = request.get_json()
-#     filters = data.get("filters")
-#
-#     if filters == None:
-#         return core.recent_tubes_and_fabrics()
-#
-#     return core.tubes_and_fabrics(filters)
+@core_bp.get("/tubes2")
+def tubes2():
+    log.info("recent_tubes()")
+    query = request.args.get("q")
 
-
-# @core_bp.get("/tubes")
-# def tubes():
-#     log.info("recent_tubes()")
-#     query = request.args.get("q")
-#
-#     if not query:
-#         return Error("Query parameter not passed", 400).returnIt()
-#     return core.tubes(query)
+    if not query:
+        return Error("Query parameter not passed", 400).returnIt()
+    return core.tubes2(query)
 
 
 # If q is empty or not digits, return an empty list immediately

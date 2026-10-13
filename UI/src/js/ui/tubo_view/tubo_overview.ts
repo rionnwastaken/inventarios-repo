@@ -642,6 +642,7 @@ class MoveFabric {
         this.resolve = null;
       },
       body: this.body(),
+      title: "Mover Tela",
     });
   }
 
@@ -663,7 +664,7 @@ class MoveFabric {
       searchField: "text",
 
       load: function (query, callback) {
-        var url = "/core/tubes?q=" + encodeURIComponent(query);
+        var url = "/core/tubes2?q=" + encodeURIComponent(query);
         fetch(url)
           .then((response) => response.json())
           .then((ids) => {

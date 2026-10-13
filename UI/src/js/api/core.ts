@@ -20,6 +20,8 @@ export const CoreAPI = {
       id: tube_id,
     }),
 
+  get_tubes2: async (data) => await api.post("/tubes2", data),
+
   delete_tube: async (tube_id) =>
     await api.post("/tube/delete", {
       id: tube_id,

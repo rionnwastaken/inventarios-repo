@@ -5,6 +5,7 @@ from decimal import Decimal
 from functools import wraps
 
 from sqlalchemy import select, desc
+from sqlmodel import String, cast
 
 
 from inventario_persianas.exceptions import OverDrawing
@@ -393,11 +394,12 @@ def delete_fabric(id: int):
         return data
 
 
+# TODO prevent if trying to move to current tube
 @handle_db_exceptions
 def move_fabric(fabric_id: int, payload: dict):
     log.debug("move_fabric")
 
-    retval = update_fabric(fabric_id, payload)
+    retval = update_fabric(fabric_id, payload, {"message": "Move to another tube"})
     with db.session.begin():
         data = retval[0]
         log.debug("data ", data)
@@ -411,31 +413,34 @@ def move_fabric(fabric_id: int, payload: dict):
         return retval
 
 
-# @handle_db_exceptions
-# def tubes(query):
-#     if not query or not query.isdigit():
-#         raise ValueError("")
-#
-#     target_id = int(query)
-#
-#     # Search for IDs starting with or containing the typed numbers
-#     log.debug(f"query {query} {target_id} ")
-#     stmt = (
-#         select(Tube.id)
-#         .where(cast(Tube.id, String).like(f"%{query}%"))
-#         .order_by(
-#             (Tube.id == target_id).desc(),  # Exact match at index 0
-#             Tube.id.asc(),
-#         )
-#         .limit(20)
-#     )
-#
-#     # .scalars().all() returns [12, 120, 121] directly
-#     tube_ids = db.session.execute(stmt).scalars().all()
-#
-#     log.debug(f"Tubes found are {tube_ids} ")
-#
-#     return tube_ids, 200
+# TODO FIX this bullshit, there are 2 functions that query tubes
+
+
+@handle_db_exceptions
+def tubes2(query):
+    if not query or not query.isdigit():
+        raise ValueError("")
+
+    target_id = int(query)
+
+    # Search for IDs starting with or containing the typed numbers
+    log.debug(f"query {query} {target_id} ")
+    stmt = (
+        select(Tube.id)
+        .where(cast(Tube.id, String).like(f"%{query}%"))
+        .order_by(
+            (Tube.id == target_id).desc(),  # Exact match at index 0
+            Tube.id.asc(),
+        )
+        .limit(20)
+    )
+
+    # .scalars().all() returns [12, 120, 121] directly
+    tube_ids = db.session.execute(stmt).scalars().all()
+
+    log.debug(f"Tubes found are {tube_ids} ")
+
+    return tube_ids, 200
 
 
 @handle_db_exceptions
@@ -509,7 +514,9 @@ def prevent_fabric_invalid_measurement_update(fabric: Fabric, payload: dict):
 
 
 @handle_db_exceptions
-def update_fabric(id: int, payload: dict):
+def update_fabric(id: int, payload: dict, extra: dict[str, str] = None):
+    if not extra:
+        extra = {}
     with db.session.begin():
         fabric = db.session.get(
             Fabric,
@@ -554,6 +561,7 @@ def update_fabric(id: int, payload: dict):
             id,
             old_values=fabric_old_json,
             new_values=payload,
+            message=extra.get("message"),
         )
 
         log.debug("Updated fabric: %s", fabric)
