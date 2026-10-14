@@ -18,6 +18,7 @@ import greater_than_icon from "../../assets/icons/greater-than.svg?raw";
 import less_than_icon from "../../assets/icons/less-than.svg?raw";
 import equal_icon from "../../assets/icons/equal-sign.svg?raw";
 import TomSelect from "tom-select";
+import { TubeSearcher } from "./components/TubeSearcher.ts";
 
 //TODO EVENT WHEN TUBO IS CREATED
 
@@ -28,6 +29,7 @@ export interface ControlPanelEvents {
   "view:changed": (filters: Object) => void;
   "data:change": (tubes: Tube[], fabrics: Fabric[]) => void;
   "search-btn:clicked": (filters: null | Object) => void;
+  "searchbar:tube-selected": (tube: Tube, fabrics: Fabric[]) => void;
 }
 
 type input_data = {
@@ -59,6 +61,7 @@ class ControlPanel {
   clear_filters_btn: HTMLButtonElement;
 
   block_send_filters: Boolean;
+  tubeSearcher: TubeSearcher;
 
   search_btn: HTMLButtonElement;
   verified_data: {
@@ -71,6 +74,22 @@ class ControlPanel {
   constructor() {
     this.tom_selects = new Array();
     this.map_tom_selects = new Map();
+
+    this.tubeSearcher = new TubeSearcher({
+      tw_class: "w-80",
+      cb_item_select: async (tube_id) => {
+        this.tubeSearcher.tom.clear();
+        this.tubeSearcher.tom.close();
+        let res = await CoreAPI.get_tube_data(tube_id);
+
+        if (!res.success) {
+          log.debug(res.data);
+          return;
+        }
+        let data = res.data;
+        this.events.emit("searchbar:tube-selected", data.tube, data.fabrics);
+      },
+    });
 
     this.body();
     this.init_bindings();
@@ -85,8 +104,8 @@ class ControlPanel {
     <div class="flex flex-col gap-3 w-full">
 
       <!-- Row 1: primary action + search + view toggle -->
-        <div class="flex flex-row-reverse items-center gap-4">
-          <input class="input input-bordered w-64" placeholder="Buscar Tubo" />
+        <div class="flex flex-row-reverse items-center gap-4 mr-4">
+          <input id="replaceme-search-tube"> </input>
 
           <label class="flex items-center gap-2 cursor-pointer">
             <span id="tipo-tabla-vista-text">Vista Tabla</span>
@@ -128,6 +147,10 @@ class ControlPanel {
 
     let container = document.querySelector("#panel-control-container");
     container.replaceWith(e);
+
+    e.querySelector("#replaceme-search-tube").replaceWith(
+      this.tubeSearcher.element,
+    );
 
     this.view_text = e.querySelector("#tipo-tabla-vista-text");
     this.view_toggler = e.querySelector("#tipo-tabla-vista-toggler");
@@ -234,9 +257,6 @@ class ControlPanel {
       }
     }
 
-    if (Object.keys(obj).length === 0) {
-      return null;
-    }
     return obj;
   }
 

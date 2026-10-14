@@ -28,6 +28,7 @@ import { shortLivedDialog } from "../shortLiveDialog.ts";
 import arrow_icon from "../../../assets/icons/arrow.svg";
 import { LocationController } from "./location/location.ts";
 import TomSelect from "tom-select";
+import { TubeSearcher } from "../components/TubeSearcher.ts";
 
 let log = getLogger("app");
 
@@ -608,6 +609,7 @@ class TubeOverview {
 class MoveFabric {
   modalDialog: ModalDialog;
   tom: TomSelect;
+  tubeSearcher: TubeSearcher;
   // resolve: (Fabric | null) => void;
   resolve: (
     data: { fabric: Fabric; tube: Tube; previous_tube: Tube } | null,
@@ -615,6 +617,9 @@ class MoveFabric {
   fabric: Fabric;
 
   constructor() {
+    this.tubeSearcher = new TubeSearcher();
+    this.tom = this.tubeSearcher.tom;
+
     this.modalDialog = new ModalDialog({
       onConfirm: async () => {
         let tube_id = this.tom.getValue() as String;
@@ -642,48 +647,9 @@ class MoveFabric {
         this.resolve(null);
         this.resolve = null;
       },
-      body: this.body(),
+      body: this.tubeSearcher.element,
       title: "Mover Tela",
     });
-  }
-
-  body() {
-    const e = createElementFromHTML(`
-    <label class="form-control w-full" >
-      <select
-        class="w-full input-lowercase"
-      ></select>
-    </label> `);
-
-    this.tom = new TomSelect(e.querySelector("select"), {
-      selectOnTab: true,
-      refreshThrottle: 0,
-      maxItems: 1,
-
-      valueField: "id", // What gets submitted in forms
-      labelField: "text", // What gets displayed in the dropdown
-      searchField: "text",
-
-      load: function (query, callback) {
-        var url = "/core/tubes2?q=" + encodeURIComponent(query);
-        fetch(url)
-          .then((response) => response.json())
-          .then((ids) => {
-            const items = ids.map((id) => ({
-              id: id, // Property named "id" holding the numeric value (e.g. 1)
-              text: `Tubo ${String(id)}`, // Property named "text" holding the string version (e.g. "1")
-            }));
-
-            // 2. Pass the created objects to Tom Select
-            callback(items);
-          })
-          .catch(() => {
-            callback();
-          });
-      },
-    });
-
-    return e;
   }
 
   show(fabric: Fabric) {

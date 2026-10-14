@@ -7,7 +7,7 @@ import { CatalogApi } from "./api/catalog.ts";
 
 import { CoreAPI } from "./api/core.ts";
 import { FabricComment } from "./schema.ts";
-import { Fabric } from "./typeObj.ts";
+import { Fabric, Tube } from "./typeObj.ts";
 
 // import {ColumnsConfig} from 'datatables.net-dt';
 
@@ -29,6 +29,13 @@ controlPanel.events.on("view:changed", (filters: Object) => {
   console.log("hey?");
   tableController.cb_toggle_group_colums(filters);
 });
+
+controlPanel.events.on(
+  "searchbar:tube-selected",
+  (tube: Tube, fabrics: Fabric[]) => {
+    tubeOverview.cb_open_modal_tube(tube, fabrics);
+  },
+);
 
 controlPanel.events.on("search-btn:clicked", (filters: Object | null) => {
   tableController.get_data(filters);
