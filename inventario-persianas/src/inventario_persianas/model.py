@@ -181,7 +181,7 @@ class Fabric(TimestampMixin, table=True):
     original_width: Decimal
     original_height: Decimal
     is_archived: bool = Field(default=False)  # Fabrics runs out of fabric to be used
-    remaining_percent: Decimal = Field(default=Decimal(100),index=True)
+    remaining_percent: Decimal = Field(default=Decimal(100), index=True)
 
     # Relationships
     tube: Optional[Tube] = Relationship(back_populates="fabrics")
@@ -317,6 +317,19 @@ class AuditLog(TimestampMixin, table=True):
     target_id: int
     extra_message: Optional[str] = Field(default=None, max_length=100)
     changes: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
+
+
+class ExcelTubeInfo(TimestampMixin, table=True):
+    __tablename__ = "excel_tube_info"  # type:ignore #type:ignore
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tube_id: int = Field(foreign_key="tube.id")
+    excel_tube_id: int
+    ubicacion: str = Field(nullable=True)
+    tube: Optional[Tube] = Relationship()
+
+    def payload(self):
+        jason = self.model_dump(mode="json")
+        return jason
 
 
 @event.listens_for(Fabric, "after_insert")

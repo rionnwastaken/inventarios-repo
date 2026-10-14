@@ -28,6 +28,11 @@ def delete_tube():
     return core.delete_tube(id)
 
 
+@core_bp.get("/tube/excel_info/<int:id>")
+def get_tube_excel_info(id):
+    return core.tube_excel_info(id)
+
+
 """
 Should be able to get the recent created tubes that got 0 fabrics inside
 but also the more recent  updated fabrics with their tubes, maybe i dont to bring all info
@@ -40,20 +45,11 @@ def tubes():
     log.info("tubes()")
     data = request.get_json()
 
-    offset = data.get("offset")
-    limit = data.get("limit")
-    draw = data.get("draw")
-    filters = data.get("filters")
-
     log.debug(f"Data received {data}")
-
     if not data:
         return Error("No data ppase", 400).returnIt()
 
-    if filters == None:
-        return core.get_recent_tubes(offset, limit, draw)
-    else:
-        return core.get_tubes(offset, limit, draw, filters)
+    return core.get_tubes(data)
 
 
 @core_bp.post("/fabrics")

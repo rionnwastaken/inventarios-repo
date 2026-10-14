@@ -28,6 +28,7 @@ import { shortLivedDialog } from "../shortLiveDialog.ts";
 import arrow_icon from "../../../assets/icons/arrow.svg";
 import { LocationController } from "./location/location.ts";
 import TomSelect from "tom-select";
+import { ExcelTubeInfo } from "../../schema.ts";
 import { TubeSearcher } from "../components/TubeSearcher.ts";
 
 let log = getLogger("app");
@@ -83,6 +84,7 @@ class TubeOverview {
   location_par: HTMLParagraphElement;
   verified_p: HTMLParagraphElement;
   verified_container: HTMLDivElement;
+  excel_tube_data: HTMLParagraphElement;
 
   moveFabric: MoveFabric;
 
@@ -195,7 +197,10 @@ class TubeOverview {
     const e = createElementFromHTML(`
     <div class="flex justify-between"> 
 	<div class="flex gap-2.5  flex-col">
-	  <h3 id="title" class="text-lg font-bold"></h3>
+     <div class="flex gap-6 text-lg font-bold">
+          <h3 id="title" ></h3>
+          <p id="excel_tube_info"> </p>
+      </div>
       <div class="flex gap-2 items-center"> 
       <p class="location-paragraph">Ubicacion: No asignado</p>
       ${createIconHTML({
@@ -215,6 +220,7 @@ class TubeOverview {
     let a_tw = "gap-2.5 border-4 rounde  ";
 
     this.tube_title = e.querySelector(`#title`);
+    this.excel_tube_data = e.querySelector(`#excel_tube_info`);
 
     this.verified_p = e.querySelector(".rectificado-container p");
     this.verified_container = e.querySelector(".rectificado-container");
@@ -543,9 +549,29 @@ class TubeOverview {
     this.fabricCraft.cb_initModalDropdowns();
   }
 
-  cb_open_modal_tube(tube: Tube, fabrics: Fabric[]) {
+  async get_excel_info(tube_id: number): Promise<null | ExcelTubeInfo> {
+    let res = await CoreAPI.tube_excel_info(tube_id);
+
+    if (!res.success) {
+      log.debug(res.data);
+      return null;
+    }
+
+    return res.data as ExcelTubeInfo;
+  }
+
+  async cb_open_modal_tube(tube: Tube, fabrics: Fabric[]) {
     if (this.modal_dialog.opened) {
       return;
+    }
+
+    this.excel_tube_data.textContent = ``;
+    if (!tube.verified) {
+      let eti = await this.get_excel_info(tube.id);
+      if (eti) {
+        log.debug("excel data is ", eti);
+        this.excel_tube_data.textContent = `Excel info: Tube ID : ${eti.excel_tube_id} | Ubicacion : ${eti.ubicacion}`;
+      }
     }
 
     this.tube_title.textContent = `Tubo ${tube.id}`;

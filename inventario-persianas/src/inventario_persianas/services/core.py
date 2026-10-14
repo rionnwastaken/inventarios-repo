@@ -10,6 +10,7 @@ from sqlmodel import String, cast
 
 from inventario_persianas.exceptions import OverDrawing
 from inventario_persianas.model import (
+    ExcelTubeInfo,
     Fabric,
     FabricComment,
     FabricCommentUpdate,
@@ -418,9 +419,6 @@ def move_fabric(fabric_id: int, payload: dict):
 
 @handle_db_exceptions
 def tubes2(query):
-    if not query or not query.isdigit():
-        raise ValueError("")
-
     target_id = int(query)
 
     # Search for IDs starting with or containing the typed numbers
@@ -888,3 +886,15 @@ def comment_delete(comment_id: int, fabric_id: int):
         db.session.refresh(fabric)
 
         return {"fabric": fabric.payload(), "comment": comment_json}, 200
+
+
+@handle_db_exceptions
+def tube_excel_info(tube_id: int):
+    with db.session.begin():
+        statement = select(ExcelTubeInfo).where(ExcelTubeInfo.tube_id == tube_id)
+        excel_info = db.session.execute(statement).scalar()
+
+        if not excel_info:
+            raise ValueError(f"Excel info data not found with id {tube_id}")
+
+        return excel_info.payload(), 200
