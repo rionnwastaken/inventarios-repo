@@ -9,7 +9,7 @@ import {
   createElementFromHTML,
   input_allow_numbers_min_max,
   input_only_allow_numbers,
-  TruthyColorer,
+  ElementToggler,
 } from "./utils.ts";
 
 import save_icon from "../../assets/icons/plus.svg?raw";
@@ -64,12 +64,7 @@ class ControlPanel {
   tubeSearcher: TubeSearcher;
 
   search_btn: HTMLButtonElement;
-  verified_data: {
-    el: HTMLElement;
-    colorer: TruthyColorer;
-    state: boolean;
-    color: Function;
-  };
+  verified_data: ElementToggler;
 
   constructor() {
     this.tom_selects = new Array();
@@ -163,15 +158,11 @@ class ControlPanel {
 
     this.search_btn = e.querySelector("#buscar-btn");
     let verified_btn: HTMLElement = e.querySelector("#verified-btn");
-    this.verified_data = {
-      el: verified_btn,
-      colorer: new TruthyColorer("bg-green-200", "bg-red-200", verified_btn),
-      state: true,
-      color: function () {
-        this.colorer.color(this.state);
-      },
-    };
-    this.verified_data.color();
+    this.verified_data = new ElementToggler(
+      [null, true, false],
+      ["empty", "bg-green-200", "bg-red-200"],
+      verified_btn,
+    );
 
     input_allow_numbers_min_max(this.availability_data.input, 0, 100);
 
@@ -182,8 +173,7 @@ class ControlPanel {
     });
 
     this.verified_data.el.addEventListener("click", () => {
-      this.verified_data.state = !this.verified_data.state;
-      this.verified_data.color();
+      this.verified_data.change();
     });
 
     for (let obj of catalago) {
@@ -246,7 +236,7 @@ class ControlPanel {
       };
     }
 
-    obj["tube_verified"] = this.verified_data.state;
+    obj["tube_verified"] = this.verified_data.value();
 
     for (let tom of this.tom_selects) {
       let values = tom.getValue();
@@ -274,8 +264,7 @@ class ControlPanel {
     this.block_send_filters = false;
 
     this.events.emit("search-btn:clicked", null);
-    this.verified_data.state = true;
-    this.verified_data.color();
+    this.verified_data.reset();
 
     this.width_data.reset();
     this.height_data.reset();

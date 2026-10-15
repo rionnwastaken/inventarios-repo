@@ -286,28 +286,36 @@ export function input_allow_numbers_min_max(
   });
 }
 
-export class TruthyColorer {
-  bg_true: boolean;
-  bg_false: boolean;
+//TODO  ALLOW Array of colors (classes)
+export class ElementToggler {
+  colors: string[];
+  values: unknown[];
+  length: number;
   el: HTMLElement;
+  index: number;
 
-  constructor(bg_true, bg_false, el: HTMLElement) {
-    this.bg_true = bg_true;
-    this.bg_false = bg_false;
+  constructor(values: unknown[], colors: string[], el: HTMLElement) {
+    this.colors = colors;
+    this.values = values;
+    this.length = colors.length;
     this.el = el;
+    this.index = 0;
   }
 
-  color(state: boolean) {
-    let color_add;
-    let color_remove;
-    if (state) {
-      color_add = this.bg_true;
-      color_remove = this.bg_false;
-    } else {
-      color_remove = this.bg_true;
-      color_add = this.bg_false;
-    }
-    this.el.classList.remove(color_remove);
-    this.el.classList.add(color_add);
+  change() {
+    this.el.classList.remove(this.colors[this.index]);
+    this.index = (this.index + 1) % this.length;
+    this.el.classList.add(this.colors[this.index]);
+  }
+
+  value() {
+    let v = this.values[this.index];
+    log.debug("v is ", v);
+    return v;
+  }
+
+  reset() {
+    this.el.classList.remove(this.colors[this.index]);
+    this.index = 0;
   }
 }

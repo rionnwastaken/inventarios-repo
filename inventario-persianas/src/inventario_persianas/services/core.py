@@ -216,7 +216,8 @@ def apply_filters(stmt, filters):
             op = OPERATORS.get(f.get("orientation", "greater"), DEFAULT_OP)
             stmt = stmt.where(op(column, f["value"]))
 
-    stmt = stmt.where(Tube.verified == filters["tube_verified"])
+    if filters.get("tube_verified") != None:
+        stmt = stmt.where(Tube.verified == filters["tube_verified"])
 
     return stmt
 
