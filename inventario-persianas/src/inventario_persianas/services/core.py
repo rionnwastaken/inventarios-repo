@@ -246,10 +246,17 @@ def datatable_response(model, stmt, *, offset, limit, draw, order_by, options=()
     }, 200
 
 
-def get_tubes(offset=0, limit=50, draw=1, filters=None):
+def get_tubes(data):
+
     log.debug("start to get tubes")
+
+    offset = data.get("offset")
+    limit = data.get("limit")
+    draw = data.get("draw")
+    filters = data.get("filters", {})
+    search = data.get("search")
+
     offset, limit, draw = parse_datatable_params(offset, limit, draw)
-    filters = filters or {}
 
     # Tube matches if ANY of its fabrics matches
     stmt = apply_filters(

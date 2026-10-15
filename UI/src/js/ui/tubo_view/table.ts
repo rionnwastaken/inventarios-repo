@@ -306,4 +306,10 @@ function render_catalago(info: RenderingInfo, catalago_tablename) {
     log.debug(`Formatting value for column ${info.column_id}`);
     return getDiffValue(original_value, modified_value, data.mode);
   }
+
+  let original_value = state.catalagoData.catalagoValue(
+    catalago_tablename,
+    data.original_fabric?.[info.column_id] ?? null,
+  );
+  return original_value;
 }

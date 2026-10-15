@@ -73,10 +73,14 @@ class TableController {
     const bottomRow = document.querySelector(
       "#myTable_wrapper > div:nth-child(3)",
     );
+
+    const xerxes = document.querySelector(".dt-search");
+
     const mainContainer = document.querySelector("#btn-new-tube").parentNode; // Your main flex container
     if (bottomRow && mainContainer) {
       const btnNewTube = document.getElementById("btn-new-tube");
       mainContainer.prepend(bottomRow);
+      mainContainer.prepend(xerxes);
     }
   }
 
@@ -85,7 +89,7 @@ class TableController {
       <div class="flex flex-col h-full max-h-full gap-4 overflow-y-hidden overflow-x-visible p-2">
         
         <!-- Table container: flex-1 min-h-0 allows it to shrink/grow and scroll -->
-        <div class="flex-1 min-h-0 overflow-y-clip overflow-x-visible pr-36  ">
+        <div class="flex-1 min-h-0 overflow-y-clip overflow-x-visible   ">
             <table id="myTable" class="display w-full">
               <thead></thead>
               <tbody></tbody>
@@ -119,23 +123,18 @@ class TableController {
 
   async load_data(data, cb, settings) {
     try {
-      console.debug("load_data ", data);
+      data.offset = data.start;
+      data.limit = data.length;
+      data.filters = this.filters || {};
 
-      let uhh = {
-        offset: data.start,
-        limit: data.length,
-        draw: data.draw,
-        filters: this.filters,
-      };
-
-      console.debug("Sending data ", uhh);
+      console.debug("Sending data ", data);
       console.debug("Getting ", state.active_view);
 
       let res;
       if (state.active_view == "tube") {
-        res = await CoreAPI.get_tubes(uhh);
+        res = await CoreAPI.get_tubes(data);
       } else if (state.active_view == "fabric") {
-        res = await CoreAPI.get_fabrics(uhh);
+        res = await CoreAPI.get_fabrics(data);
       }
 
       if (res.success) {

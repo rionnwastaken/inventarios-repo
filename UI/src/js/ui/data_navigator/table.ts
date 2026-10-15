@@ -12,7 +12,7 @@ import { createIconHTML, render_datecell, render_plain2 } from "../renderUtils";
 
 import delete_icon from "../../../assets/icons/delete.svg?raw";
 import { fabric_catalago_title_id, tube_title_id } from "../misc";
-import { Fabric } from "../../typeObj";
+import { Fabric, Tube } from "../../typeObj";
 import { state } from "../../state";
 
 type callback = (
@@ -87,6 +87,16 @@ export class NavigationTable extends Table {
           rendering_func: render_plain2,
         }),
       ),
+
+      column2({
+        id: "",
+        column_name: "Verificado",
+        group: "tube",
+        rendering_func: (info: RenderingInfo) => {
+          let data = info.data as Tube;
+          return data.verified ? "Si" : "No";
+        },
+      }),
     ];
 
     const fabric_columns = [
