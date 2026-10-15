@@ -87,7 +87,7 @@ class TubeOverview {
   excel_tube_data: HTMLParagraphElement;
 
   moveFabric: MoveFabric;
-
+  excel_info: unknown;
   public events = new TypedEventEmitter<RowModalEvents>();
 
   constructor() {
@@ -309,6 +309,8 @@ class TubeOverview {
         this.verified_p.classList.add("!text-red-500");
         this.verified_p.classList.remove("!text-green-500");
       }
+
+      this.update_display_excel_info();
     });
   }
 
@@ -560,23 +562,28 @@ class TubeOverview {
     return res.data as ExcelTubeInfo;
   }
 
+  update_display_excel_info() {
+    if (!this.tube.verified) {
+      if (this.excel_info) {
+        log.debug("excel data is ", this.excel_info);
+        let data = this.excel_info;
+        this.excel_tube_data.textContent = `Excel info: Tube ID : ${data.excel_tube_id} | Ubicacion : ${data.ubicacion}`;
+      }
+      return;
+    }
+    this.excel_tube_data.textContent = ``;
+  }
+
   async cb_open_modal_tube(tube: Tube, fabrics: Fabric[]) {
     if (this.modal_dialog.opened) {
       return;
     }
 
-    this.excel_tube_data.textContent = ``;
-    if (!tube.verified) {
-      let eti = await this.get_excel_info(tube.id);
-      if (eti) {
-        log.debug("excel data is ", eti);
-        this.excel_tube_data.textContent = `Excel info: Tube ID : ${eti.excel_tube_id} | Ubicacion : ${eti.ubicacion}`;
-      }
-    }
-
     this.tube_title.textContent = `Tubo ${tube.id}`;
     this.tube = tube;
+    this.excel_info = await this.get_excel_info(tube.id); // Maybe if somebody by mistake  verifies , to make sure to get the data?
 
+    this.update_display_excel_info();
     this.update_display();
 
     // let fabrics = state.tableData.get_fabrics_by_tube_id(
