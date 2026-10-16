@@ -88,6 +88,7 @@ export class ActionOverlay {
 
       if (data == this.selected_row.data()) {
         this.selected_row = null;
+        this.remove_actions_overlay();
         log.debug("type of this shit is ", typeof this.cb_samerow_2clicks);
         await this.cb_samerow_2clicks(data, row);
         return;
