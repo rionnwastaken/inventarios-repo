@@ -1,5 +1,8 @@
 import logging
-from datetime import datetime, timezone
+from datetime import (
+    datetime,
+    timezone,
+)
 from typing import Any, Dict, List, Optional
 
 from pydantic import field_serializer
@@ -137,10 +140,6 @@ class Tube(TimestampMixin, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     location_id: Optional[int] = Field(default=None, foreign_key="location.id")
 
-    legacy_location_1: Optional[str] = Field(default=None, max_length=100)
-    legacy_location_2: Optional[str] = Field(default=None, max_length=100)
-
-    verified: bool = Field(default=True, index=False)
     location: Optional[Location] = Relationship(back_populates="tubes")
     fabrics: List["Fabric"] = Relationship(back_populates="tube")
 
@@ -326,6 +325,7 @@ class ExcelTubeInfo(TimestampMixin, table=True):
     excel_tube_id: int
     ubicacion: str = Field(nullable=True)
     tube: Optional[Tube] = Relationship()
+    verified: bool = Field(default=True, index=False)
 
     def payload(self):
         jason = self.model_dump(mode="json")

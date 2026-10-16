@@ -5,6 +5,7 @@ import {
   Tube as SchemaTube,
   Location as SchemaLocation,
   LocationTag,
+  ExcelTubeInfo,
 } from "./schema";
 
 export type ViewMode = "tube" | "fabric" | "both";

@@ -1,11 +1,12 @@
 import logging
 
+from operator import and_
 from typing import List, Optional
 from decimal import Decimal
 from functools import wraps
 
 from sqlalchemy import select, desc
-from sqlmodel import String, cast
+from sqlmodel import String, cast, or_
 
 
 from inventario_persianas.exceptions import OverDrawing
@@ -216,8 +217,19 @@ def apply_filters(stmt, filters):
             op = OPERATORS.get(f.get("orientation", "greater"), DEFAULT_OP)
             stmt = stmt.where(op(column, f["value"]))
 
-    if filters.get("tube_verified") != None:
-        stmt = stmt.where(Tube.verified == filters["tube_verified"])
+    stmt = stmt.outerjoin(ExcelTubeInfo, Tube.id == ExcelTubeInfo.tube_id)
+    tube_verified = filters.get("tube_verified")
+    if tube_verified is not None:
+        if tube_verified:
+            # Verified: Either NOT in Excel (program-created) OR Excel entry is verified=True
+            stmt = stmt.where(
+                or_(ExcelTubeInfo.id.is_(None), ExcelTubeInfo.verified == True)
+            )
+        else:
+            # Not verified: Must be in Excel AND have verified=False
+            stmt = stmt.where(
+                and_(ExcelTubeInfo.id.is_not(None), ExcelTubeInfo.verified == False)
+            )
 
     return stmt
 

@@ -87,7 +87,7 @@ class TubeOverview {
   excel_tube_data: HTMLParagraphElement;
 
   moveFabric: MoveFabric;
-  excel_info: unknown;
+  excel_info: ExcelTubeInfo;
   public events = new TypedEventEmitter<RowModalEvents>();
 
   constructor() {
@@ -316,16 +316,6 @@ class TubeOverview {
 
   update_display() {
     this.location_par.textContent = `Ubicación: ${this.tube.location_id ?? "No asignado"}`;
-
-    if (this.tube.verified) {
-      this.verified_p.textContent = "Verificado";
-      this.verified_p.classList.add("!text-green-500");
-      this.verified_p.classList.remove("!text-red-500");
-    } else {
-      this.verified_p.textContent = "No Verificado";
-      this.verified_p.classList.remove("!text-green-500");
-      this.verified_p.classList.add("!text-red-500");
-    }
   }
 
   async handle_unsaved_changes() {
@@ -563,14 +553,30 @@ class TubeOverview {
   }
 
   update_display_excel_info() {
-    if (!this.tube.verified) {
-      if (this.excel_info) {
-        log.debug("excel data is ", this.excel_info);
+    if (this.excel_info) {
+      let verified = this.excel_info.verified;
+      this.verified_p.parentElement.classList.remove("hidden");
+      this.verified_p.parentElement.classList.add("flex");
+
+      log.debug("excel data is ", this.excel_info);
+      if (verified) {
+        this.verified_p.textContent = "Verificado";
+        this.verified_p.classList.add("!text-green-500");
+        this.verified_p.classList.remove("!text-red-500");
+        this.excel_tube_data.textContent = ``;
+      } else {
         let data = this.excel_info;
         this.excel_tube_data.textContent = `Excel info: Tube ID : ${data.excel_tube_id} | Ubicacion : ${data.ubicacion}`;
+        this.verified_p.textContent = "No Verificado";
+        this.verified_p.classList.remove("!text-green-500");
+        this.verified_p.classList.add("!text-red-500");
       }
+
       return;
     }
+
+    this.verified_p.parentElement.classList.add("hidden");
+    this.verified_p.parentElement.classList.remove("flex");
     this.excel_tube_data.textContent = ``;
   }
 

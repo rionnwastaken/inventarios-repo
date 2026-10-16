@@ -87,16 +87,6 @@ export class NavigationTable extends Table {
           rendering_func: render_plain2,
         }),
       ),
-
-      column2({
-        id: "",
-        column_name: "Verificado",
-        group: "tube",
-        rendering_func: (info: RenderingInfo) => {
-          let data = info.data as Tube;
-          return data.verified ? "Si" : "No";
-        },
-      }),
     ];
 
     const fabric_columns = [
