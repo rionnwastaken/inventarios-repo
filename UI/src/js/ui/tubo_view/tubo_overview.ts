@@ -288,28 +288,15 @@ class TubeOverview {
 
   handle_verify_click() {
     this.verified_container.addEventListener("click", async () => {
-      let payload: Partial<Tube> = {
-        verified: !this.tube.verified,
-      };
-      let res = await CoreAPI.update_tube(this.tube.id, payload);
-
+      let res = await CoreAPI.update_verified_state_excel_info(
+        this.excel_info.id,
+        !this.excel_info.verified,
+      );
       if (!res.success) {
         log.debug(res.data);
         return;
       }
-      this.tube = res.data.tube;
-      this.events.emit("tube:updated", this.tube);
-
-      if (this.tube.verified) {
-        this.verified_p.textContent = "Verificado";
-        this.verified_p.classList.remove("!text-red-500");
-        this.verified_p.classList.add("!text-green-500");
-      } else {
-        this.verified_p.textContent = "No Verificado";
-        this.verified_p.classList.add("!text-red-500");
-        this.verified_p.classList.remove("!text-green-500");
-      }
-
+      this.excel_info = res.data.excel_info;
       this.update_display_excel_info();
     });
   }

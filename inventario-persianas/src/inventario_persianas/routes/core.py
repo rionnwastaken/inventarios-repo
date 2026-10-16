@@ -267,3 +267,18 @@ def comment_delete():
         ).returnIt()
 
     return core.comment_delete(comment_id, fabric_id)
+
+
+@core_bp.post("/excel-info/verified-state/set/")
+def excel_info_update():
+    log.info("/excel-info/verified-state/set/")
+    data = request.get_json() or {}
+
+    verified = data.get("verified")
+    id = data.get("id")
+
+    log.debug(f"Data received {data}")
+    if verified == None or not id:
+        return Error(f"'verified' or 'id' not found {data}", 400).returnIt()
+
+    return core.update_excel_info_verified(id, verified)

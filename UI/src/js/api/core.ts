@@ -26,6 +26,12 @@ export const CoreAPI = {
 
   get_tubes2: async (data) => await api.post("/tubes2", data),
 
+  update_verified_state_excel_info: async (id, verified) =>
+    await api.post("/excel-info/verified-state/set/", {
+      id: id,
+      verified: verified,
+    }),
+
   delete_tube: async (tube_id) =>
     await api.post("/tube/delete", {
       id: tube_id,

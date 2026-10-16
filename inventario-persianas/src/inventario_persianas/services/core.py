@@ -918,3 +918,23 @@ def tube_excel_info(tube_id: int):
             raise ValueError(f"Excel info data not found with id {tube_id}")
 
         return excel_info.payload(), 200
+
+
+@handle_db_exceptions
+def update_excel_info_verified(id: int, verified):
+    with db.session.begin():
+        excel_info = db.session.get(ExcelTubeInfo, id)
+        if not excel_info:
+            raise ValueError(f"ExcelInfo not found with id {id}")
+
+        excel_info.verified = verified
+        db.session.add(excel_info)
+        db.session.flush()
+        AuditLogger.log(
+            "Update",
+            "excel_info",
+            id,
+            old_values={"verified": not verified},
+            new_values={"verified": verified},
+        )
+        return {"excel_info": excel_info.payload()}, 200
