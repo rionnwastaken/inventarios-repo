@@ -69,8 +69,6 @@ export class ActionOverlay {
         return;
       }
 
-      this.callback_row_click(data, row);
-
       const hasMoreThanOneSelected = this.table.rows(".selected").count() > 1;
       if (hasMoreThanOneSelected) {
         this.selected_row = null;
@@ -80,6 +78,7 @@ export class ActionOverlay {
       }
 
       this.update_row_actions_overlay(row);
+      this.callback_row_click(data, row);
       if (this.selected_row == null) {
         log.debug("Assing row", row);
         this.selected_row = row;

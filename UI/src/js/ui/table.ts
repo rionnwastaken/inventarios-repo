@@ -16,7 +16,7 @@ export abstract class Table {
 
   constructor() {
     this.actionOverlay = new ActionOverlay({
-      container: this.create_action_overlay(),
+      container: null,
     });
   }
 
@@ -41,6 +41,10 @@ export abstract class Table {
   }
 
   init(tbl_element: HTMLElement | string, userOptions: Options = {}): void {
+    // this.actionOverlay.init()
+
+    this.actionOverlay.container = this.create_action_overlay();
+
     const baseOptions = this.default_options();
 
     const finalOptions: Options = {
