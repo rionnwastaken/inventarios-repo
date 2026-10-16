@@ -1,6 +1,5 @@
 import { disableAll, getLogger } from "loglevel";
-import { Tube } from "../../schema";
-import { CatalogItem, FabricData, Fabric, Tube } from "../../typeObj";
+import { CatalogItem, Fabric, Tube } from "../../typeObj.ts";
 import {
   createElementFromHTML,
   ObjectChanged as ObjectChanged,
@@ -22,13 +21,19 @@ import {
   viceversa_map,
 } from "./utils.ts";
 
-import { ModalState, ItemState } from "../../typeObj";
+import { ModalState, ItemState } from "../../typeObj.ts";
 import { ModalDialog } from "../dialogs/modalDialog.ts";
-import { createPrefixedLogger } from "../utils";
+import { createPrefixedLogger } from "../utils.ts";
 
 let ID = "FabricCraft";
 
 const log = createPrefixedLogger(ID, "DEBUG");
+
+interface MeasurementData {
+  active: boolean;
+  input: HTMLInputElement;
+  disable: CallableFunction;
+}
 
 export class FabricCraft {
   public events = new TypedEventEmitter<RowModalEvents>();
@@ -36,12 +41,12 @@ export class FabricCraft {
   map_tom_selects: Map<string, TomSelect>;
   mode: ModalState;
   tube_id: number;
-  fabricData: FabricData;
+  fabric: Fabric;
   modalDialog: ModalDialog;
   private resolvePromise?: (value: Fabric) => void;
 
-  width_data: Object;
-  height_data: Object;
+  width_data: MeasurementData;
+  height_data: MeasurementData;
 
   constructor(events) {
     this.tom_selects = new Array();
@@ -109,7 +114,7 @@ export class FabricCraft {
 
   init_measurement(container) {
     let input = container.querySelector("input");
-    let data = {
+    let data: MeasurementData = {
       active: false,
       input: input,
       disable: (should_disable) => {
@@ -168,36 +173,34 @@ export class FabricCraft {
     // this.fabricData.mode = this.mode
 
     if (this.mode == "editing_created") {
-      this.fabricData.mode = "created";
-      Object.assign(this.fabricData.original_fabric, result.data);
+      this.fabric.mode = "created";
+      Object.assign(this.fabric.original_fabric, result.data);
     }
 
     if (this.mode == "editing") {
-      Object.assign(this.fabricData.modified_fabric, result.data);
+      Object.assign(this.fabric.modified_fabric, result.data);
 
       log.debug("Assignind data to modified, the data:", result.data);
-      log.debug("modified looks now like", this.fabricData.modified_fabric);
+      log.debug("modified looks now like", this.fabric.modified_fabric);
 
       if (
         ObjectChanged(
-          this.fabricData.original_fabric,
-          this.fabricData.modified_fabric,
+          this.fabric.original_fabric,
+          this.fabric.modified_fabric,
           new Set(["created_at", "updated_at", "deleted_at"]),
         )
       ) {
-        this.fabricData.mode = "edited";
+        this.fabric.mode = "edited";
       } else {
-        this.fabricData.mode = "normal";
+        this.fabric.mode = "normal";
       }
 
-      log.debug(
-        `Mode assign to fabric in editing mode is ${this.fabricData.mode}`,
-      );
+      log.debug(`Mode assign to fabric in editing mode is ${this.fabric.mode}`);
     }
 
     if (this.mode == "creating") {
-      this.fabricData.mode = "created";
-      this.fabricData.original_fabric = result.data;
+      this.fabric.mode = "created";
+      this.fabric.original_fabric = result.data;
     }
 
     log.debug(`Correct ${result.correct}`);
@@ -306,57 +309,38 @@ export class FabricCraft {
   TODO MAKE IT PRETTY
     */
 
-  show(
-    fabricData: FabricData,
-    actionState: ModalState,
-    extra?: { tube_id: number },
-  ): Promise<any> {
+  show(fabric?: Fabric, extra?: { tube_id: number }): Promise<Fabric | null> {
     return new Promise((resolve) => {
-      log.debug(`Opening with mode ${actionState} `);
       this.resolvePromise = resolve;
-      this.fabricData = fabricData;
-      this.mode = actionState;
-      this.tube_id = fabricData?.original_fabric?.tube_id || extra?.tube_id;
+      this.fabric = fabric;
+      this.tube_id = fabric?.tube_id || extra?.tube_id;
       //Create editing copy just in case if the user decides to save
 
       this.width_data.disable(false);
       this.height_data.disable(false);
 
-      let fabric;
-      if (actionState == "editing") {
-        let should_disable =
-          (fabricData?.original_fabric?.deductions?.length ?? 0) > 0;
-        log.debug("Should disable inputs ", should_disable);
-        this.width_data.disable(should_disable);
-        this.height_data.disable(should_disable);
-        if (!fabricData.modified_fabric) {
-          fabricData.modified_fabric = structuredClone(
-            fabricData.original_fabric,
-          );
-          log.debug("clone of this has ", fabricData.modified_fabric);
-        }
-        fabric = fabricData.modified_fabric;
-      }
-
-      if (actionState == "editing_created") {
-        fabric = fabricData.original_fabric;
-      }
-
-      if (actionState !== "creating") {
+      if (fabric != null) {
+        this.should_disable_measurementes_huh(fabric);
         this.insert_data_to_tom_selects(fabric);
       }
-
       this.modalDialog.show();
       // modal_filling_data.showModal();
     });
   }
 
-  insert_data_to_tom_selects(data: Fabric) {
+  should_disable_measurementes_huh(fabric: Fabric) {
+    let should_disable = (fabric?.deductions?.length ?? 0) > 0;
+    log.debug("Should disable inputs ", should_disable);
+    this.width_data.disable(should_disable);
+    this.height_data.disable(should_disable);
+  }
+
+  insert_data_to_tom_selects(fabric: Fabric) {
     for (let tom of this.tom_selects) {
       tom.clear();
       let table_name = tom.customData.table_name;
       let column_id = table2column[table_name];
-      let value = data[column_id];
+      let value = fabric[column_id];
 
       if (value) {
         tom.setValue(value);
@@ -364,8 +348,8 @@ export class FabricCraft {
       }
     }
 
-    this.width_data.input.value = data.original_width;
-    this.height_data.input.value = data.original_height;
+    this.width_data.input.value = fabric.original_width;
+    this.height_data.input.value = fabric.original_height;
   }
 
   get_tom_select_id(tablename) {

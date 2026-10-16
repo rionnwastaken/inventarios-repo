@@ -70,33 +70,6 @@ export function render_datecell(info: RenderingInfo) {
   return info.data;
 }
 
-export function getDiffValue(
-  original_value,
-  modified_value,
-  mode: ItemState,
-): string {
-  if (mode == "normal" || mode == "created") {
-    return original_value;
-  }
-
-  if (original_value === modified_value) {
-    log.debug(`Showing orignal value ${original_value}}`);
-    return original_value;
-  }
-
-  log.debug(`Render comparison ${original_value} ${original_value}`);
-  return `
-        <div class="flex flex-col justify-center leading-tight py-0.5 text-xs font-mono">
-            <span class="text-red-600 dark:text-red-400 line-through decoration-red-500 decoration-1 opacity-80 select-none">
-                ${original_value}
-            </span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-semibold">
-                ${modified_value}
-            </span>
-        </div>
-    `;
-}
-
 export interface IconOptions {
   src: string;
   id?: string;

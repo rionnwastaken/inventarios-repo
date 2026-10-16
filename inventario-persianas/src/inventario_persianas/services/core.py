@@ -330,40 +330,29 @@ def get_tube_data(id: int):
 
 
 @handle_db_exceptions
-def add_fabrics(fabrics_to_add: list[dict]) -> list[dict]:
+def add_fabric(fabric_data: dict):
 
-    log.debug(f"Fabrics to add data {fabrics_to_add} ")
+    log.debug(f"Fabrics to add data {fabric_data} ")
     with db.session.begin():
-        fabrics = []
-        retval = []
+        fabric_data.pop("created_at", None)
+        fabric_data.pop("updated_at", None)
 
-        for payload in fabrics_to_add:
-            retval.append(
-                {
-                    "fabric": add_fabric(payload),
-                }
+        log.debug(f"Fabric here is {fabric_data}")
+        fabric = Fabric.model_validate(fabric_data)
+        db.session.add(fabric)
+        db.session.flush()
+        fabric_json = fabric.payload()
+
+        tube = db.session.get(Tube, fabric.tube_id)
+        if not tube:
+            raise ValueError(
+                f"Tube not found with id {fabric.tube_id} from fabric {fabric_json} "
             )
 
-        log.debug(f"Fabrics {fabrics}")
-        log.debug(f"Return value {retval}")
-
-        return retval
-
-
-def add_fabric(payload: dict):
-
-    payload.pop("created_at", None)
-    payload.pop("updated_at", None)
-
-    log.debug(f"Fabric here is {payload}")
-    fabric = Fabric.model_validate(payload)
-    db.session.add(fabric)
-    db.session.flush()
-    fabric_json = fabric.payload()
-
-    log_json = AuditLogger.log("Insert", "fabric", fabric.id, new_values=fabric_json)
-
-    return fabric_json
+        log_json = AuditLogger.log(
+            "Insert", "fabric", fabric.id, new_values=fabric_json
+        )
+        return {"fabric": fabric_json, "tube": tube.payload()}, 200
 
 
 @handle_db_exceptions

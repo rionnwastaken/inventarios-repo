@@ -1,6 +1,6 @@
 import { getLogger } from "loglevel";
 import { Fabric, Location } from "../../typeObj.ts";
-import { CatalogItem, FabricData, Tube } from "../../typeObj.ts";
+import { CatalogItem, Tube } from "../../typeObj.ts";
 import {
   createElementFromHTML,
   get_partial_data,
@@ -19,10 +19,6 @@ import { FabricCraft, ItemState } from "./fabricCraft.ts";
 import { TubeOverviewTable } from "./table.ts";
 import { ApiRowsMethods } from "datatables.net";
 import { ModalDialog } from "../dialogs/modalDialog.ts";
-import edit_icon from "../../../assets/icons/edit.png";
-import archive_icon from "../../../assets/icons/archive.png";
-import { Actions } from "./actions.ts";
-// import { ActionOverlay } from "../misc/ActionOverlay.ts";
 import { createIconHTML } from "../renderUtils.ts";
 import { shortLivedDialog } from "../shortLiveDialog.ts";
 import arrow_icon from "../../../assets/icons/arrow.svg";
@@ -61,10 +57,9 @@ class TemporalID {
 const temporalID = new TemporalID();
 
 class TubeOverview {
-  table: Api<FabricData>;
+  table: Api<Fabric>;
   tube: Tube;
   fabricCraft: FabricCraft;
-  actions: Actions;
   tubeOverviewTable: TubeOverviewTable;
   modal_dialog: ModalDialog;
 
@@ -97,15 +92,15 @@ class TubeOverview {
     this.tubeOverviewTable = new TubeOverviewTable({
       tbl_element: this.tbl_element,
       edit_callback: async (data, row) => {
-        await this.actions.open_form_editing(row);
+        await this.open_form_editing(row);
       },
       archive_callback: async (data, row) => {},
       delete_callback: async (data, row) => {
-        await this.handle_delete_fabric(data as FabricData, row);
+        // await this.handle_delete_fabric(data as Fabric, row);
       },
 
-      move_callback: async (fdata: FabricData, row) => {
-        let data = await this.moveFabric.show(fdata.original_fabric as Fabric);
+      move_callback: async (fabric: Fabric, row) => {
+        let data = await this.moveFabric.show(fabric);
 
         if (data == null) {
           return;
@@ -119,12 +114,11 @@ class TubeOverview {
         this.table.draw(false);
       },
       row_selected_callback: async (data, row) => {
-        await this.handle_fabric_selection(row);
+        this.events.emit("tubo_overview:dblclick_fabric", data as Fabric);
       },
     });
     this.table = this.tubeOverviewTable.table;
     this.fabricCraft = new FabricCraft(this.events);
-    this.actions = new Actions(this.fabricCraft, this.table);
     this.init_bindings();
     this.locationController = new LocationController();
   }
@@ -132,7 +126,6 @@ class TubeOverview {
   init_bindings() {
     this.bind_add_btn();
     inspect_row(this.table.table().body(), this.table);
-    this.bind_row_right_click();
     this.handle_verify_click();
     this.handle_location_click();
   }
@@ -143,20 +136,8 @@ class TubeOverview {
       body: this.body(),
       title: this.title(),
       container_tailwind_class: a_tw,
-      confirmText: "Guardar",
       cancelText: "Cerrar",
-      onConfirm: async () => {
-        const mods = get_type_modifications_arrays(this.table);
-        log.debug(
-          `Count of the arrays. Created ${mods.created_arr.data().length}, edited ${mods.edited_arr.data().length}, deleted ${mods.deleted_arr.data().length}`,
-        );
-        this.handle_saving_edited_fabrics(mods.edited_arr);
-        this.handle_saving_created_fabrics(mods.created_arr);
-        return false;
-      },
-      onCancel: () => {
-        return this.handle_unsaved_changes();
-      },
+      showConfirm: false,
       onClose: () => {
         this.table.data().clear();
       },
@@ -231,23 +212,23 @@ class TubeOverview {
     return e;
   }
 
-  async handle_delete_fabric(data: FabricData, row) {
-    let res = await CoreAPI.fabric_delete(data.original_fabric.id);
-
-    if (!res.success) {
-      log.debug(res.data);
-
-      shortLivedDialog.titleContainer.innerHTML = res.data.error;
-      const confirm = await shortLivedDialog.open();
-      return;
-    }
-
-    row.remove();
-    this.table.draw(false);
-
-    this.events.emit("fabric:deleted", res.data.fabric);
-    this.events.emit("tube:updated", res.data.tube);
-  }
+  // async handle_delete_fabric(data: Fabric, row) {
+  //   let res = await CoreAPI.fabric_delete(data.original_fabric.id);
+  //
+  //   if (!res.success) {
+  //     log.debug(res.data);
+  //
+  //     shortLivedDialog.titleContainer.innerHTML = res.data.error;
+  //     const confirm = await shortLivedDialog.open();
+  //     return;
+  //   }
+  //
+  //   row.remove();
+  //   this.table.draw(false);
+  //
+  //   this.events.emit("fabric:deleted", res.data.fabric);
+  //   this.events.emit("tube:updated", res.data.tube);
+  // }
 
   handle_location_click() {
     this.change_location_btn.addEventListener("click", async () => {
@@ -343,181 +324,50 @@ class TubeOverview {
     return true;
   }
 
-  async handle_saving_created_fabrics(rows: ApiRowsMethods<FabricData>) {
-    if (rows.data().length > 0) {
-      log.info("handle_saving_created_fabrics()");
-      log.info(`Adding ${rows.count()} created rows`);
-
-      // Extract the raw data objects from the rows API instance into an array
-      const fabrics: FabricData[] = rows.data().toArray();
-      log.debug("SEnding data ", fabrics);
-      const res = await CoreAPI.fabric_add_many(
-        fabrics.map((row) => row.original_fabric),
-      );
-
-      if (!res.success) {
-        log.error(res.data);
-        return;
-      }
-      log.debug("rows is ", rows);
-      rows.remove();
-
-      for (const data_response of res.data["fabrics"]) {
-        const fabric_data = data_response["fabric"];
-
-        this.events.emit("fabric:created", fabric_data);
-        let f: FabricData = {
-          original_fabric: fabric_data,
-          mode: "normal",
-        };
-        this.table.row.add(f);
-      }
-      this.table.draw(false);
-      log.info("Creation of rows success");
-    }
-  }
-
-  /*
-    GIVE ME BLEACH PLEASE, MY EYES GOTTA UNSEE IT
-    */
-  async handle_saving_edited_fabrics(rows: ApiRowsMethods<FabricData>) {
-    if (rows.data().length > 0) {
-      log.info("handle_saving_edited_fabrics()");
-      log.info(`Updating ${rows.length} rows`);
-
-      const fabrics: FabricData[] = rows.data().toArray();
-      console.debug("[DEBUG] Raw fabrics data array from DataTables:", fabrics);
-
-      const partial_data = [];
-      for (let i = 0; i < fabrics.length; i++) {
-        const fabricData = fabrics[i];
-
-        if (!fabricData || !fabricData.original_fabric) {
-          log.error(`[DEBUG] FabricData at index ${i} is invalid:`, fabricData);
-          continue;
-        }
-
-        const p = get_partial_data(
-          fabricData.original_fabric,
-          fabricData.modified_fabric,
-          {
-            omitKeys: ["created_at", "updated_at", "id"],
-          },
-        );
-
-        partial_data.push({
-          partial_data: p,
-          id: fabricData.original_fabric.id,
-        });
-      }
-
-      console.debug("[DEBUG] Sending partial data to API:", partial_data);
-      const res = await CoreAPI.fabric_update_many(partial_data);
-
-      if (!res.success) {
-        log.error("[DEBUG] CoreAPI.fabric_update_many failed:", res.data);
-        return;
-      }
-
-      log.info("Update of rows success ", res);
-      const updated_fabrics: FabricData[] = res.data;
-      console.debug(
-        "[DEBUG] Updated fabrics received from backend:",
-        updated_fabrics,
-      );
-
-      for (const updated_fabric of updated_fabrics) {
-        const targetId = updated_fabric.id;
-
-        const dtRow = this.table.row((idx, data: FabricData) => {
-          return (
-            data &&
-            data.original_fabric &&
-            String(data.original_fabric.id) === String(targetId)
-          );
-        });
-
-        const currentData = dtRow.data() as FabricData;
-
-        if (!currentData) {
-          log.warn(
-            `[DEBUG] Could not find row in DataTables for ID [${targetId}]`,
-          );
-          continue;
-        }
-
-        log.debug(
-          `[DEBUG] Successfully found row for ID [${targetId}]:`,
-          currentData,
-        );
-
-        const updatedRowData: FabricData = {
-          ...currentData,
-          original_fabric: updated_fabric,
-          modified_fabric: null,
-          mode: "normal",
-        };
-
-        dtRow.data(updatedRowData);
-
-        if (this.events) {
-          this.events.emit("fabric:edited", updated_fabric);
-        }
-      }
-
-      this.table.draw(false);
-      log.debug("[DEBUG] Finished handle_saving_edited_fabrics successfully.");
-    }
-  }
-
-  async handle_saving_deleted_fabrics(arr: Array<FabricData>) {
-    if (arr.data().length > 0) {
-      log.info(`Deleting  ${arr.length} rows`);
-    }
-  }
-
   bind_add_btn() {
     this.add_btn.addEventListener("click", async () => {
-      await this.actions.open_form_create(this.tube.id);
-    });
-  }
+      const fabric = await this.fabricCraft.show(null, {
+        tube_id: this.tube.id,
+      });
 
-  bind_row_right_click() {
-    // Listen for clicks
-    let body = this.table.table().body();
-    body.addEventListener("contextmenu", async (event) => {
-      event.preventDefault();
-      log.debug("right clieck");
-
-      const row = event.target.closest("tr");
-      log.debug(row);
-
-      if (row && body.contains(row)) {
-        const row_obj = this.table.row(row);
-        this.actions.open_form_editing(row_obj);
+      if (!fabric) {
+        log.debug("operation was canceled");
+        return;
       }
+
+      // const fabricData = buildFabricObject(result, this.tube.id);
+      log.info(`Adding table with data ${fabric}`);
+      let res = await CoreAPI.fabric_add(fabric);
+
+      if (!res.success) {
+        log.debug(res.data);
+        return;
+      }
+
+      this.table.row.add(res.data.fabric);
+      this.table.draw();
     });
   }
 
-  async handle_fabric_selection(row: ApiRowMethods<FabricData>) {
-    const data = row.data();
-    if (data.mode == "created") {
-      await this.fabricCraft.show(data, "editing_created");
-    }
-
-    if (data.mode == "normal") {
-      this.events.emit("tubo_overview:dblclick_fabric", data.original_fabric);
-      //SHOULDNT I RETURN?
-    }
-
-    if (data.mode == "edited") {
-      await this.fabricCraft.show(data, "editing");
-    }
+  async handle_fabric_selection(row: ApiRowMethods<Fabric>) {
+    const fabric = row.data();
+    let changed_fabric = await this.fabricCraft.show(fabric);
 
     log.info("Redrawing table");
-    log.info("Data of worked row ", data);
-    row.data(data);
-    this.table.draw(false);
+    log.info("Data of worked row ", fabric);
+    if (changed_fabric) {
+      let partial_data = get_partial_data(fabric, changed_fabric);
+      log.info("Updating fabric with data ", partial_data);
+      let res = await CoreAPI.fabric_update(fabric.id, partial_data);
+      if (!res.success) {
+        log.debug(res.data);
+        return;
+      }
+      //TODO beware Everytime  i draw in the table, it makes a request to the  server
+      this.events.emit("tube:updated", res.data.tube);
+      row.data(res.data.fabric);
+      this.table.draw(false);
+    }
   }
 
   get_tom_select_id(tablename) {
@@ -579,24 +429,10 @@ class TubeOverview {
     this.update_display_excel_info();
     this.update_display();
 
-    // let fabrics = state.tableData.get_fabrics_by_tube_id(
-    //   this.tube.id,
-    // ) as Fabric[];
-
-    let fabrics_data = [];
     for (let fabric of fabrics) {
-      let data: FabricData = {
-        original_fabric: fabric,
-        modified_fabric: null,
-        mode: "normal",
-      };
-      fabrics_data.push(data);
+      this.table.row.add(fabric);
     }
-
-    log.debug(`Length of fabrics here is ${fabrics_data.length}`);
-
-    // this.table.clear()
-    this.table.rows.add(fabrics_data);
+    log.debug(`Length of fabrics here is ${fabrics.length}`);
     this.table.draw();
 
     log.debug(tube, fabrics);
@@ -613,7 +449,7 @@ class TubeOverview {
 
     log.debug("cb_update_fabric_data(fabric: Fabric)");
     let row = this.table.row((index, data, node) => {
-      if (data.original_fabric.id == fabric.id) {
+      if (data.id == fabric.id) {
         return true;
       }
     });
@@ -622,11 +458,23 @@ class TubeOverview {
       log.debug(`Not able to find row with id ${fabric.id}`);
       return;
     }
-    let data: FabricData = {
-      original_fabric: fabric,
-      mode: "normal",
-    };
-    log.debug(data);
+    log.debug(fabric);
+    row.data(fabric);
+    this.table.draw(false);
+  }
+
+  async open_form_editing(row: ApiRowMethods<Fabric>) {
+    const data = row.data();
+
+    if (data == undefined) {
+      log.debug("Double click row undefined");
+      return;
+    }
+
+    await this.fabricCraft.show(data);
+
+    log.info("Redrawing table");
+    log.info("Data of worked row ", data);
     row.data(data);
     this.table.draw(false);
   }

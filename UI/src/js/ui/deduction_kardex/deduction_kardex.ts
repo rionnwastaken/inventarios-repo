@@ -1,11 +1,5 @@
 // import { FabricDeduction } from "../../schema";
-import {
-  FabricData,
-  Fabric,
-  ModalState,
-  FabricDeduction,
-  Tube,
-} from "../../typeObj";
+import { Fabric, ModalState, FabricDeduction, Tube } from "../../typeObj";
 import { ModalDialog } from "../dialogs/modalDialog";
 import {
   column2,

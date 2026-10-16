@@ -112,20 +112,15 @@ def update_tube():
     return core.update_tube(tube_id, payload)
 
 
-@core_bp.post("/fabric/add_many")
-def fabric_add_many():
-    data = request.get_json()
+@core_bp.post("/fabric/add/")
+def fabric_add():
+    data = request.get_json() or {}
+    fabric = data.get("fabric")
 
-    if not data:
-        return {"error": "No data"}, 400
+    if not fabric:
+        return Error(f"'fabric' not found in data {data}", 400).returnIt()
 
-    fabrics: list[dict] = data.get("fabrics")
-    if not fabrics:
-        return {"error": "Key 'fabrics' was not passed in the data"}, 400
-
-    inserted_fabrics = core.add_fabrics(fabrics)
-
-    return {"fabrics": inserted_fabrics}, 200
+    return core.add_fabric(fabric)
 
 
 # TODO UPDATE typescript and this to make it be PATCH
@@ -136,6 +131,17 @@ def update_fabrics():
         return Error("Payload to update was not passed", 400).returnIt()
 
     data = core.update_fabrics(data["data"])
+    return data
+
+
+@core_bp.post("/fabric/update/")
+def fabric_update():
+    data = request.get_json()
+    partial_fabric = data.get("partial_fabric")
+    id = data.get("id")
+    if not partial_fabric or not id:
+        return Error(f"'partial_fabric' or 'id' not found in {data}", 400).returnIt()
+    data = core.update_fabric(id, partial_fabric)
     return data
 
 

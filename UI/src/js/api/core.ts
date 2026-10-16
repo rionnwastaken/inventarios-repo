@@ -37,13 +37,8 @@ export const CoreAPI = {
       id: tube_id,
     }),
 
-  // get_tube: async (tube_id) =>
-  //   await api.post("/tube/get", {
-  //     id: tube_id,
-  //   }),
-
-  fabric_add_many: async (fabrics: Array<Fabric>) =>
-    await api.post("/fabric/add_many", { fabrics: fabrics }),
+  fabric_add: async (fabric: Fabric) =>
+    await api.post("/fabric/add/", { fabric: fabric }),
 
   fabric_delete: async (fabric_id: number) =>
     await api.post("/fabric/delete/", { id: fabric_id }),
@@ -51,8 +46,11 @@ export const CoreAPI = {
   fabric_move: async (fabric_id: number, payload: Partial<Fabric>) =>
     await api.post("/fabric/move/", { fabric_id: fabric_id, payload: payload }),
 
-  fabric_update_many: async (fabrics: Array<Object>) =>
-    await api.post("/fabric/edit/many/", { data: fabrics }),
+  fabric_update: async (fabric_id, fabric_partial: Partial<Fabric>) =>
+    await api.post("/fabric/update/", {
+      id: fabric_id,
+      partial_fabric: fabric_partial,
+    }),
 
   create_deduction: async (deduction: FabricDeduction) => {
     return await api.post("/fabric/new/deduction/", deduction);

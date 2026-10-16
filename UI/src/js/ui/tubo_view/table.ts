@@ -1,6 +1,6 @@
 import { getLogger } from "loglevel";
-import { Fabric, Tube } from "../../schema.ts";
-import { CatalogItem, FabricData, Tube } from "../../typeObj.ts";
+import { Tube } from "../../schema.ts";
+import { CatalogItem, Fabric, Tube } from "../../typeObj.ts";
 import {
   column,
   column2,
@@ -25,7 +25,6 @@ import { state } from "../../state.ts";
 import {
   createIconHTML,
   format_measurement,
-  getDiffValue,
   render_datecell,
   render_plain2,
 } from "../renderUtils.ts";
@@ -46,9 +45,9 @@ type callback = (
 ) => Promise<unknown>;
 
 export class TubeOverviewTable extends Table {
-  table: Api<FabricData>;
+  // table: Api<Fabric>;
   tube: Tube;
-  fabricColumns: (ColumnsConfig & { data: keyof FabricData })[];
+  fabricColumns: (ColumnsConfig & { data: keyof Fabric })[];
   fabricCraft: FabricCraft;
   tbl_element: HTMLTableElement;
 
@@ -79,19 +78,17 @@ export class TubeOverviewTable extends Table {
     this.delete_callback = data.delete_callback;
     this.move_callback = data.move_callback;
 
-    this.init_columns();
-
     this.init(this.tbl_element, {
-      order: { name: "original_fabric.updated_at", dir: "desc" },
-      rowCallback: render_row,
+      order: { name: "updated_at", dir: "desc" },
+      // rowCallback: render_row,
     });
 
     this.actionOverlay.cb_samerow_2clicks = async (data, row) => {
       this.row_selected_callback(data, row);
     };
 
-    this.actionOverlay.callback_row_click = (data: FabricData, row) => {
-      let deductions = data.original_fabric.deductions;
+    this.actionOverlay.callback_row_click = (data: Fabric, row) => {
+      let deductions = data.deductions;
       if (deductions.length > 1) {
         //TODO hide deletebutton when more
       }
@@ -103,7 +100,7 @@ export class TubeOverviewTable extends Table {
   create_action_overlay(): HTMLDivElement {
     let container = createElementFromHTML(`
 
-      <div class="dt-row-overlay absolute right-1 top-0 z-[9999]  flex  gap-2    border border-slate-700 whitespace-nowrap">
+      <div class="dt-row-overlay absolute right-1 top-0 z-[9999]  flex  gap-2   whitespace-nowrap">
       ${createIconHTML({
         svg: edit_icon,
         id: "edit-action",
@@ -164,7 +161,9 @@ export class TubeOverviewTable extends Table {
           id: `${schema_column_name}_id`,
           column_name: column_name,
           rendering_func: function (info: RenderingInfo) {
-            return render_catalago(info, schema_column_name);
+            let data = info.data as Fabric;
+            const id = data?.[info?.column_id];
+            return state.catalagoData.catalagoValue(schema_column_name, id);
           },
         }),
       ),
@@ -174,11 +173,9 @@ export class TubeOverviewTable extends Table {
         id: "",
         column_name: "Medidas Entrada",
         rendering_func: (info: RenderingInfo) => {
-          let data = info.data as FabricData;
-          let original_value = `${data.original_fabric.original_width} x ${data.original_fabric.original_height} mts`;
-          let modified_value = `${data?.modified_fabric?.original_width} x ${data?.modified_fabric?.original_height} mts`;
-
-          return getDiffValue(original_value, modified_value, data.mode);
+          let fabric = info.data as Fabric;
+          let original_value = `${fabric.original_width} x ${fabric.original_height} mts`;
+          return original_value;
         },
       }),
 
@@ -187,129 +184,34 @@ export class TubeOverviewTable extends Table {
         id: "",
         column_name: "% Restante",
         rendering_func: (info: RenderingInfo) => {
-          let data = info.data as FabricData;
-          let percentage = data?.original_fabric?.remaining_percent ?? 100;
+          let data = info.data as Fabric;
+          let percentage = data?.remaining_percent ?? 100;
           return `${percentage}%`;
         },
       }),
 
       // @ts-ignore
       column2({
-        id: "original_fabric.updated_at",
+        id: "updated_at",
         column_name: "Fecha actualizado",
         rendering_func: render_datecell,
       }),
       // @ts-ignore
       column2({
-        id: "original_fabric.created_at",
+        id: "created_at",
         column_name: "Creado en ",
         rendering_func: render_datecell,
       }),
     ];
   }
 
-  // init_table() {
-  //   this.table = new DataTable(this.tbl_element, {
-  //     columns: this.fabricColumns,
-  //     paging: false,
-  //     autoWidth: true,
-  //     searching: false,
-  //     order: { name: "original_fabric.updated_at", dir: "desc" },
-  //     rowCallback: render_row,
-  //
-  //     info: false,
-  //     select: {
-  //       blurable: true,
-  //     },
-  //     columnDefs: [
-  //       {
-  //         targets: "_all", // Zero-based index of the columns you want to left-align
-  //         className: "dt-left", // Applies left-alignment to both header and body cells
-  //       },
-  //     ],
-  //   });
-  // }
-
   //Data is litterally the the value of a column, like an id
-  render_plain(fabricData: FabricData, type, row, meta, table_name, column_id) {
-    // log.debug("fabricdata in redenr cell", fabricData);
+  render_plain(fabric: Fabric, type, row, meta, table_name, column_id) {
     if (type === "display") {
-      let original_value = fabricData?.original_fabric[column_id] ?? null;
-      let modified_value = fabricData?.modified_fabric?.[column_id] ?? null;
-
+      let original_value = fabric?.[column_id] ?? null;
       original_value = `${original_value} mts`;
 
-      if (modified_value) {
-        modified_value = `${modified_value} mts`;
-      }
-
-      return getDiffValue(original_value, modified_value, fabricData.mode);
+      return original_value;
     }
   }
-}
-
-//TODO FIGURE OUT HOW TO DISPLAY THIS SHIT WHEN CHANGING XD
-
-function render_row(row: HTMLTableRowElement, data: FabricData, index: number) {
-  // Reset custom inline styles back to default DataTables values
-  row.style.removeProperty("background-color");
-  row.style.removeProperty("text-decoration");
-  row.style.removeProperty("color");
-
-  // Remove background styles on child cells in case DataTables set them directly
-  const cells = row.querySelectorAll<HTMLTableCellElement>("td, th");
-  cells.forEach((cell) => {
-    cell.style.removeProperty("background-color");
-    cell.style.removeProperty("color");
-  });
-
-  style_row_with_color(row, data, index);
-}
-
-function style_row_with_color(
-  row: HTMLTableRowElement,
-  data: FabricData,
-  index: number,
-) {
-  switch (data.mode) {
-    case "created":
-      row.style.setProperty("background-color", "#dfffbf", "important");
-      break;
-
-    case "edited":
-      row.style.setProperty("background-color", "#bfe2ff", "important");
-      break;
-
-    case "deleted":
-      row.style.setProperty("background-color", "#ffbfbf", "important");
-      row.style.setProperty("text-decoration", "line-through");
-      break;
-
-    case "normal":
-    default:
-  }
-}
-
-function render_catalago(info: RenderingInfo, catalago_tablename) {
-  // log.debug("fabricdata in redenr cell", data);
-  let data = info.data as FabricData;
-  if (info.type === "display") {
-    let original_value = state.catalagoData.catalagoValue(
-      catalago_tablename,
-      data.original_fabric?.[info.column_id] ?? null,
-    );
-    let modified_value = state.catalagoData.catalagoValue(
-      catalago_tablename,
-      data.modified_fabric?.[info.column_id] ?? null,
-    );
-
-    log.debug(`Formatting value for column ${info.column_id}`);
-    return getDiffValue(original_value, modified_value, data.mode);
-  }
-
-  let original_value = state.catalagoData.catalagoValue(
-    catalago_tablename,
-    data.original_fabric?.[info.column_id] ?? null,
-  );
-  return original_value;
 }

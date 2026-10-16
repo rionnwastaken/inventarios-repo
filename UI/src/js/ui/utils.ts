@@ -4,7 +4,7 @@ import { Tube } from "../schema.ts";
 import { Fabric } from "../typeObj.ts";
 
 import { Api, ColumnsConfig } from "datatables.net-dt";
-import { FabricData, TableView, Tube as Tube, ViewMode } from "../typeObj.ts";
+import { TableView, Tube as Tube, ViewMode } from "../typeObj.ts";
 import { TypedEventEmitter } from "../emitter.ts";
 
 import { getLogger } from "loglevel";
