@@ -76,7 +76,7 @@ export interface IconOptions {
   title: string;
   btnClass?: string;
   imgClass?: string;
-  svg?: unknown;
+  svg?: unknown | Array<String>;
 }
 export function createIconHTML(options: IconOptions): string {
   const {
@@ -92,8 +92,6 @@ export function createIconHTML(options: IconOptions): string {
   // Base layout styles mixed with your custom/override classes
   const fullBtnClasses =
     `flex items-center justify-center rounded-full transition-colors shadow-md active:scale-95 shrink-0 ${btnClass} text-black`.trim();
-  const fullImgClasses =
-    `pointer-events-none object-contain ${imgClass}`.trim();
 
   if (options.svg != null) {
     return `
@@ -108,6 +106,35 @@ export function createIconHTML(options: IconOptions): string {
   return `
     <button type="button" title="${title}" aria-label="${title}" class="${fullBtnClasses}" ${idAttr}>
       <img src="${src}" alt="" class="" />
+    </button>
+  `;
+}
+
+export interface ButtonRawIcon {
+  id?: string;
+  title: string;
+  btnClass?: string;
+  imgClass?: string;
+  svg: Array<String>;
+}
+
+export function createButtonRawIcon(options: ButtonRawIcon): String {
+  const {
+    id,
+    title,
+    btnClass = "w-14 h-14 bg-white hover:bg-slate-200",
+    imgClass = "w-4 h-4",
+  } = options;
+
+  const fullBtnClasses =
+    `flex items-center justify-center rounded-full transition-colors shadow-md active:scale-95 shrink-0 ${btnClass} text-black`.trim();
+
+  return `
+    <button id="${options.id}" type="button" title="${options.title}" aria-label="${options.title}" class="${fullBtnClasses}" >
+
+    <span class="w-6 h-6">
+      ${options.svg.join("")}
+    </span
     </button>
   `;
 }

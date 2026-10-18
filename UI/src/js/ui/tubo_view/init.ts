@@ -83,6 +83,7 @@ class TubeOverview {
 
   moveFabric: MoveFabric;
   excel_info: ExcelTubeInfo;
+  archive_toggler_visibility: HTMLInputElement;
   public events = new TypedEventEmitter<RowModalEvents>();
 
   constructor() {
@@ -94,9 +95,51 @@ class TubeOverview {
       edit_callback: async (data, row) => {
         await this.open_form_editing(row);
       },
-      archive_callback: async (data, row) => {},
-      delete_callback: async (data, row) => {
-        // await this.handle_delete_fabric(data as Fabric, row);
+      archive_callback: async (fabric: Fabric, row) => {
+        let partial_fabric: Partial<Fabric> = {
+          is_archived: !fabric.is_archived,
+        };
+        let res = await CoreAPI.fabric_update(fabric.id, partial_fabric);
+
+        if (!res.success) {
+          log.debug(res.data);
+          return;
+        }
+
+        // 1. Remove the old row
+        row.remove();
+
+        // 2. Add the new row, draw, and immediately grab its new node
+        let showArchived = this.archive_toggler_visibility.checked;
+
+        let newRowApi = this.table.row.add(res.data.fabric).draw(false);
+        let newNode = newRowApi.node();
+
+        log.debug("stuff here ", res.data.fabric, " now node ", newNode);
+
+        // 3. Apply visibility style to the fresh node
+        if (newNode) {
+          newNode.style.display = showArchived ? "" : "none";
+        }
+      },
+      delete_callback: async (fabric: Fabric, row) => {
+        if (
+          fabric.deductions.length > 0 ||
+          fabric.comments.length > 0 ||
+          fabric.is_archived
+        ) {
+          shortLivedDialog.titleContainer.textContent = `No se puede eliminar la tela porque tiene salidas o comentarios o esta archivada`;
+          await shortLivedDialog.open();
+          return;
+        }
+
+        let res = await CoreAPI.fabric_delete(fabric.id);
+        if (!res.success) {
+          log.debug(res.data);
+          return;
+        }
+        row.remove();
+        this.table.draw(false);
       },
 
       move_callback: async (fabric: Fabric, row) => {
@@ -128,6 +171,26 @@ class TubeOverview {
     inspect_row(this.table.table().body(), this.table);
     this.handle_verify_click();
     this.handle_location_click();
+    this.bind_archive_visibility_toggler();
+  }
+
+  update_archive_visibility() {
+    const showArchived = this.archive_toggler_visibility.checked;
+
+    this.table.rows().every(function () {
+      const fabric = this.data();
+
+      if (fabric.is_archived) {
+        // If checked, clear display (show); if unchecked, set to "none" (hide)
+        this.node().style.display = showArchived ? "" : "none";
+      }
+    });
+  }
+
+  bind_archive_visibility_toggler() {
+    this.archive_toggler_visibility.addEventListener("change", () => {
+      this.update_archive_visibility();
+    });
   }
 
   create_dialog() {
@@ -176,27 +239,43 @@ class TubeOverview {
   }
   title() {
     const e = createElementFromHTML(`
-    <div class="flex justify-between"> 
-	<div class="flex gap-2.5  flex-col">
-     <div class="flex gap-6 text-lg font-bold">
-          <h3 id="title" ></h3>
-          <p id="excel_tube_info"> </p>
-      </div>
-      <div class="flex gap-2 items-center"> 
-      <p class="location-paragraph">Ubicacion: No asignado</p>
-      ${createIconHTML({
-        src: arrow_icon,
-        id: "change-location-btn",
-        title: "Cambiar ubicacion",
-      })}
-      </div>
-	</div>
+    <div class="flex justify-between items-center w-full">  
+      
+      <!-- Left Column (Needs w-full or flex-1 so inner elements can stretch) -->
+      <div class="flex gap-2.5 flex-col w-full">
+        
+        <div class="flex justify-between items-center w-full text-lg font-bold">
+          <!-- Left Section -->
+          <div class="flex gap-6 items-center">
+              <h3 id="title"></h3>
+              <p id="excel_tube_info"></p>
+          </div>
 
-    <div class="rectificado-container flex justify-center items-center gap-2.5 border-black border-2 rounded-3xl p-4">
-        <p class="font-bold select-none"></p>
-    </div
+          <!-- Right Section (Toggle) -->
+          <div class="flex gap-3 items-center" id="archived-fabric-toggler-container" >
+                  
+              <span id="tipo-tabla-vista-text">Mostrar telas archivadas</span>
+              <input type="checkbox" class="toggle toggle-primary" />
+          </div>
+        </div>
+
+        <div class="flex gap-2 items-center">  
+          <p class="location-paragraph">Ubicacion: No asignado</p>
+          ${createIconHTML({
+            src: arrow_icon,
+            id: "change-location-btn",
+            title: "Cambiar ubicacion",
+          })}
+        </div>
+      </div>
+
+      <!-- Right Box (Rectificado) -->
+      <div class="rectificado-container flex justify-center items-center gap-2.5 border-black border-2 rounded-3xl p-4 shrink-0">
+          <p class="font-bold select-none"></p>
+      </div>
+      
     </div>
-    `);
+  `);
 
     let a_tw = "gap-2.5 border-4 rounde  ";
 
@@ -208,6 +287,11 @@ class TubeOverview {
 
     this.location_par = e.querySelector(".location-paragraph");
     this.change_location_btn = e.querySelector("#change-location-btn");
+
+    this.archive_toggler_visibility = e.querySelector(
+      "#archived-fabric-toggler-container input",
+    );
+    this.archive_toggler_visibility.checked = false;
 
     return e;
   }
@@ -432,8 +516,11 @@ class TubeOverview {
     for (let fabric of fabrics) {
       this.table.row.add(fabric);
     }
+
     log.debug(`Length of fabrics here is ${fabrics.length}`);
     this.table.draw();
+
+    this.update_archive_visibility();
 
     log.debug(tube, fabrics);
 

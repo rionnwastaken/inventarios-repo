@@ -14,7 +14,7 @@ import "tom-select/dist/css/tom-select.css";
 import { CatalogApi } from "../../api/catalog.ts";
 import { TypedEventEmitter } from "../../emitter.ts";
 import { CoreAPI } from "../../api/core.ts";
-import { RowModalEvents } from "./tubo_overview.ts";
+import { RowModalEvents } from "./init.ts";
 import {
   fabric_column_name_from_tablename,
   request_to_create_value_on_table,

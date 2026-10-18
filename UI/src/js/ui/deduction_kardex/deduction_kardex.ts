@@ -63,6 +63,7 @@ class DeductionKardex {
 
   recent_comment_p: HTMLParagraphElement;
   tube_p: HTMLParagraphElement;
+  archive_text_hint_p: HTMLParagraphElement;
 
   kardexTable: KardexTable;
 
@@ -106,7 +107,7 @@ class DeductionKardex {
     this.update_display();
   }
 
-  update_title(fabric: Fabric) {
+  update_catalago_text() {
     const tablenames = [
       "blind_model",
       "color",
@@ -116,7 +117,7 @@ class DeductionKardex {
     let text = "";
 
     for (let tablename of tablenames) {
-      let id = fabric[`${tablename}_id`];
+      let id = this.fabric[`${tablename}_id`];
       let name = state.catalagoData.catalagoValue(tablename, id);
 
       if (name) {
@@ -126,14 +127,16 @@ class DeductionKardex {
     text = text.slice(0, text.length - 2);
     log.debug(text);
     this.title_catalago_p.textContent = text;
-    this.tube_p.textContent = `Tubo ${this.fabric.tube_id}`;
   }
 
   title(): HTMLElement {
     this.title_el = createElementFromHTML(`
   <div class="flex justify-between"> 
-    <div> 
-      <p id="tube_p"> </p>
+    <div class="flex flex-col"> 
+      <div class="flex gap-4">
+          <p id="tube_p"> </p>
+          <p class="text-red-600 font-bold" id="archivada_text_hint" </p>
+      </div>
       <h1>Kardex de Salida de Tela</h1>
       <h2 id="${title_catalago_id}"></h2>
     </div>
@@ -163,6 +166,9 @@ class DeductionKardex {
 `);
 
     this.tube_p = this.title_el.querySelector("#tube_p");
+    this.archive_text_hint_p = this.title_el.querySelector(
+      "#archivada_text_hint",
+    );
 
     return this.title_el;
   }
@@ -338,12 +344,19 @@ class DeductionKardex {
     if (this.fabric.comments.length > 0) {
       this.recent_comment_p.textContent = `Comentario Reciente: ${this.fabric.comments[0].comment} `;
     }
+    this.update_catalago_text();
+    this.update_display_initial_measurements();
+    this.tube_p.textContent = `Tubo ${this.fabric.tube_id}`;
+
+    this.deduct.disabled = false;
+    if (this.fabric.is_archived) {
+      this.archive_text_hint_p.textContent = "Tela Archivada";
+      this.deduct.disabled = true;
+    }
   }
 
   cb_show_kardex(fabric: Fabric) {
     this.fabric = fabric;
-    this.update_title(fabric);
-    this.update_display_initial_measurements();
     log.debug("Fabric received in kardex", fabric);
     this.update_display();
 

@@ -4,6 +4,7 @@ import {
   column2,
   createElementFromHTML,
   fabricColumn,
+  render_row,
   RenderingInfo,
   tubeColumn,
 } from "../utils";
@@ -45,6 +46,7 @@ export class NavigationTable extends Table {
       scrollY: "800px",
       deferRender: true,
       info: true,
+      rowCallback: render_row,
     });
 
     this.actionOverlay.cb_samerow_2clicks = async (row_data, row) => {
@@ -69,7 +71,7 @@ export class NavigationTable extends Table {
 
     delete_action_btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      log.debug("Deleting deduction");
+      log.debug("Deleting in data navigator");
 
       let row = this.actionOverlay.selected_row;
       let deduction = row.data();
@@ -132,6 +134,16 @@ export class NavigationTable extends Table {
         rendering_func: (info: RenderingInfo) => {
           let data = info.data as Fabric;
           return `${data.remaining_percent}`;
+        },
+      }),
+
+      column2({
+        id: "",
+        column_name: "Salidas",
+        group: "fabric",
+        rendering_func: (info: RenderingInfo) => {
+          let data = info.data as Fabric;
+          return `${data?.deductions?.length}`;
         },
       }),
     ];

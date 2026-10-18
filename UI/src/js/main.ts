@@ -15,7 +15,7 @@ import TomSelect from "tom-select";
 
 import { controlPanel } from "./ui/control_panel.ts";
 import { tableController } from "./ui/data_navigator/init.ts";
-import { tubeOverview } from "./ui/tubo_view/tubo_overview.ts";
+import { tubeOverview } from "./ui/tubo_view/init.ts";
 
 import "../css/input.css";
 import { TableView } from "./typeObj.ts";

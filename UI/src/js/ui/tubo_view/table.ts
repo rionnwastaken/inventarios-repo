@@ -7,6 +7,7 @@ import {
   createElementFromHTML,
   fabricDataColumn,
   num,
+  render_row,
   RenderingInfo,
 } from "../utils.ts";
 import { Api, ApiRowMethods, ColumnsConfig } from "datatables.net-dt";
@@ -23,6 +24,7 @@ import { TypedEventEmitter } from "../../emitter.ts";
 import { FabricCraft, ItemState } from "./fabricCraft.ts";
 import { state } from "../../state.ts";
 import {
+  createButtonRawIcon,
   createIconHTML,
   format_measurement,
   render_datecell,
@@ -35,7 +37,8 @@ import { Table } from "../table.ts";
 import edit_icon from "../../../assets/icons/edit2.svg?raw";
 import move_icon from "../../../assets/icons/move.svg?raw";
 import delete_icon from "../../../assets/icons/delete.svg?raw";
-import archive_icon from "../../../assets/icons/archive.png";
+import archive_icon from "../../../assets/icons/archive.svg?raw";
+import un_archive_icon from "../../../assets/icons/un_archive.svg?raw";
 
 let log = getLogger("app");
 
@@ -61,6 +64,7 @@ export class TubeOverviewTable extends Table {
   delete_callback: callback;
   move_callback: callback;
   row_selected_callback: callback;
+  archive_action_icon_container: HTMLElement;
 
   constructor(data: {
     edit_callback: callback;
@@ -80,24 +84,24 @@ export class TubeOverviewTable extends Table {
 
     this.init(this.tbl_element, {
       order: { name: "updated_at", dir: "desc" },
-      // rowCallback: render_row,
+      rowCallback: render_row,
     });
 
     this.actionOverlay.cb_samerow_2clicks = async (data, row) => {
       this.row_selected_callback(data, row);
     };
 
+    log.debug("fartsnarts", this.delete_fabric_btn);
     this.actionOverlay.callback_row_click = (data: Fabric, row) => {
-      let deductions = data.deductions;
-      if (deductions.length > 1) {
-        //TODO hide deletebutton when more
-      }
+      log.debug("row clicked hahah ", this.delete_fabric_btn);
+      log.debug("fucks this ", this); // this.delete_fabric_btn.classList.add("block");
     };
 
     // this.actionOverlay.init(this.dt)
   }
 
   create_action_overlay(): HTMLDivElement {
+    log.debug("sparking up my heart");
     let container = createElementFromHTML(`
 
       <div class="dt-row-overlay absolute right-1 top-0 z-[9999]  flex  gap-2   whitespace-nowrap">
@@ -118,25 +122,36 @@ export class TubeOverviewTable extends Table {
         id: "move-action",
         title: "Mover Tela",
       })}
+
+      ${createIconHTML({
+        svg: archive_icon,
+        id: "archive-action",
+        title: "Archivar Tela",
+      })}
       </div>
 `);
 
     this.edit_action_btn = container.querySelector("#edit-action");
-    // this.archive_action_btn = container.querySelector("#archive-action");
+    this.archive_action_btn = container.querySelector("#archive-action");
+    this.archive_action_icon_container =
+      this.archive_action_btn.querySelector("span");
     this.delete_fabric_btn = container.querySelector("#delete-action");
     this.move_fabric_btn = container.querySelector("#move-action");
 
     this.edit_action_btn.addEventListener("click", (e) => {
+      log.debug("big butts ", this.delete_fabric_btn, this.edit_action_btn);
       e.stopPropagation(); // Prevents triggering card click event
       let row = this.actionOverlay.selected_row;
       this.edit_callback(row.data(), row);
     });
 
-    // this.archive_action_btn.addEventListener("click", (e) => {
-    //   e.stopPropagation(); // Prevents triggering card click event
-    //   let row = this.actionOverlay.selected_row;
-    //   this.archive_callback(row.data(), row);
-    // });
+    this.archive_action_btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevents triggering card click event
+      let row = this.actionOverlay.selected_row;
+      this.archive_callback(row.data(), row);
+    });
+
+    log.debug("nice and slow", this.delete_fabric_btn);
 
     this.delete_fabric_btn.addEventListener("click", (e) => {
       e.stopPropagation(); // Prevents triggering card click event

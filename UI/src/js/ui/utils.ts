@@ -319,3 +319,25 @@ export class ElementToggler {
     this.index = 0;
   }
 }
+
+export function render_row(
+  row: HTMLTableRowElement,
+  data: Fabric,
+  index: number,
+) {
+  // Reset custom inline styles back to default DataTables values
+  row.style.removeProperty("background-color");
+  row.style.removeProperty("text-decoration");
+  row.style.removeProperty("color");
+
+  // Remove background styles on child cells in case DataTables set them directly
+  const cells = row.querySelectorAll<HTMLTableCellElement>("td, th");
+  cells.forEach((cell) => {
+    cell.style.removeProperty("background-color");
+    cell.style.removeProperty("color");
+  });
+
+  if (data.is_archived) {
+    row.style.setProperty("background-color", "#ffbfbf", "important");
+  }
+}

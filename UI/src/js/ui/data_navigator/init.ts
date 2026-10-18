@@ -195,7 +195,15 @@ class TableController {
     this.table.ajax.reload(null, false);
   }
 
-  async delete_fabric(tube: Fabric, row) {}
+  async delete_fabric(fabric: Fabric, row) {
+    let res = await CoreAPI.fabric_delete(fabric.id);
+    if (!res.success) {
+      log.debug(res.data);
+      return;
+    }
+    row.remove();
+    this.table.draw(false);
+  }
 
   async on_select_row(data, row) {
     let tbody = this.table.table().body();

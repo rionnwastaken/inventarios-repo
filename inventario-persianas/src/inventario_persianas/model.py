@@ -179,7 +179,9 @@ class Fabric(TimestampMixin, table=True):
     # meters
     original_width: Decimal
     original_height: Decimal
-    is_archived: bool = Field(default=False)  # Fabrics runs out of fabric to be used
+    is_archived: bool = Field(
+        default=False
+    )  # Fabrics that are of no use no more but kept in history
     remaining_percent: Decimal = Field(default=Decimal(100), index=True)
 
     # Relationships
