@@ -3,6 +3,10 @@ out/
 *.pyc
 static/
 
+*.xls
+*.xlsx
+*.xlsx#
+
 !webpack.config.js
 
 schema.ts

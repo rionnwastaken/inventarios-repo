@@ -18,6 +18,13 @@ dependencies = [
 
 ]
 
+[dependency-groups]
+dev = [
+    "pandas",
+    "openpyxl",
+"xlrd",
+]
+
 
 [tool.pyright]
 venv = ".venv"
