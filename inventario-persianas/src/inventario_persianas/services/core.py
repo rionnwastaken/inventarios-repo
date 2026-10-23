@@ -209,13 +209,23 @@ def apply_filters(stmt, filters):
     for key, column in FABRIC_IN_FILTERS.items():
         values = filters.get(key)
         if values:
-            stmt = stmt.where(column.in_(values))
+            stmt = stmt.where(
+                or_(
+                    column.in_(values),
+                    Fabric.id.is_(None),  # Allows empty/naked tubes
+                )
+            )
 
     for key, column in FABRIC_RANGE_FILTERS.items():
         f = filters.get(key)
         if f and f.get("value") is not None:
             op = OPERATORS.get(f.get("orientation", "greater"), DEFAULT_OP)
-            stmt = stmt.where(op(column, f["value"]))
+            stmt = stmt.where(
+                or_(
+                    op(column, f["value"]),
+                    Fabric.id.is_(None),  # Allows empty/naked tubes
+                )
+            )
 
     stmt = stmt.outerjoin(ExcelTubeInfo, Tube.id == ExcelTubeInfo.tube_id)
     tube_verified = filters.get("tube_verified")
@@ -249,12 +259,15 @@ def datatable_response(model, stmt, *, offset, limit, draw, order_by, options=()
         stmt.distinct().options(*options).order_by(order_by).offset(offset).limit(limit)
     )
     rows = db.session.scalars(paginated_stmt).all()
+    rows_payload = [row.payload() for row in rows]
+
+    log.debug(f"Retuning payload of {len(rows_payload)}")
 
     return {
         "draw": draw,
         "total_records": total_count,
         "total_filtered": filtered_count,
-        "data": [row.payload() for row in rows],
+        "data": rows_payload,
     }, 200
 
 
