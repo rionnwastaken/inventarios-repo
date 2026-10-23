@@ -11,12 +11,11 @@ from inventario_persianas.model import (
     Color,
     FabricClassification,
     Location,
-    LocationTag,
     Supplier,
     db,
 )
 from sqlalchemy import Select, delete
-from sqlmodel import SQLModel, select
+from sqlmodel import select
 
 from inventario_persianas.services.utils import Error
 
@@ -148,41 +147,14 @@ def get_optional_attributs_of_fabric():
 @catalago_bp.post("/add/")
 def add_to_catalago():
 
-    data = request.get_json()
-
-    if not data:
-        return {"error": "Data was not passed"}, 400
-
+    data = request.get_json() or {}
     table_name = data.get("table_name")
-    value: str = data.get("value")
+    value = data.get("value")
 
-    cat_arr: list[type[SQLModel]] = [
-        Color,
-        Supplier,
-        FabricClassification,
-        BlindModel,
-        LocationTag,
-    ]
-    cat_map = {c.__tablename__: c for c in cat_arr}
+    if not table_name or not value:
+        return Error("'table_name' or 'value' not found", 400).returnIt()
 
-    if not value:
-        return {"error": "value key is None"}, 400
-
-    if table_name not in cat_map:
-        return {"error": f"table_name {table_name} does not exist"}, 400
-
-    cleaned_value = value.lower()
-
-    catobj = cat_map[table_name]
-    obj = catobj(name=value)
-    db.session.add(obj)
-    db.session.flush()
-    obj_json = obj.model_dump()
-    obj_json["table_name"] = table_name
-
-    db.session.commit()
-
-    return {"success": "Catalago item has been created", "item": obj_json}, 200
+    return service.create_item(table_name, value)
 
 
 @catalago_bp.post("/upload-location-image")

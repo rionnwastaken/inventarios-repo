@@ -1,11 +1,14 @@
 from pathlib import Path
 
-from sqlmodel import select
+from sqlmodel import SQLModel, select
 
 from inventario_persianas import constants
 from inventario_persianas.model import (
+    BlindModel,
     Color,
+    FabricClassification,
     LocationTag,
+    Supplier,
     Tube,
 )
 from sqlalchemy import Delete, exists
@@ -33,6 +36,40 @@ def add_color(db: Session, color_name: str):
 def delete_color(db: Session, id: int):
     db.execute(Delete(Color).where(Color.id == id))
     db.commit()
+
+
+@handle_db_exceptions
+def create_item(table_name, value):
+    cat_arr: list[type[SQLModel]] = [
+        Color,
+        Supplier,
+        FabricClassification,
+        BlindModel,
+        LocationTag,
+    ]
+    cat_map = {c.__tablename__: c for c in cat_arr}
+
+    if table_name not in cat_map:
+        raise ValueError(f"Table name {table_name} not recognized")
+
+    cleaned_value = value.lower()
+
+    catobj = cat_map[table_name]
+    obj_exists = db.session.scalar(select(catobj).where(catobj.name == cleaned_value))
+    if obj_exists:
+        raise ValueError(
+            f"Item {cleaned_value} already exists in the table {table_name}"
+        )
+
+    obj = catobj(name=cleaned_value)
+    db.session.add(obj)
+    db.session.flush()
+    obj_json = obj.model_dump()
+    obj_json["table_name"] = table_name
+
+    db.session.commit()
+
+    return {"success": "Catalago item has been created", "item": obj_json}, 200
 
 
 @handle_db_exceptions
