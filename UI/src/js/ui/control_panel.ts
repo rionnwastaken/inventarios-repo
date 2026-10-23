@@ -364,11 +364,14 @@ class ControlPanel {
       selectOnTab: true,
       refreshThrottle: 0,
       maxItems: null,
-      // wrapperClass: 'ts-wrapper [&_.ts-control]:!flex [&_.ts-control]:!flex-col [&_.ts-control]:max-h-16 [&_.ts-control]:overflow-y-auto [&_.ts-control]:gap-1.5 [&_.ts-control_.item]:!w-full [&_.ts-control_.item]:!m-0 [&_.ts-control_input]:!w-full',
 
-      // onChange: () => {
-      //   this.send_filters();
-      // },
+      onItemAdd: () => {
+        setTimeout(() => {
+          tom.setTextboxValue("");
+          tom.refreshOptions();
+          tom.close();
+        }, 100);
+      },
     });
     tom.customData = {
       table_name: table_name,
