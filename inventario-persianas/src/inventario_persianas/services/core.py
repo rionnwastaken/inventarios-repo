@@ -272,11 +272,11 @@ def get_tubes(data):
 
     # Tube matches if ANY of its fabrics matches
     stmt = apply_filters(
-        select(Tube).join(Tube.fabrics),
+        select(Tube).outerjoin(Tube.fabrics),
         filters,
     )
 
-    log.debug("end get tubes")
+    log.debug(f"end get tubes and statement is {stmt}")
     return datatable_response(
         Tube,
         stmt,
