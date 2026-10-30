@@ -86,7 +86,7 @@ export class FabricCraft {
     let inputs = [
       { tablename: "blind_model", label: "Modelo de Persiana" },
       { tablename: "color", label: "Color" },
-      { tablename: "fabric_classification", label: "Clasificación" },
+      { tablename: "fabric_classification", label: "Tejido" },
       { tablename: "supplier", label: "Proveedor" },
     ];
 
@@ -344,7 +344,7 @@ export class FabricCraft {
     const tom = new TomSelect(select, {
       create: true,
       createOnBlur: true,
-      openOnFocus: true,
+      openOnFocus: false,
       selectOnTab: true,
       refreshThrottle: 0,
       maxItems: 1,
@@ -359,6 +359,14 @@ export class FabricCraft {
         if (res.created) {
           this.events.emit("catalog_item:added", res.item);
         }
+      },
+
+      onItemAdd: () => {
+        setTimeout(() => {
+          tom.setTextboxValue("");
+          tom.refreshOptions();
+          tom.close();
+        }, 100);
       },
     });
 
