@@ -92,8 +92,25 @@ class TubeOverview {
 
     this.tubeOverviewTable = new TubeOverviewTable({
       tbl_element: this.tbl_element,
-      edit_callback: async (data, row) => {
-        await this.open_form_editing(row);
+      edit_callback: async (data: Fabric, row) => {
+        let partial_payload = await this.fabricCraft.show(data);
+
+        if (partial_payload == null) {
+          return;
+        }
+        let res = await CoreAPI.fabric_update(data.id, partial_payload);
+
+        if (!res.success) {
+          log.debug(res.data);
+          return;
+        }
+
+        this.table.row.add(res.data.fabric);
+
+        row.remove();
+        this.table.draw(false);
+
+        this.events.emit("fabric:edited", res.data.fabric);
       },
       archive_callback: async (fabric: Fabric, row) => {
         let partial_fabric: Partial<Fabric> = {
@@ -547,22 +564,6 @@ class TubeOverview {
     }
     log.debug(fabric);
     row.data(fabric);
-    this.table.draw(false);
-  }
-
-  async open_form_editing(row: ApiRowMethods<Fabric>) {
-    const data = row.data();
-
-    if (data == undefined) {
-      log.debug("Double click row undefined");
-      return;
-    }
-
-    await this.fabricCraft.show(data);
-
-    log.info("Redrawing table");
-    log.info("Data of worked row ", data);
-    row.data(data);
     this.table.draw(false);
   }
 }

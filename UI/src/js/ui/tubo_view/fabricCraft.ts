@@ -2,6 +2,7 @@ import { disableAll, getLogger } from "loglevel";
 import { CatalogItem, Fabric, Tube } from "../../typeObj.ts";
 import {
   createElementFromHTML,
+  get_partial_data,
   ObjectChanged as ObjectChanged,
 } from "../utils.ts";
 import { Api, ColumnsConfig } from "datatables.net-dt";
@@ -65,7 +66,7 @@ export class FabricCraft {
       },
 
       onConfirm: async () => {
-        return await this.handle_save();
+        await this.handle_save();
       },
 
       onClose: () => {
@@ -172,35 +173,13 @@ export class FabricCraft {
     log.debug(`Mode when saving ${this.mode}`);
     // this.fabricData.mode = this.mode
 
-    if (this.mode == "editing_created") {
-      this.fabric.mode = "created";
-      Object.assign(this.fabric.original_fabric, result.data);
-    }
-
-    if (this.mode == "editing") {
-      Object.assign(this.fabric.modified_fabric, result.data);
-
-      log.debug("Assignind data to modified, the data:", result.data);
-      log.debug("modified looks now like", this.fabric.modified_fabric);
-
-      if (
-        ObjectChanged(
-          this.fabric.original_fabric,
-          this.fabric.modified_fabric,
-          new Set(["created_at", "updated_at", "deleted_at"]),
-        )
-      ) {
-        this.fabric.mode = "edited";
-      } else {
-        this.fabric.mode = "normal";
-      }
-
-      log.debug(`Mode assign to fabric in editing mode is ${this.fabric.mode}`);
-    }
-
-    if (this.mode == "creating") {
-      this.fabric.mode = "created";
-      this.fabric.original_fabric = result.data;
+    if (
+      this.mode == "editing" &&
+      ObjectChanged(this.fabric, result.data, new Set())
+    ) {
+      let partial_data = get_partial_data(this.fabric, result.data);
+      this.resolveIt(partial_data);
+      return;
     }
 
     log.debug(`Correct ${result.correct}`);
