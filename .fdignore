@@ -4,3 +4,5 @@ schema.ts
 !**/*schema.ts
 
 !icons/
+
+!*.log

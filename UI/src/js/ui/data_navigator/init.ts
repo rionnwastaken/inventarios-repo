@@ -125,7 +125,7 @@ class TableController {
     try {
       data.offset = data.start;
       data.limit = data.length;
-      data.filters = this.filters || {};
+      data.filters = this.filters || { tube_verified: null };
 
       console.debug("Sending data ", data);
       console.debug("Getting ", state.active_view);

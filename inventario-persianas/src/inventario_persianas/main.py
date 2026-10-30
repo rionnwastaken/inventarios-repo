@@ -50,8 +50,5 @@ def serve_location_image(filename):
         abort(404)
 
 
-print("hi")
-
-
 if __name__ == "__main__":
     app.run("localhost", 9999, debug=True)

@@ -188,19 +188,22 @@ class DeductionKardex {
 
       <div class="bottom-container flex flex-col"> 
 
-	<div class="flex justify-between"> 
+    <div>
 
-       <div class="flex">
-	    <button class="btn" id="kardex-deduct">Crear Salida</button>
-	    <button class="btn" id="kardex-comments">Ver comentarios</button>
-       </div
+        <p id='recent-comment'>Comentario reciente:</p>
+        <div class="flex justify-between"> 
 
-        <div>
-            <button class="btn" id="kardex-goback">Vista Tubo</button>
-        </div
-	</div>
+            <div>
+                <button class="btn" id="kardex-goback">Vista Tubo</button>
+            </div>
 
-      <p id='recent-comment'>Comentario reciente:</p>
+            <div class="flex">
+                <button class="btn" id="kardex-deduct">Crear Salida</button>
+                <button class="btn" id="kardex-comments">Ver comentarios</button>
+            </div
+
+        </div>
+
       </div>
     </div>
   `);

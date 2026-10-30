@@ -11,10 +11,18 @@ Features
   fabrcs that are added by script should keep their possible locations
   make the tables overflow y  clip  and fix the overlay that overlaps with the scroll bar
   fix add tube btn
+  change text  modelo de persiana to modelo de tejido
+  search tubes of with excel_id
+  filters for searching data with excel info, (excel_tube_id,excel_location)
+  configuration, option to toggle tools for searching with excel_info (hide and show)
+  fix tela archivada text kardex update when opening
+  cambiar clasificacion a tejido en  fabriccraft
+  error en fabriccraft actualizar tabla con nuevo valor bug done
 
 
 
 
+  hide archived fabrics done
 synchronize data between tablecontroller and state  done (State does not exist no more)
 
 

@@ -123,7 +123,7 @@ def get_all_catalago():
     ]
 
     pretty_json = json.dumps(catalog_data, indent=2, default=str)
-    log.debug(f"Catalog data:\n{pretty_json}")
+    # log.debug(f"Catalog data:\n{pretty_json}")
     return catalog_data, 200
 
 
