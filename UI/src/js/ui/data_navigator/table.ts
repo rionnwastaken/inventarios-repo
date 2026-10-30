@@ -47,6 +47,7 @@ export class NavigationTable extends Table {
       deferRender: true,
       info: true,
       rowCallback: render_row,
+      searching: false,
     });
 
     this.actionOverlay.cb_samerow_2clicks = async (row_data, row) => {

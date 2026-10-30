@@ -291,10 +291,10 @@ export class ElementToggler {
   colors: string[];
   values: unknown[];
   length: number;
-  el: HTMLElement;
+  el?: HTMLElement;
   index: number;
 
-  constructor(values: unknown[], colors: string[], el: HTMLElement) {
+  constructor(values: unknown[], colors: string[], el?: HTMLElement) {
     this.colors = colors;
     this.values = values;
     this.length = colors.length;

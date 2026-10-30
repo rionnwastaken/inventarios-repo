@@ -463,6 +463,7 @@ catalago_models = [
     Color,
     Location,
     LocationTag,
+    ExcelTubeLocation,
 ]
 
 

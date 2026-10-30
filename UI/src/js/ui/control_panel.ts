@@ -70,6 +70,8 @@ class ControlPanel {
   verified_data: ElementToggler;
   filtering_elements: Array<unknown>;
 
+  excel_tube_searcher: TubeSearcher;
+
   constructor() {
     this.tom_selects = new Array();
     this.map_tom_selects = new Map();
@@ -78,25 +80,31 @@ class ControlPanel {
     this.tubeSearcher = new TubeSearcher({
       tw_class: "w-80",
       cb_item_select: async (tube_id) => {
-        this.tubeSearcher.tom.clear();
-        this.tubeSearcher.tom.close();
-        let res = await CoreAPI.get_tube_data(tube_id);
-
-        if (!res.success) {
-          log.debug(res.data);
-          return;
-        }
-        let data = res.data;
-        this.events.emit("searchbar:tube-selected", data.tube, data.fabrics);
+        await this.open_tube(this.tubeSearcher, tube_id);
       },
     });
+
+    this.verified_data = new ElementToggler(
+      [null, true, false],
+      ["empty", "bg-green-200", "bg-red-200"],
+    );
 
     this.body();
     this.init_bindings();
     this.init_state();
     this.block_send_filters = false;
+  }
+  async open_tube(tubeSearcher: TubeSearcher, tube_id) {
+    tubeSearcher.tom.clear();
+    tubeSearcher.tom.close();
+    let res = await CoreAPI.get_tube_data(tube_id);
 
-    console.log("icon : ", save_icon);
+    if (!res.success) {
+      log.debug(res.data);
+      return;
+    }
+    let data = res.data;
+    this.events.emit("searchbar:tube-selected", data.tube, data.fabrics);
   }
 
   body() {
@@ -118,22 +126,37 @@ class ControlPanel {
         </div>
 
       <!-- Row 2: filters (wrap) + actions -->
+ <div class="flex flex-col">
+
+    <div class="flex flex-col" id="excel-panel">
+      <p class="font-bold">Panel de control Excel</p>
+      <div class="flex  items-center">
+        <button class="tube-searcher"></button>
+        ${this.select_catalago("excel_tube_location", "Ubicacion")}
+      </div>
+    </div>
+
+
       <div class="flex flex-wrap items-end justify-between gap-3">
 
-        <div class="flex flex-wrap items-end gap-3">
-          ${this.input_number("Ancho", "Ancho")}
-          ${this.input_number("Alto", "Alto")}
-          ${this.input_percent("Disponibilidad %", "disponibilidad")}
-          ${catalago.map((obj) => this.select_catalago(obj.tablename, obj.label)).join("")}
-        </div>
+           <div class="flex flex-col">
+                <div class="flex flex-wrap items-end gap-3">
+                  ${this.input_number("Ancho", "Ancho")}
+                  ${this.input_number("Alto", "Alto")}
+                  ${this.input_percent("Disponibilidad %", "disponibilidad")}
+                  ${catalago.map((obj) => this.select_catalago(obj.tablename, obj.label)).join("")}
+                </div>
 
-        <div class="flex items-center gap-2">
-          <button id="clear-filters-btn" class="btn">Borrar Filtros</button>
-          <button id="verified-btn" class="btn">Tubos Verificados</button>
-          <button id="buscar-btn" class="btn btn-primary">Buscar</button>
-        </div>
+          </div>
 
-      </div>
+            <div class="flex items-center gap-2">
+              <button id="clear-filters-btn" class="btn">Borrar Filtros</button>
+              <button id="verified-btn" class="btn">Tubos Verificados</button>
+              <button id="buscar-btn" class="btn btn-primary">Buscar</button>
+            </div>
+
+          </div>
+</div>
     </div>
   `);
     let a_tw = "justify-end";
@@ -155,12 +178,35 @@ class ControlPanel {
     );
 
     this.search_btn = e.querySelector("#buscar-btn");
-    let verified_btn: HTMLElement = e.querySelector("#verified-btn");
-    this.verified_data = new ElementToggler(
-      [null, true, false],
-      ["empty", "bg-green-200", "bg-red-200"],
-      verified_btn,
-    );
+    this.verified_data.el = e.querySelector("#verified-btn");
+
+    let excel_panel = e.querySelector("#excel-panel");
+    let searcher = excel_panel.querySelector("button");
+    this.excel_tube_searcher = new TubeSearcher({
+      placeholder: "Buscar Tubo Excel",
+      tw_class: "fit-w",
+      cb_item_select: (tube_id) => {
+        this.open_tube(this.excel_tube_searcher, tube_id);
+      },
+      request_items: async (tube_id, callback) => {
+        let res = await CoreAPI.search_excel_tubes(tube_id);
+        if (!res.success) {
+          log.debug(res.data);
+          return;
+        }
+        log.debug(res.data);
+        let formattedItems = res.data.map((item) => {
+          return {
+            ...item, // Keeps all existing properties (excel_id, tube_id, textile, etc.)
+            text: `Tubo ${item.excel_id} | ${item.textile}`,
+            id: item.tube_id,
+          };
+        });
+
+        callback(formattedItems);
+      },
+    });
+    searcher.replaceWith(this.excel_tube_searcher.element);
 
     input_allow_numbers_min_max(this.availability_data.input, 0, 100);
 
@@ -175,6 +221,27 @@ class ControlPanel {
       this.verified_data.change();
     });
 
+    this.init_filtering_objects(e);
+
+    let select = e.querySelector(
+      `#excel_tube_location select`,
+    ) as HTMLSelectElement;
+    let tom = this.createTom(select, "excel_tube_location");
+    this.filtering_elements.push(tom);
+
+    tom.on("change", () => {
+      this.clear_filter_update_ux();
+    });
+
+    this.search_btn.addEventListener("click", () => {
+      const filters = this.get_active_filters();
+      this.events.emit("search-btn:clicked", filters);
+    });
+
+    return e;
+  }
+
+  init_filtering_objects(e) {
     this.filtering_elements.push(
       this.availability_data.input,
       this.verified_data,
@@ -206,13 +273,6 @@ class ControlPanel {
         });
       }
     }
-
-    this.search_btn.addEventListener("click", () => {
-      const filters = this.get_active_filters();
-      this.events.emit("search-btn:clicked", filters);
-    });
-
-    return e;
   }
 
   clear_filter_update_ux() {
@@ -280,6 +340,7 @@ class ControlPanel {
 
     obj["tube_verified"] = this.verified_data.value();
 
+    //Adds all tom selects created by createTom
     for (let tom of this.tom_selects) {
       let values = tom.getValue();
       let table_name = tom.customData.table_name;
@@ -395,12 +456,7 @@ class ControlPanel {
     </div>`;
   }
 
-  createTom<
-    T extends {
-      id: number;
-      name: string;
-    },
-  >(select: HTMLSelectElement, table_name: string) {
+  createTom(select: HTMLSelectElement, table_name: string) {
     const tom = new TomSelect(select, {
       openOnFocus: true,
       selectOnTab: true,
@@ -424,6 +480,18 @@ class ControlPanel {
       const pos = e.target.selectionStart;
       e.target.value = e.target.value.toLowerCase();
       e.target.setSelectionRange(pos, pos);
+    });
+
+    tom.control.addEventListener("click", (e) => {
+      // Look for the clicked item element inside the control container
+      const itemEl = e.target.closest(".item");
+      if (itemEl && tom.control.contains(itemEl)) {
+        const value = itemEl.dataset.value;
+        if (value !== undefined) {
+          tom.removeItem(value);
+          tom.refreshOptions(false);
+        }
+      }
     });
 
     this.tom_selects.push(tom);

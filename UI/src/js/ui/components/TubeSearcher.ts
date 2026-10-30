@@ -6,11 +6,15 @@ import { CoreAPI } from "../../api/core";
 interface TubeSearcherData {
   tw_class?: string;
   cb_item_select?: (tube_id: number) => void;
+  request_items?: (tube_id, callback) => void;
+  placeholder?: string;
 }
 
 let defaults: TubeSearcherData = {
   tw_class: "form-control w-full",
   cb_item_select: (tube_id: number) => {},
+  request_items: null,
+  placeholder: "Buscar Tubo",
 };
 
 export class TubeSearcher {
@@ -48,7 +52,7 @@ export class TubeSearcher {
       labelField: "text", // What gets displayed in the dropdown
       searchField: "text",
 
-      placeholder: "Buscar Tubo",
+      placeholder: data.placeholder,
 
       onItemAdd: () => {
         let value = this.tom.getValue();
@@ -56,22 +60,12 @@ export class TubeSearcher {
         data.cb_item_select(Number(value));
       },
 
-      load: async function (query, callback) {
-        let res = await CoreAPI.search_tubes(query);
-
-        if (!res.success) {
-          log.debug(res.data);
-          callback();
-          return;
+      load: async (query, callback) => {
+        if (data.request_items == null) {
+          await this.default_function(query, callback);
+        } else {
+          await data.request_items(query, callback);
         }
-        let tube_id_array = res.data;
-        const items = tube_id_array.map((id) => {
-          return {
-            id: id,
-            text: `Tubo ${id}`,
-          };
-        });
-        callback(items);
       },
     });
 
@@ -80,5 +74,24 @@ export class TubeSearcher {
     input_only_allow_numbers(input);
     this.element = e;
     return e;
+  }
+
+  async default_function(query, callback) {
+    log.debug("claling");
+    let res = await CoreAPI.search_tubes(query);
+
+    if (!res.success) {
+      log.debug(res.data);
+      callback();
+      return;
+    }
+    let tube_id_array = res.data;
+    const items = tube_id_array.map((id) => {
+      return {
+        id: id,
+        text: `Tubo ${id}`,
+      };
+    });
+    callback(items);
   }
 }

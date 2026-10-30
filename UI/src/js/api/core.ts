@@ -114,4 +114,9 @@ export const CoreAPI = {
     const res = await api.get(`/search_tubes?q=${text}`);
     return res;
   },
+
+  search_excel_tubes: async (text) => {
+    const res = await api.get(`/search_excel_tubes?q=${text}`);
+    return res;
+  },
 };

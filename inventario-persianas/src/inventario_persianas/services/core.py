@@ -12,6 +12,7 @@ from sqlmodel import String, cast, or_
 from inventario_persianas.exceptions import OverDrawing
 from inventario_persianas.model import (
     ExcelTubeInfo,
+    ExcelTubeLocation,
     Fabric,
     FabricComment,
     FabricCommentUpdate,
@@ -190,6 +191,8 @@ FABRIC_RANGE_FILTERS = {
     "availability": Fabric.remaining_percent,
 }
 
+EXCEL_INFO_FILTERS = {"excel_tube_location": ExcelTubeInfo.locations}
+
 DEFAULT_OP = lambda col, val: col >= val  # noqa
 
 
@@ -228,6 +231,16 @@ def apply_filters(stmt, filters):
             )
 
     stmt = stmt.outerjoin(ExcelTubeInfo, Tube.id == ExcelTubeInfo.tube_id)
+
+    for key, relationship_attr in EXCEL_INFO_FILTERS.items():
+        values = filters.get(key)
+        if values:
+            # Ensure values is treated as a list for .in_()
+            if not isinstance(values, (list, tuple)):
+                values = [values]
+
+            stmt = stmt.where(relationship_attr.any(ExcelTubeLocation.id.in_(values)))
+
     tube_verified = filters.get("tube_verified")
     if tube_verified is not None:
         if tube_verified:
@@ -461,6 +474,50 @@ def search_tubes(query):
     log.debug(f"Tubes found are {tube_ids} ")
 
     return tube_ids, 200
+
+
+@handle_db_exceptions
+def search_excel_tubes(query):
+    # Try parsing query as an integer to prioritize exact matches if applicable
+    try:
+        target_id = int(query)
+    except (ValueError, TypeError):
+        target_id = None
+
+    log.debug(f"query {query} target_id {target_id}")
+
+    # Search exclusively by excel_tube_id
+    stmt = select(ExcelTubeInfo).where(
+        cast(ExcelTubeInfo.excel_tube_id, String).like(f"%{query}%")
+    )
+
+    # Order by exact match first (if query is a valid number), then ascending
+    if target_id is not None:
+        stmt = stmt.order_by(
+            (ExcelTubeInfo.excel_tube_id == target_id).desc(),
+            ExcelTubeInfo.excel_tube_id.asc(),
+        )
+    else:
+        stmt = stmt.order_by(ExcelTubeInfo.excel_tube_id.asc())
+
+    stmt = stmt.limit(20)
+
+    excel_tubes = db.session.execute(stmt).scalars().all()
+    log.debug(f"ExcelTubeInfos found: {len(excel_tubes)}")
+
+    # Map the results to the requested structure
+    results = [
+        {
+            "excel_id": info.excel_tube_id,
+            "textile": info.textile.name
+            if info.textile and hasattr(info.textile, "name")
+            else info.textile_id,
+            "tube_id": info.tube_id,
+        }
+        for info in excel_tubes
+    ]
+
+    return results, 200
 
 
 @handle_db_exceptions

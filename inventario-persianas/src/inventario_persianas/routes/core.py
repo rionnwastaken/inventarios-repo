@@ -95,6 +95,14 @@ def search_tubes():
     return core.search_tubes(query)
 
 
+@core_bp.get("/search_excel_tubes")
+def search_excel_tubes():
+    query = request.args.get("q")
+    if not query:
+        return Error("Query parameter not passed", 400).returnIt()
+    return core.search_excel_tubes(query)
+
+
 # If q is empty or not digits, return an empty list immediately
 
 
