@@ -440,7 +440,7 @@ def move_fabric(fabric_id: int, payload: dict):
 
 
 @handle_db_exceptions
-def tubes2(query):
+def search_tubes(query):
     target_id = int(query)
 
     # Search for IDs starting with or containing the typed numbers

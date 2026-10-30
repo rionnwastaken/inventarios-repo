@@ -1,6 +1,7 @@
 import TomSelect from "tom-select";
 import { Fabric, Tube } from "../../typeObj";
 import { createElementFromHTML, input_only_allow_numbers } from "../utils";
+import { CoreAPI } from "../../api/core";
 
 interface TubeSearcherData {
   tw_class?: string;
@@ -55,22 +56,22 @@ export class TubeSearcher {
         data.cb_item_select(Number(value));
       },
 
-      load: function (query, callback) {
-        var url = "/core/tubes2?q=" + encodeURIComponent(query);
-        fetch(url)
-          .then((response) => response.json())
-          .then((ids) => {
-            const items = ids.map((id) => ({
-              id: id, // Property named "id" holding the numeric value (e.g. 1)
-              text: `Tubo ${String(id)}`, // Property named "text" holding the string version (e.g. "1")
-            }));
+      load: async function (query, callback) {
+        let res = await CoreAPI.search_tubes(query);
 
-            // 2. Pass the created objects to Tom Select
-            callback(items);
-          })
-          .catch(() => {
-            callback();
-          });
+        if (!res.success) {
+          log.debug(res.data);
+          callback();
+          return;
+        }
+        let tube_id_array = res.data;
+        const items = tube_id_array.map((id) => {
+          return {
+            id: id,
+            text: `Tubo ${id}`,
+          };
+        });
+        callback(items);
       },
     });
 

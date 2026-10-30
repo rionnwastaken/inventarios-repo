@@ -24,7 +24,7 @@ export const CoreAPI = {
     return await api.get(`/tube/excel_info/${tube_id}`);
   },
 
-  get_tubes2: async (data) => await api.post("/tubes2", data),
+  // get_tubes2: async (data) => await api.post("/tubes2", data),
 
   update_verified_state_excel_info: async (id, verified) =>
     await api.post("/excel-info/verified-state/set/", {
@@ -107,6 +107,11 @@ export const CoreAPI = {
     const res = await api.post("/data", {
       filters: filters,
     });
+    return res;
+  },
+
+  search_tubes: async (text) => {
+    const res = await api.get(`/search_tubes?q=${text}`);
     return res;
   },
 };

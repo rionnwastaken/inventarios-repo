@@ -85,14 +85,14 @@ def tube_data():
     return core.get_tube_data(id)
 
 
-@core_bp.get("/tubes2")
-def tubes2():
+@core_bp.get("/search_tubes")
+def search_tubes():
     log.info("recent_tubes()")
     query = request.args.get("q")
 
     if not query:
         return Error("Query parameter not passed", 400).returnIt()
-    return core.tubes2(query)
+    return core.search_tubes(query)
 
 
 # If q is empty or not digits, return an empty list immediately
