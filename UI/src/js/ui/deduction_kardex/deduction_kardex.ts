@@ -355,6 +355,9 @@ class DeductionKardex {
     if (this.fabric.is_archived) {
       this.archive_text_hint_p.textContent = "Tela Archivada";
       this.deduct.disabled = true;
+    } else {
+      this.archive_text_hint_p.textContent = "";
+      this.deduct.disabled = false;
     }
   }
 
