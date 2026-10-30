@@ -190,8 +190,9 @@ export class ModalDialog {
       this.dialogEl.remove();
     });
 
-    this.dialogEl.addEventListener("submit", (e) => {
+    this.dialogEl.addEventListener("submit", async (e) => {
       e.preventDefault();
+      await this.handleCancel();
     });
 
     this.dialogEl.addEventListener(
