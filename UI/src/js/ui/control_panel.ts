@@ -19,11 +19,14 @@ import less_than_icon from "../../assets/icons/less-than.svg?raw";
 import equal_icon from "../../assets/icons/equal-sign.svg?raw";
 import TomSelect from "tom-select";
 import { TubeSearcher } from "./components/TubeSearcher.ts";
+import { getLogger } from "loglevel";
 
 //TODO EVENT WHEN TUBO IS CREATED
 
 let operation_symbol_labels = ["greater", "less", "equal"];
 let operation_symbols = [greater_than_icon, less_than_icon, equal_icon];
+
+let log = getLogger("app");
 
 export interface ControlPanelEvents {
   "view:changed": (filters: Object) => void;
@@ -65,10 +68,12 @@ class ControlPanel {
 
   search_btn: HTMLButtonElement;
   verified_data: ElementToggler;
+  filtering_elements: Array<unknown>;
 
   constructor() {
     this.tom_selects = new Array();
     this.map_tom_selects = new Map();
+    this.filtering_elements = new Array();
 
     this.tubeSearcher = new TubeSearcher({
       tw_class: "w-80",
@@ -131,13 +136,6 @@ class ControlPanel {
       </div>
     </div>
   `);
-    // ...rest unchanged
-
-    // tube searcher
-    // measurements  2 num valid
-    // remaining percent 1 num valid
-    // catalago 4 text
-
     let a_tw = "justify-end";
 
     let container = document.querySelector("#panel-control-container");
@@ -169,6 +167,7 @@ class ControlPanel {
     this.clear_filters_btn = e.querySelector("#clear-filters-btn");
 
     this.clear_filters_btn.addEventListener("click", () => {
+      this.clear_filters_btn.classList.remove("btn-warning");
       this.clear_filters();
     });
 
@@ -176,11 +175,36 @@ class ControlPanel {
       this.verified_data.change();
     });
 
+    this.filtering_elements.push(
+      this.availability_data.input,
+      this.verified_data,
+      this.width_data.input,
+      this.height_data.input,
+    );
+
     for (let obj of catalago) {
       let select = e.querySelector(
         `#${obj.tablename} select`,
       ) as HTMLSelectElement;
-      this.createTom(select, obj.tablename);
+      let tom = this.createTom(select, obj.tablename);
+
+      this.filtering_elements.push(tom);
+
+      tom.on("change", () => {
+        this.clear_filter_update_ux();
+      });
+    }
+
+    for (let el of this.filtering_elements) {
+      if (el instanceof HTMLInputElement) {
+        el.addEventListener("focusout", () => {
+          this.clear_filter_update_ux();
+        });
+      } else if (el instanceof ElementToggler) {
+        el.el.addEventListener("click", () => {
+          this.clear_filter_update_ux();
+        });
+      }
     }
 
     this.search_btn.addEventListener("click", () => {
@@ -191,25 +215,43 @@ class ControlPanel {
     return e;
   }
 
-  // async send_filters() {
-  //   if (this.block_send_filters) {
-  //       return
-  //   }
-  //
-  //
-  //   log.debug("send_filters()");
-  //   let filters = this.get_active_filters();
-  //
-  //   log.debug("filters ", filters);
-  //
-  //   let res = await CoreAPI.get_tube_and_fabrics(filters);
-  //
-  //   if (!res.success) {
-  //     log.debug(res.data);
-  //     return;
-  //   }
-  //   this.events.emit("data:change", res.data.tubes, res.data.fabrics);
-  // }
+  clear_filter_update_ux() {
+    let filters_active = this.check_if_filters_active();
+    this.clear_filters_btn.classList.remove("btn-warning");
+    if (filters_active) {
+      this.clear_filters_btn.classList.add("btn-warning");
+    }
+
+    // for (let )
+  }
+  check_if_filters_active() {
+    for (let el of this.filtering_elements) {
+      if (el instanceof TomSelect) {
+        let value = el.getValue();
+        if (value.length >= 1) {
+          return true;
+        }
+      } else if (el instanceof ElementToggler) {
+        if (el.filterActive()) {
+          return true;
+        }
+      } else if (el instanceof HTMLInputElement) {
+        if (el.value != "") {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  element_has_value(el) {
+    if (typeof el == "function") {
+      return el() != "";
+    }
+
+    return el.value != "";
+  }
 
   get_active_filters() {
     let obj = {};
@@ -386,6 +428,7 @@ class ControlPanel {
 
     this.tom_selects.push(tom);
     this.map_tom_selects.set(table_name, tom);
+    return tom;
   }
 
   title() {}

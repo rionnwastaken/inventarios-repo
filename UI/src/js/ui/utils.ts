@@ -314,6 +314,10 @@ export class ElementToggler {
     return v;
   }
 
+  filterActive() {
+    return this.index != 0;
+  }
+
   reset() {
     this.el.classList.remove(this.colors[this.index]);
     this.index = 0;
