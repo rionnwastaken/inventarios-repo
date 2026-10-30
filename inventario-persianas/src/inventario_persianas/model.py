@@ -320,18 +320,64 @@ class AuditLog(TimestampMixin, table=True):
     changes: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
 
 
+class ExcelInfoLocationLink(SQLModel, table=True):
+    __tablename__ = "excel_info_location_link"
+
+    info_id: Optional[int] = Field(
+        default=None, foreign_key="excel_tube_info.id", primary_key=True
+    )
+    location_id: Optional[int] = Field(
+        default=None, foreign_key="excel_tube_location.id", primary_key=True
+    )
+
+
 class ExcelTubeInfo(TimestampMixin, table=True):
+    """
+    If id == excel_tube_id, it means that the tube can mantain tube_id
+    If id != excel_tube_id, it means that the tube needs to change id in the real world
+    """
+
     __tablename__ = "excel_tube_info"  # type:ignore #type:ignore
     id: Optional[int] = Field(default=None, primary_key=True)
     tube_id: int = Field(foreign_key="tube.id")
     excel_tube_id: int
-    ubicacion: str = Field(nullable=True)
-    tube: Optional[Tube] = Relationship()
     verified: bool = Field(default=True, index=False)
+    rename_transformation_complete: bool = Field(
+        default=True, index=False
+    )  # physical tube id has  changed to new tube id
+
+    textile_id: int = Field(default=None, foreign_key="fabric_classification.id")
+
+    tube: Optional[Tube] = Relationship()
+
+    textile: Optional[FabricClassification] = (
+        Relationship()
+    )  # To know which duplicate we are searchig for
+    locations: List["ExcelTubeLocation"] = Relationship(
+        back_populates="infos", link_model=ExcelInfoLocationLink
+    )
 
     def payload(self):
-        jason = self.model_dump(mode="json")
-        return jason
+        obj = self.model_dump(mode="json")
+        obj["locations"] = []
+        for location in self.locations:
+            location_obj = location.model_dump(mode="json")
+            obj["locations"].append(location_obj)
+        return obj
+
+
+class ExcelTubeLocation(SQLModel, table=True):
+    __tablename__ = "excel_tube_location"  # type:ignore
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(default=None, max_length=100)
+
+    infos: List[ExcelTubeInfo] = Relationship(
+        back_populates="locations", link_model=ExcelInfoLocationLink
+    )
+
+    def payload(self):
+        return self.model_dump(mode="json")
 
 
 @event.listens_for(Fabric, "after_insert")

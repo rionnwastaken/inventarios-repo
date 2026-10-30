@@ -913,7 +913,11 @@ def comment_delete(comment_id: int, fabric_id: int):
 @handle_db_exceptions
 def tube_excel_info(tube_id: int):
     with db.session.begin():
-        statement = select(ExcelTubeInfo).where(ExcelTubeInfo.tube_id == tube_id)
+        statement = (
+            select(ExcelTubeInfo)
+            .options(selectinload(ExcelTubeInfo.locations))
+            .where(ExcelTubeInfo.tube_id == tube_id)
+        )
         excel_info = db.session.execute(statement).scalar()
 
         if not excel_info:

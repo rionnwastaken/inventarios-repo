@@ -24,7 +24,8 @@ import { shortLivedDialog } from "../shortLiveDialog.ts";
 import arrow_icon from "../../../assets/icons/arrow.svg";
 import { LocationController } from "./location/location.ts";
 import TomSelect from "tom-select";
-import { ExcelTubeInfo } from "../../schema.ts";
+// import { ExcelTubeInfo } from "../../schema.ts";
+import { ExcelTubeInfo } from "../../typeObj.ts";
 import { TubeSearcher } from "../components/TubeSearcher.ts";
 
 let log = getLogger("app");
@@ -504,7 +505,15 @@ class TubeOverview {
         this.excel_tube_data.textContent = ``;
       } else {
         let data = this.excel_info;
-        this.excel_tube_data.textContent = `Excel info: Tube ID : ${data.excel_tube_id} | Ubicacion : ${data.ubicacion}`;
+        let locations_text = "Ubicaciones: ";
+
+        for (let location of data.locations) {
+          locations_text += `${location.name},`;
+        }
+        if (data.locations.length <= 0) {
+          locations_text = "No tiene ubicacion";
+        }
+        this.excel_tube_data.textContent = `Excel info: Tube ID : ${data.excel_tube_id} | ${locations_text}`;
         this.verified_p.textContent = "No Verificado";
         this.verified_p.classList.remove("!text-green-500");
         this.verified_p.classList.add("!text-red-500");

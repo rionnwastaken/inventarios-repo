@@ -5,7 +5,8 @@ import {
   Tube as SchemaTube,
   Location as SchemaLocation,
   LocationTag,
-  ExcelTubeInfo,
+  ExcelTubeInfo as SchemaExcelTubeInfo,
+  ExcelTubeLocation,
 } from "./schema";
 
 export type ViewMode = "tube" | "fabric" | "both";
@@ -13,6 +14,10 @@ export type ViewMode = "tube" | "fabric" | "both";
 export interface TableView {
   previous_view: ViewMode;
   new_view: ViewMode;
+}
+
+export interface ExcelTubeInfo extends SchemaExcelTubeInfo {
+  locations: Array<ExcelTubeLocation>;
 }
 
 export interface Tube extends SchemaTube {
