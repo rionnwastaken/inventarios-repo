@@ -100,6 +100,14 @@ def delete_tube(id):
                 f"No se puede borrar tubo con que tiene {len(tube.fabrics)} telas"
             )
 
+        excel_info = db.session.scalar(select(ExcelTubeInfo).where(ExcelTubeInfo.tube_id == tube.id))
+        if (excel_info):
+            excel_info_payload = excel_info.payload()
+            db.session.delete(excel_info)
+            db.session.flush()
+            AuditLogger.log("Delete", "excel_tube_info", excel_info.id, old_values=excel_info_payload)
+
+
         tube_json = tube.payload()
 
         db.session.delete(tube)
