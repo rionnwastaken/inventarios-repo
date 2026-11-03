@@ -134,7 +134,7 @@ class TableController {
       const res = await CoreAPI.newTube();
       console.log(res);
       if (res.success) {
-        this.cb_insert_tube_to_table(res.data.tube);
+        this.insert_tube_to_table(res.data.tube);
       }
     });
 
@@ -143,7 +143,7 @@ class TableController {
       if (tube == null) {
         return;
       }
-      this.cb_insert_tube_to_table(tube);
+      this.insert_tube_to_table(tube);
     });
   }
 
@@ -213,21 +213,23 @@ class TableController {
       log.debug(res.data);
       shortLivedDialog.titleContainer.innerHTML = res.data.error;
       shortLivedDialog.open();
-      return;
+      return false;
     }
-    // row.remove()
-    // this.table.draw(false)
     this.table.ajax.reload(null, false);
+    return true;
   }
 
   async delete_fabric(fabric: Fabric, row) {
     let res = await CoreAPI.fabric_delete(fabric.id);
     if (!res.success) {
       log.debug(res.data);
-      return;
+      shortLivedDialog.titleContainer.innerHTML = res.data.error;
+      shortLivedDialog.open();
+      return false;
     }
     row.remove();
     this.table.draw(false);
+    return true;
   }
 
   async on_select_row(data, row) {
@@ -307,12 +309,18 @@ class TableController {
     });
   }
 
-  cb_insert_tube_to_table(tube: Tube) {
-    log.debug("cb_insert_tube_to_table(fabric:Tube), data", tube);
+  insert_tube_to_table(tube: Tube) {
+    log.debug("insert_tube_to_table", tube);
     if (!tube) {
       log.error("Tube is undefined ");
       return;
     }
+
+    if (state.active_view != "tube") {
+      state.active_view = "tube";
+      this.cb_toggle_group_colums();
+    }
+
     this.table.row.add(tube);
     this.table.draw();
   }

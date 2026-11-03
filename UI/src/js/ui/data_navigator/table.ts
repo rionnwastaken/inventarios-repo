@@ -75,8 +75,9 @@ export class NavigationTable extends Table {
       log.debug("Deleting in data navigator");
 
       let row = this.actionOverlay.selected_row;
-      let deduction = row.data();
-      await this.on_delete(deduction, row);
+      let data = row.data();
+      await this.on_delete(data, row);
+      this.actionOverlay.selected_row = null;
     });
     return this.overlay_container;
   }
