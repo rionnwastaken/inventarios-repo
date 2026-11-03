@@ -17,15 +17,29 @@ type Action = Literal["Insert", "Delete", "Update"]
 
 
 class Error:
-    message: str
-    status: int
+    obj: object
+    default_status: int
 
-    def __init__(self, message, status) -> None:
-        self.message = message
-        self.status = status
+    def __init__(self, obj, default_status=400) -> None:
+        if isinstance(obj, Exception) and obj.args and isinstance(obj.args[0], dict):
+            self.obj = obj.args[0]
+        else:
+            self.obj = obj
+
+        self.default_status = default_status
 
     def returnIt(self):
-        return {"error": self.message}, self.status
+        log.debug("bublebutt")
+        log.debug(self.obj)
+
+        if isinstance(self.obj, dict):
+            status = self.obj.get("status")
+            log.debug(f"status is {status}")
+            if status is None:
+                status = self.default_status
+            return self.obj, status
+
+        return {"error": str(self.obj)}, self.default_status
 
 
 class AuditLogger:

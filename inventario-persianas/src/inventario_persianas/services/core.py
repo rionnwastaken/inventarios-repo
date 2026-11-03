@@ -52,25 +52,32 @@ def handle_db_exceptions(func):
             return Error(e, 400).returnIt()
         except NoResultFound as e:
             log.exception(e)
-            return Error(str(e), 400).returnIt()
+            return Error((e), 400).returnIt()
         except OverDrawing as e:
             log.exception(e)
-            return Error(str(e), 400).returnIt()
+            return Error((e), 400).returnIt()
         except ValueError as e:
             log.exception(e)
-            return Error(str(e), 400).returnIt()
+            return Error((e), 400).returnIt()
 
         except Exception as e:
             log.exception(e)
-            return Error(str(e), 400).returnIt()
+            return Error((e), 400).returnIt()
 
     return wrapper
 
 
 @handle_db_exceptions
-def new_tube():
+def new_tube(tube_id=None):
     with db.session.begin():
-        tube = Tube()
+        if tube_id != None:
+            tube_exists = db.session.get(Tube, tube_id)
+            if tube_exists:
+                raise ValueError({"error": f"Tubo {tube_id} ya existe", "status": 409})
+            tube = Tube(id=tube_id)
+        else:
+            tube = Tube()
+
         db.session.add(tube)
         db.session.flush()
 
@@ -78,7 +85,7 @@ def new_tube():
         AuditLogger.log("Insert", "tube", tube.id, new_values=tube_json)
         log.debug(f"new tube json {tube_json} {len(tube_json)} ")
 
-        return tube_json
+        return {"tube": tube_json}, 201
 
 
 @handle_db_exceptions
