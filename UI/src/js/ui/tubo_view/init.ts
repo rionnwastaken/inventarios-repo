@@ -212,7 +212,8 @@ class TubeOverview {
   }
 
   create_dialog() {
-    const a_tw = "min-w-7xl min-h-5xl";
+    const a_tw =
+      "min-w-7xl h-[50vh] max-h-[50vh] flex flex-col overflow-hidden";
     this.modal_dialog = new ModalDialog({
       body: this.body(),
       title: this.title(),
@@ -228,30 +229,24 @@ class TubeOverview {
   }
   body() {
     let e = createElementFromHTML(`
- <div>
-      <div class="mr-20">
-	<table  class="display">
-	  <thead></thead>
-	  <tbody></tbody>
-	</table>
+      <div class="flex flex-col h-[70%]">
+        <div class="mr-20 h-full min-h-0 overflow-y-scroll overflow-x-visible">
+          <table class="display w-full">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
 
-
+        <div class="flex gap-4 mt-4">
+          <button id="add" class="w-fit btn" type="">
+            Agregar
+          </button>
+        </div>
       </div>
-
-
-	<div class="flex gap-4">
-	  <button id="add" class="w-fit  btn" type="">
-	    Agregar
-	  </button>
-	</div>
-
-    </div>
     `);
 
     this.add_btn = e.querySelector("#add");
     this.tbl_element = e.querySelector(`table`);
-
-    console.log("add btn ", this.add_btn);
 
     return e;
   }

@@ -85,6 +85,9 @@ export class TubeOverviewTable extends Table {
     this.init(this.tbl_element, {
       order: { name: "updated_at", dir: "desc" },
       rowCallback: render_row,
+      scrollY: "100%",
+      scrollCollapse: true,
+      paging: false,
     });
 
     this.actionOverlay.cb_samerow_2clicks = async (data, row) => {

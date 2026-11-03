@@ -45,7 +45,7 @@ export class ModalDialog {
         options.footerContainer_tailwind_class ?? null,
 
       title: options.title ?? "Dialog",
-      body: options.body ?? "",
+      body: options.body ?? null,
       width: options.width ?? "",
       height: options.height ?? "",
       confirmText: options.confirmText ?? "Aceptar",
@@ -81,7 +81,7 @@ export class ModalDialog {
     // const containerClasses =
     // `modal-box absolute ${this.options.container_tailwind_class}  ${widthClass} ${heightClass} flex flex-col gap-4  overflow-visible`.trim();
     const containerClasses =
-      `modal-box absolute ${this.options.container_tailwind_class} ${widthClass} ${heightClass} flex flex-col gap-4 overflow-visible`.trim();
+      `modal-box absolute ${this.options.container_tailwind_class} ${widthClass} ${heightClass} flex flex-col gap-4 `.trim();
 
     // 3. Build layout template using DaisyUI structure
     this.dialogEl.innerHTML = `
@@ -125,12 +125,14 @@ export class ModalDialog {
     this.bodyContainer = this.dialogEl.querySelector<HTMLElement>(
       ".dialog-body-container",
     );
-    if (!this.bodyContainer) return;
+    if (!this.bodyContainer || this.options.body == null) return;
+
+    console.debug(this.options.body);
 
     if (this.options.body instanceof HTMLElement) {
-      this.bodyContainer.replaceChildren(this.options.body);
+      this.bodyContainer.replaceWith(this.options.body);
     } else {
-      this.bodyContainer.innerHTML = this.options.body;
+      this.bodyContainer.replaceWith(createElementFromHTML(this.options.body));
     }
   }
 

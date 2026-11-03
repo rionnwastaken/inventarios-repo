@@ -26,7 +26,7 @@ export abstract class Table {
       paging: false,
       autoWidth: true,
       info: false,
-      searching: true,
+      searching: false,
       order: { name: "updated_at", dir: "desc" },
       select: {
         blurable: true,
