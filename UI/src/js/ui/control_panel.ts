@@ -183,6 +183,7 @@ class ControlPanel {
     let excel_panel = e.querySelector("#excel-panel");
     let searcher = excel_panel.querySelector("button");
     this.excel_tube_searcher = new TubeSearcher({
+      searchField: ["excel_id", "text"],
       placeholder: "Buscar Tubo Excel",
       tw_class: "fit-w",
       cb_item_select: (tube_id) => {
@@ -198,8 +199,10 @@ class ControlPanel {
         let formattedItems = res.data.map((item) => {
           return {
             ...item, // Keeps all existing properties (excel_id, tube_id, textile, etc.)
-            text: `Tubo ${item.excel_id} | ${item.textile}`,
+            text: `${item.excel_id} | ${item.textile}`,
             id: item.tube_id,
+            excel_id: item.excel_id,
+            // excel_id: item.excel_id,
           };
         });
 

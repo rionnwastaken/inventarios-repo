@@ -8,6 +8,7 @@ interface TubeSearcherData {
   cb_item_select?: (tube_id: number) => void;
   request_items?: (tube_id, callback) => void;
   placeholder?: string;
+  searchField?: Array<string>;
 }
 
 let defaults: TubeSearcherData = {
@@ -15,6 +16,7 @@ let defaults: TubeSearcherData = {
   cb_item_select: (tube_id: number) => {},
   request_items: null,
   placeholder: "Buscar Tubo",
+  searchField: ["text"],
 };
 
 export class TubeSearcher {
@@ -38,7 +40,7 @@ export class TubeSearcher {
     const e = createElementFromHTML(`
     <label class="${data.tw_class}" >
       <select
-        class="w-full input-lowercase"
+        class="w-full input-lowercase "
       ></select>
     </label> `);
 
@@ -50,7 +52,7 @@ export class TubeSearcher {
 
       valueField: "id", // What gets submitted in forms
       labelField: "text", // What gets displayed in the dropdown
-      searchField: "text",
+      searchField: data.searchField,
 
       placeholder: data.placeholder,
 
