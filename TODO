@@ -5,7 +5,6 @@ Features
   implement filtering logic and UI
   TableController to use Table class
   Delete tube without any fabric 
-  fabric show tube number done
   create manual tutorial and concepts of the program
   Replace the icons toones that represent the action
   fabrcs that are added by script should keep their possible locations
@@ -15,12 +14,16 @@ Features
   search tubes of with excel_id
   filters for searching data with excel info, (excel_tube_id,excel_location)
   configuration, option to toggle tools for searching with excel_info (hide and show)
-  fix tela archivada text kardex update when opening
-  cambiar clasificacion a tejido en  fabriccraft
+  prevent tube creating in fabric vierw
+  button to add tube with tube id as input and validations
+  fix spinner size searchng tubes
+
+
+  make sure list of exel tubes shows repeatedd tubes together, not far away done
+  fabric show tube number done
   error en fabriccraft actualizar tabla con nuevo valor bug done
-
-
-
+  fix tela archivada text kardex update when opening done 
+  cambiar clasificacion a tejido en  fabriccraft done
 
   hide archived fabrics done
 synchronize data between tablecontroller and state  done (State does not exist no more)

@@ -6,3 +6,5 @@ schema.ts
 !icons/
 
 !*.log
+
+!scripts/

@@ -2,7 +2,6 @@ import { ModalDialog } from "./dialogs/modalDialog";
 
 class ShortLivedDialog extends ModalDialog {
   resolve: (data: boolean) => void;
-  modalDialog: ModalDialog;
 
   constructor() {
     super({
