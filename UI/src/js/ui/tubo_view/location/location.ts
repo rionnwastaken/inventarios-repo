@@ -81,18 +81,25 @@ export class LocationController {
       height: "h-auto max-h-[80vh]",
       cancelText: "Volver",
       cancelClass: "btn",
-      confirmText: "Deducir",
-      confirmClass: "btn-error",
+      confirmText: "Guardar ubicacion",
       footerContainer_tailwind_class: "flex justify-left",
 
       showCancel: true,
-      showConfirm: false,
+      showConfirm: true,
 
       onCancel: () => {
+        if (this.slot_location_in_use != null) {
+          this.slot_location_in_use.classList.remove(slot_in_use_tw);
+          this.slot_location_in_use = null;
+        }
+
+        this.resolvePromise(false);
+        this.resolvePromise = null;
+
         this.modalDialog.close();
       },
 
-      onClose: () => {
+      onConfirm: () => {
         if (this.slot_location_in_use == null) {
           this.resolvePromise(null);
           this.resolvePromise = null;
@@ -116,6 +123,8 @@ export class LocationController {
           state.catalagoData.data["location"],
         );
       },
+
+      onClose: () => {},
     });
 
     let d = this.modalDialog.dialogEl;
@@ -222,16 +231,22 @@ export class LocationController {
   }
 
   set_slot_as_selected_location(slotCard) {
-    if (this.slot_location_in_use && this.slot_location_in_use == slotCard) {
-      return;
-    }
-
     if (this.slot_location_in_use != null) {
       this.slot_location_in_use.classList.remove(slot_in_use_tw);
     }
 
     this.slot_location_in_use = slotCard;
     this.slot_location_in_use.classList.add(slot_in_use_tw);
+  }
+
+  handle_slot_double_click(slotCard) {
+    if (this.slot_location_in_use == slotCard) {
+      this.slot_location_in_use.classList.remove(slot_in_use_tw);
+      this.slot_location_in_use = null;
+      return;
+    }
+
+    this.set_slot_as_selected_location(slotCard);
   }
 
   bindEvents() {
@@ -254,7 +269,7 @@ export class LocationController {
       }
 
       if (slotCard == this.selected_slot) {
-        this.set_slot_as_selected_location(slotCard);
+        this.handle_slot_double_click(slotCard);
         return;
       }
 

@@ -344,13 +344,14 @@ class TubeOverview {
           }
         });
       }
-      let data: Location | null = await this.locationController.show(location);
+      let data: Location | null | Boolean =
+        await this.locationController.show(location);
 
-      if (data == null) {
+      if (data == false) {
         return;
       }
       let payload: Partial<Tube> = {
-        location_id: data.id,
+        location_id: data?.id ?? null,
       };
 
       log.debug("sending data ", this.tube.id, payload);
