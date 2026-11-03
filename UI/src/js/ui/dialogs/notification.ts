@@ -80,5 +80,7 @@ export class NotiDialog extends ModalDialog {
 const notiDialog = new NotiDialog({});
 export { notiDialog };
 export function errorNotiTopRight(title, body) {
+  notiDialog.titleContainer.innerText = title;
+  notiDialog.bodyContainer.replaceChildren(body);
   notiDialog.show();
 }
