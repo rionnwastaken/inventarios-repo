@@ -17,6 +17,7 @@ import {
   createElementFromHTML,
   fabricColumn,
   fcolumn,
+  input_only_allow_numbers,
   inspect_row,
   num,
   RenderingInfo,
@@ -28,6 +29,7 @@ import { render_datecell, render_plain2 } from "../renderUtils.ts";
 import { fabric_catalago_title_id, tube_title_id } from "../misc.ts";
 import { NavigationTable } from "./table.ts";
 import { shortLivedDialog } from "../shortLiveDialog.ts";
+import { ModalDialog } from "../dialogs/modalDialog.ts";
 //TODO ON TUBO ADD BUTTON, add tube to table and refresh it
 //TODO WHEN A NEW FABRIC IS ADDED, MAKE SURE IT IS REFLECTED IN THE VIEW, so it increments in tota lof the tube
 
@@ -48,6 +50,8 @@ class TableController {
   tbl_element: HTMLTableElement;
   btn_new_tube: HTMLButtonElement;
   navigationTable: NavigationTable;
+  btn_new_tube_customize: HTMLButtonElement;
+  customizableTubeForm: CustomizeTubeForm;
 
   constructor() {
     this.body();
@@ -70,13 +74,16 @@ class TableController {
     this.init_visible_group();
     this.init_bindings();
 
+    this.customizableTubeForm = new CustomizeTubeForm(this.table);
+
     const bottomRow = document.querySelector(
       "#myTable_wrapper > div:nth-child(3)",
     );
 
     const xerxes = document.querySelector(".dt-search");
 
-    const mainContainer = document.querySelector("#btn-new-tube").parentNode; // Your main flex container
+    const mainContainer =
+      document.querySelector("#btn-new-tube").parentNode.parentNode; // Your main flex container
     if (bottomRow && mainContainer) {
       const btnNewTube = document.getElementById("btn-new-tube");
       mainContainer.prepend(bottomRow);
@@ -97,11 +104,22 @@ class TableController {
         </div>
 
         <!-- Button stays fixed at the bottom -->
-        <div id="btn-new-tube" class="flex items-center gap-2 bg-green-900 p-2 btn w-fit flex-shrink-0">
-          <p class="text-lg text-white">Tubo</p>
-          <span class="btn w-7 h-7 btn-circle border-none text-white bg-green-600">
-            ${save_icon}
-          </span>
+        <div class="flex flex-row">
+            <div id="btn-new-tube" class="flex items-center gap-2 bg-green-900 p-2 btn w-fit flex-shrink-0">
+              <p class="text-lg text-white">Tubo</p>
+              <span class="btn w-7 h-7 btn-circle border-none text-white bg-green-600">
+                ${save_icon}
+              </span>
+            </div>
+
+
+            <div id="btn-new-tube-custom" class="flex items-center gap-2 bg-green-900 p-2 btn w-fit flex-shrink-0">
+              <p class="text-lg text-white">Tubo customizado</p>
+              <span class="btn w-7 h-7 btn-circle border-none text-white bg-green-600">
+                ${save_icon}
+              </span>
+            </div>
+
         </div>
 
       </div>
@@ -110,6 +128,7 @@ class TableController {
     const container = document.querySelector("#table-controller-container");
     this.tbl_element = e.querySelector("table");
     this.btn_new_tube = e.querySelector("#btn-new-tube");
+    this.btn_new_tube_customize = e.querySelector("#btn-new-tube-custom");
     container.replaceWith(e);
 
     this.btn_new_tube.addEventListener("click", async () => {
@@ -118,6 +137,14 @@ class TableController {
       if (res.success) {
         this.cb_insert_tube_to_table(res.data.tube);
       }
+    });
+
+    this.btn_new_tube_customize.addEventListener("click", async () => {
+      let tube = await this.customizableTubeForm.openForm();
+      if (tube == null) {
+        return;
+      }
+      this.cb_insert_tube_to_table(tube);
     });
   }
 
@@ -291,6 +318,100 @@ class TableController {
     }
     this.table.row.add(tube);
     this.table.draw();
+  }
+}
+
+class CustomizeTubeForm {
+  modalDialog: ModalDialog;
+  input: HTMLInputElement;
+  error_p: HTMLParagraphElement;
+  table: Api<Tube | Fabric>;
+  resolve?: (value: Tube | null) => void;
+
+  constructor(table: Api<Tube | Fabric>) {
+    this.table = table;
+    this.modalDialog = new ModalDialog({
+      body: this.body(),
+      title: "Tubo customizable",
+
+      onConfirm: async () => {
+        let tube_id = this.get_tube_id();
+        if (tube_id == null) {
+          return false;
+        }
+        let res = await CoreAPI.newTube(tube_id);
+
+        if (!res.success) {
+          log.debug(res.data);
+          this.update_error_message(res.status);
+          return false;
+        }
+        this.resolve(res.data.tube);
+        return true;
+      },
+
+      onClose: () => {
+        this.input.value = "";
+        this.update_error_message(0);
+        this.resolve(null);
+        this.resolve = null;
+      },
+    });
+  }
+
+  get_tube_id() {
+    let value = this.input.value;
+    let id = Number(value);
+
+    // Use isNaN() instead of == NaN
+    if (value === "" || isNaN(id)) {
+      this.update_error_message(1);
+      return null; // or handle invalid state appropriately
+    }
+
+    return id;
+  }
+
+  openForm() {
+    return new Promise<Tube | null>((resolve) => {
+      this.resolve = resolve;
+      this.modalDialog.show();
+    });
+  }
+
+  update_error_message(error_num) {
+    let e = this.error_p;
+    switch (error_num) {
+      case 0:
+        e.classList.add("hidden");
+        e.textContent = "";
+        break;
+
+      case 1:
+        e.classList.remove("hidden");
+        e.textContent = "Input no es numero";
+
+      case 409:
+        e.classList.remove("hidden");
+        e.textContent = "El tubo que quiere crear ya existe";
+    }
+  }
+
+  body() {
+    let e = createElementFromHTML(`
+
+        <div>
+  <p class="hidden text-red-500"> </p>
+  <input> </input>
+</div>
+
+
+`);
+    this.input = e.querySelector("input");
+    this.error_p = e.querySelector("p");
+
+    input_only_allow_numbers(this.input);
+    return e;
   }
 }
 

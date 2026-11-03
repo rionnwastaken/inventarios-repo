@@ -5,7 +5,10 @@ import { createa_api } from "./axios_init.ts";
 const api = createa_api("core");
 // Exported API Module (Guarantees payload is wrapped in an object)
 export const CoreAPI = {
-  newTube: async () => await api.post("/new/tube"),
+  newTube: async (id?) =>
+    await api.post("/new/tube", {
+      id: id,
+    }),
   update_tube: async (tube_id, payload: Partial<Tube>) => {
     return await api.post("/tube/update/", {
       id: tube_id,

@@ -12,10 +12,10 @@ core_bp = Blueprint("core", __name__)
 
 @core_bp.post("/new/tube/")
 def new_tube():
-    tube_json = core.new_tube()
-    return {
-        "tube": tube_json,
-    }, 201
+    data = request.get_json() or {}
+    tube_id = data.get("id")
+
+    return core.new_tube(tube_id)
 
 
 @core_bp.post("/tube/delete/")
