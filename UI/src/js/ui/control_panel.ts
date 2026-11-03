@@ -29,9 +29,9 @@ let operation_symbols = [greater_than_icon, less_than_icon, equal_icon];
 let log = getLogger("app");
 
 export interface ControlPanelEvents {
-  "view:changed": (filters: Object) => void;
+  "view:changed": () => void;
   "data:change": (tubes: Tube[], fabrics: Fabric[]) => void;
-  "search-btn:clicked": (filters: null | Object) => void;
+  "search-btn:clicked": () => void;
   "searchbar:tube-selected": (tube: Tube, fabrics: Fabric[]) => void;
 }
 
@@ -237,8 +237,8 @@ class ControlPanel {
     });
 
     this.search_btn.addEventListener("click", () => {
-      const filters = this.get_active_filters();
-      this.events.emit("search-btn:clicked", filters);
+      this.update_active_filters();
+      this.events.emit("search-btn:clicked");
     });
 
     return e;
@@ -316,7 +316,8 @@ class ControlPanel {
     return el.value != "";
   }
 
-  get_active_filters() {
+  update_active_filters() {
+    // Changes state.filter
     let obj = {};
 
     if (this.width_data.input.value != "") {
@@ -353,7 +354,7 @@ class ControlPanel {
       }
     }
 
-    return obj;
+    state.filters = obj;
   }
 
   clear_filters() {
@@ -566,7 +567,8 @@ class ControlPanel {
         new_view: state.active_view,
       };
       console.log(view);
-      this.events.emit("view:changed", this.get_active_filters());
+      this.update_active_filters();
+      this.events.emit("view:changed");
     });
   }
 

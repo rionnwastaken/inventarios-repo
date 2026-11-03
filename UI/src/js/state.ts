@@ -20,6 +20,7 @@ export interface StateEvents {
 class State {
   active_view: ViewMode;
   catalagoData: CatalagoData;
+  filters: null | Object;
 
   public events = new TypedEventEmitter<StateEvents>();
 

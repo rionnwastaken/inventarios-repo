@@ -57,7 +57,6 @@ class TableController {
     this.body();
     // this.init_columns();
     // this.init_table();
-    this.filters = null;
 
     this.navigationTable = new NavigationTable({
       tbl_element: this.tbl_element,
@@ -152,7 +151,7 @@ class TableController {
     try {
       data.offset = data.start;
       data.limit = data.length;
-      data.filters = this.filters || { tube_verified: null };
+      data.filters = state.filters || { tube_verified: null };
 
       console.debug("Sending data ", data);
       console.debug("Getting ", state.active_view);
@@ -179,9 +178,8 @@ class TableController {
     }
   }
 
-  async get_data(filters) {
+  async get_data() {
     log.debug("Table controller reloading data");
-    this.filters = filters;
     this.table.ajax.reload();
   }
 
@@ -287,8 +285,7 @@ class TableController {
     }
   }
 
-  cb_toggle_group_colums(filters: Object) {
-    this.filters = filters;
+  cb_toggle_group_colums() {
     console.log("called?");
     this.table.columns().every(function () {
       const config = this.init();

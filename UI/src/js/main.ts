@@ -25,9 +25,9 @@ import { deductionKardex } from "./ui/deduction_kardex/deduction_kardex.ts";
 deductionKardex.init();
 state.init();
 
-controlPanel.events.on("view:changed", (filters: Object) => {
+controlPanel.events.on("view:changed", () => {
   console.log("hey?");
-  tableController.cb_toggle_group_colums(filters);
+  tableController.cb_toggle_group_colums();
 });
 
 controlPanel.events.on(
@@ -37,8 +37,8 @@ controlPanel.events.on(
   },
 );
 
-controlPanel.events.on("search-btn:clicked", (filters: Object | null) => {
-  tableController.get_data(filters);
+controlPanel.events.on("search-btn:clicked", () => {
+  tableController.get_data();
 });
 
 tableController.events.on("tube:dblclick", (...args) => {
