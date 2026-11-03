@@ -399,8 +399,8 @@ export class FabricCraft {
     },
   >(table_name: string, items: T[]) {
     let tom = this.map_tom_selects.get(table_name);
-    log.debug(this.map_tom_selects, table_name);
-    console.log("tommy here", tom, items);
+    // log.debug(this.map_tom_selects, table_name);
+    // console.log("tommy here", tom, items);
 
     if (!tom) {
       return;
@@ -409,7 +409,7 @@ export class FabricCraft {
     items.forEach((item) => {
       let display = item.name ? item.name : item.id;
       tom.addOption({ value: item.id, text: display, table_name: table_name });
-      log.debug({ value: item.id, text: display });
+      // log.debug({ value: item.id, text: display });
     });
 
     tom.refreshOptions();

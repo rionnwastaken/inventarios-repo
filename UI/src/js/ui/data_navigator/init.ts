@@ -74,14 +74,14 @@ class TableController {
       "#myTable_wrapper > div:nth-child(3)",
     );
 
-    // const xerxes = document.querySelector(".dt-search");
-    //
-    // const mainContainer = document.querySelector("#btn-new-tube").parentNode; // Your main flex container
-    // if (bottomRow && mainContainer) {
-    //   const btnNewTube = document.getElementById("btn-new-tube");
-    //   mainContainer.prepend(bottomRow);
-    //   mainContainer.prepend(xerxes);
-    // }
+    const xerxes = document.querySelector(".dt-search");
+
+    const mainContainer = document.querySelector("#btn-new-tube").parentNode; // Your main flex container
+    if (bottomRow && mainContainer) {
+      const btnNewTube = document.getElementById("btn-new-tube");
+      mainContainer.prepend(bottomRow);
+      mainContainer.prepend(xerxes);
+    }
   }
 
   body() {
