@@ -75,15 +75,7 @@ def create_item(table_name, value):
 @handle_db_exceptions
 def save_image(files):
     with db.session.begin():
-        latest_location = (
-            db.session.execute(select(Location).order_by(Location.id.desc()))
-            .scalars()
-            .first()
-        )
-        sequence_number = 1
-        if latest_location:
-            sequence_number = latest_location.sequence_number + 1
-        location = Location(image_path="", sequence_number=sequence_number)
+        location = Location(image_path="")
 
         db.session.add(location)
         db.session.flush()
@@ -105,8 +97,10 @@ def update_image(files, location_id):
         if not location:
             raise ValueError(f"Location not found with id {location_id}")
 
+        log.debug(f"files here lol? {files} ")
+
         process_file(files, location)
-        location_json = location.model_dump(mode="json")
+        location_json = location.payload()
         # TODO WHY it complains if new values and olva values empty dict
         AuditLogger.log(
             "Update",
@@ -259,3 +253,22 @@ def location_update(id: int, payload: dict):
         return {"location": location_json}, 200
 
         return before_location_json, 200
+
+
+@handle_db_exceptions
+def location_create():
+    with db.session.begin():
+        location = Location()
+        db.session.add(location)
+        db.session.flush()
+
+        location_json = location.payload()
+
+        AuditLogger.log(
+            "Insert",
+            "location",
+            location.id,
+            new_values=location_json,
+        )
+
+        return location_json

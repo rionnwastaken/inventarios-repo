@@ -79,9 +79,8 @@ class Location(SQLModel, table=True):
     __tablename__ = "location"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    sequence_number: int = Field(default=1)
     description: Optional[str] = Field(default=None, max_length=100)
-    image_path: str = Field(max_length=100)
+    image_path: Optional[str] = Field(max_length=100, default=None)
 
     tubes: List["Tube"] = Relationship(back_populates="location")
     tags: List["LocationTag"] = Relationship(

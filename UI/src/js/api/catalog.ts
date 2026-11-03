@@ -13,6 +13,10 @@ export const CatalogApi = {
     return await api.get("all");
   },
 
+  location_create: async () => {
+    return await api.get("/location/create/");
+  },
+
   get_optional_attributs_of_fabric: async () => {
     return await api.get("/fabric/optional_table_names_attributes");
   },

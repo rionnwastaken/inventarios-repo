@@ -63,7 +63,9 @@ export class LocationController {
         }
         this.slot_location_in_use = slot;
         slot.classList.add(slot_in_use_tw);
-        log.debug("setting color here to ", slot);
+        log.debug("Location passed");
+      } else {
+        log.debug("Not location passed here");
       }
     });
   }
@@ -91,9 +93,28 @@ export class LocationController {
       },
 
       onClose: () => {
-        if (this.slot_location_in_use) {
-          this.slot_location_in_use.classList.remove(slot_in_use_tw);
+        if (this.slot_location_in_use == null) {
+          this.resolvePromise(null);
+          this.resolvePromise = null;
+          return;
         }
+
+        let id = num(this.slot_location_in_use.dataset.id);
+
+        if (this.tube_location && this.tube_location.id == id) {
+          this.resolvePromise(null);
+        } else {
+          let data = state.catalagoData.data["location"];
+          let location = data.find((el) => el.id == id);
+          this.resolvePromise(location);
+        }
+
+        this.slot_location_in_use.classList.remove(slot_in_use_tw);
+        this.resolvePromise = null;
+        log.debug(
+          "data after closing location dialog ",
+          state.catalagoData.data["location"],
+        );
       },
     });
 
@@ -200,17 +221,17 @@ export class LocationController {
     }
   }
 
-  onDoubleClickSlot(slotCard) {
-    let id = num(slotCard.dataset.id);
-    log.debug("yeah bitch", this.tube_location, this.tube_location?.id, id);
-    if (this.tube_location && this.tube_location.id == id) {
+  set_slot_as_selected_location(slotCard) {
+    if (this.slot_location_in_use && this.slot_location_in_use == slotCard) {
       return;
     }
-    let data = state.catalagoData.data["location"];
-    let location = data.find((el) => (el.id = id));
-    this.resolvePromise(location);
-    this.modalDialog.close();
-    this.resolvePromise = null;
+
+    if (this.slot_location_in_use != null) {
+      this.slot_location_in_use.classList.remove(slot_in_use_tw);
+    }
+
+    this.slot_location_in_use = slotCard;
+    this.slot_location_in_use.classList.add(slot_in_use_tw);
   }
 
   bindEvents() {
@@ -233,8 +254,7 @@ export class LocationController {
       }
 
       if (slotCard == this.selected_slot) {
-        log.debug("same");
-        this.onDoubleClickSlot(slotCard);
+        this.set_slot_as_selected_location(slotCard);
         return;
       }
 
@@ -259,7 +279,7 @@ export class LocationController {
   loadSlots() {
     let el = this.createAddSlot();
     this.grid.appendChild(el);
-    console.log("loc", state.catalagoData.data["location"]);
+    console.log("loading locations", state.catalagoData.data["location"]);
     for (let location of state.catalagoData.data["location"] as Location[]) {
       this.createSlot(location);
     }
@@ -270,7 +290,7 @@ export class LocationController {
     let slot = createElementFromHTML(`
     <div data-id="${location.id}" class="flex flex-col border border-slate-200 rounded-lg p-3 bg-white shadow-sm relative">
       <div class="flex "> 
-          <span class="text-xs font-semibold text-slate-600 mb-2">Ubicación ${location.sequence_number}</span>
+          <span class="text-xs font-semibold text-slate-600 mb-2">Ubicación ${location.id}</span>
       </div>
       
       <div class="w-full aspect-[4/3] overflow-hidden rounded bg-slate-100">
@@ -335,27 +355,21 @@ export class LocationController {
   `);
 
     addslot_element.addEventListener("click", async () => {
-      let selected_file = await openFileExplorer();
-      if (selected_file == null) {
-        return;
-      }
-      const response = await CatalogApi.uploadLocationImage(selected_file);
-
-      if (!response.success) {
-        log.debug(response.data);
-        return;
-      }
-
-      let location = response.data.location as Location;
-      this.createSlot(location);
-
-      state.catalagoData.data["location"].push(location);
-      console.log("Upload successful:", response.data);
-
-      // Refresh your grid or render the new slot card here
+      await this.addLocation();
     });
 
     return addslot_element;
+  }
+
+  async addLocation() {
+    let res = await CatalogApi.location_create();
+
+    if (!res.success) {
+      log.debug(res.data);
+      return;
+    }
+    state.catalagoData.data["location"].push(res.data);
+    this.createSlot(res.data);
   }
 
   private createButtonOverlay(): HTMLElement {
@@ -407,7 +421,11 @@ export class LocationController {
         let imageCopy = image ? image.cloneNode(true) : null;
         log.debug("locationObj ", locatinoObj);
 
-        let data = await this.locationForm.open(locatinoObj, imageCopy);
+        let data = await this.locationForm.openForm(locatinoObj, imageCopy);
+
+        if (data == null) {
+          return;
+        }
         this.reset_searchBarTom();
 
         this.updateSlot(this.selected_slot, data.location);
@@ -417,12 +435,19 @@ export class LocationController {
     //TODO maybe the save button in the form is redundant and any cahnge to the image or tags should just save
 
     // Attach direct listener to Delete button
-    this.deletebtn.addEventListener("click", (e: MouseEvent) => {
+    this.deletebtn.addEventListener("click", async (e: MouseEvent) => {
       e.stopPropagation(); // Prevents triggering card click event
       const locationId = this.selected_slot.dataset.id;
       log.debug("clicked ", locationId);
       if (locationId) {
-        this.handleDeleteSlot(this.selected_slot, locationId);
+        let is_deleted = await this.handleDeleteSlot(
+          this.selected_slot,
+          locationId,
+        );
+
+        if (is_deleted && this.slot_location_in_use == this.selected_slot) {
+          this.slot_location_in_use = null;
+        }
       }
     });
 
@@ -459,7 +484,7 @@ export class LocationController {
       notiDialog.titleContainer.textContent = "Error";
       notiDialog.bodyContainer.textContent = res.data.error;
       notiDialog.show();
-      return;
+      return false;
     }
 
     log.debug("Deleted ", res.data);
@@ -468,6 +493,7 @@ export class LocationController {
     this.slots.pop();
     state.catalagoData.remove_by_id("location", locationId);
     console.log(`Delete clicked for slot ID: ${locationId}`);
+    return true;
   }
 
   loadTags() {
@@ -662,7 +688,7 @@ class LocationForm {
     });
   }
 
-  open(location: Location, locationImage) {
+  openForm(location: Location | null, locationImage) {
     return new Promise<{ location: Location } | null>((resolve) => {
       this.location = location;
       this.resolve_promise = resolve;

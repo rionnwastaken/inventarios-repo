@@ -196,3 +196,8 @@ def location_update():
         return Error(f"No ID provided or payload not provided {id} {payload}", 400)
 
     return service.location_update(id, payload)
+
+
+@catalago_bp.get("/location/create/")
+def location_create():
+    return service.location_create()
