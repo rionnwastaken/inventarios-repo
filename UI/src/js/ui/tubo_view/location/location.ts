@@ -151,8 +151,8 @@ export class LocationController {
       <select
         class="w-full input-lowercase searchbar"
       ></select>
-      <div class="top-container grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 p-4 w-full overflow-y-scroll flex-1 min-h-0">
-      </div>
+<div class="top-container grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4 p-4 w-full overflow-y-scroll flex-1 min-h-0">
+</div>
 
       <div class="bottom-container flex flex-col">
         <!-- Any extra content meant for the bottom goes here -->
@@ -308,7 +308,7 @@ export class LocationController {
           <span class="text-xs font-semibold text-slate-600 mb-2">Ubicación ${location.id}</span>
       </div>
       
-      <div class="w-full aspect-[4/3] overflow-hidden rounded bg-slate-100">
+      <div class="w-full  rounded bg-slate-100">
         <img 
           src="/images/${filename}" 
           alt="Thumbnail" 

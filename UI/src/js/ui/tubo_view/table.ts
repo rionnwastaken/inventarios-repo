@@ -118,7 +118,9 @@ export class TubeOverviewTable extends Table {
         svg: delete_icon,
         id: "delete-action",
         title: "Eliminar Tela",
+        btnClass: "text-red-800 bg-white w-14 h-14 hover:bg-red-300",
       })}
+
 
       ${createIconHTML({
         svg: move_icon,

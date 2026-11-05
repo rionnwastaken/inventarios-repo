@@ -125,14 +125,14 @@ def process_file(files, location: Location):
         file_storage=file,
         output_dir=constants.LOCATION_IMAGES,
         filename_prefix=f"image_{location.id}",
-        max_size=(300, 300),
+        max_size=(600, 600),
     )
 
     return file_path
 
 
 def process_and_save_thumbnail(
-    file_storage, output_dir: str, filename_prefix: str, max_size=(300, 300)
+    file_storage, output_dir: str, filename_prefix: str, max_size=(600, 600)
 ) -> str:
     from PIL import Image, ImageOps
 

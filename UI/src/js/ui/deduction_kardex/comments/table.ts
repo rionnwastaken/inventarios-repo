@@ -8,7 +8,7 @@ import {
   render_plain2,
 } from "../../renderUtils";
 
-import edit_icon from "../../../../assets/icons/edit.png";
+import delete_icon from "../../../../assets/icons/delete.svg?raw";
 
 type callback = (
   data: unknown,
@@ -31,11 +31,13 @@ export class CommentsTable extends Table {
 
   create_action_overlay(): HTMLDivElement {
     this.overlay_container = createElementFromHTML(`
-      <div class="dt-row-overlay absolute left-full top-0 z-[9999]  flex flex-col gap-2    border border-slate-700 whitespace-nowrap">
+      <div class="dt-row-overlay absolute right-1 top-0 z-[9999]  flex  gap-2   whitespace-nowrap">
       ${createIconHTML({
-        src: edit_icon,
         id: "delete-action",
         title: "Eliminar Deduccion",
+        svg: delete_icon,
+
+        btnClass: "text-red-800 bg-white w-12 h-12",
       })}
       </div>
 `);

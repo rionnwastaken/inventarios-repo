@@ -105,7 +105,7 @@ export function createIconHTML(options: IconOptions): string {
   }
   return `
     <button type="button" title="${title}" aria-label="${title}" class="${fullBtnClasses}" ${idAttr}>
-      <img src="${src}" alt="" class="" />
+      <img src="${src}" alt="" class="${imgClass}" />
     </button>
   `;
 }

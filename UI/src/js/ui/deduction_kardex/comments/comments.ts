@@ -16,7 +16,6 @@ import "datatables.net-dt/css/dataTables.dataTables.css";
 import "datatables.net-select-dt/css/select.dataTables.css";
 // import "datatables.net-dt/css/dataTables.dataTables.css";
 import { TypedEventEmitter } from "../../../emitter";
-import edit_icon from "../../../../assets/icons/edit.png";
 import { ActionOverlay } from "../../misc/ActionOverlay";
 import { CoreAPI } from "../../../api/core";
 import { FabricComment } from "../../../schema";
