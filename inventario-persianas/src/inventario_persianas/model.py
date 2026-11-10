@@ -36,15 +36,13 @@ class TimestampMixin(SQLModel):
     )
 
     @field_serializer("created_at", "updated_at")
-    def serialize_dt(self, dt: datetime | None, _info) -> str | None:
+    def serialize_dt(self, dt: Optional[datetime], _info) -> Optional[str]:
         if dt is None:
             return None
 
-        # If database/SQLAlchemy stripped tzinfo, explicitly force UTC
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
 
-        # Returns standard ISO string ending with 'Z' or offset (e.g., "2026-09-21T17:47:37.104709Z")
         return dt.isoformat()
 
 
@@ -69,7 +67,7 @@ class BlindModel(SQLModel, table=True):
 class CatalogTableNames(str, Enum):
     color = "color"
     blind_model = "blind_model"
-    supploer = "supplier"
+    supplier = "supplier"
     fabric_classification = "fabric_classification"
 
 
@@ -115,7 +113,6 @@ class LocationUpdate(SQLModel):
     image_path: Optional[str] = Field(max_length=100, default=None)
 
 
-# 3. Add reverse relationship to LocationTag
 class LocationTag(SQLModel, table=True):
     __tablename__ = "location_tag"  # type:ignore
 
@@ -145,11 +142,6 @@ class FabricClassification(SQLModel, table=True):
     fabrics: List["Fabric"] = Relationship(back_populates="classification")
 
 
-"""
-updated_at should happen when a modification to a fabric occurs
-"""
-
-
 class Tube(TimestampMixin, table=True):
     __tablename__ = "tube"  # type:ignore
 
@@ -162,28 +154,11 @@ class Tube(TimestampMixin, table=True):
     def payload(self):
         tube = self.model_dump(mode="json")
         tube["fabric_count"] = len(self.fabrics)
-
         return tube
 
 
-"""
-When a tube is rectified, it means that the tube was opened in real life
-The fabric model, color, measurements are checked
-That data is sent to the person using the software
-Checks if there is discrenpancies for example
-Measurements match in a fabric but color and model are different, update
-A fabric that does not seem registered is added
-When a fabric was not in the rectification it should be deleted
-In this step of the process, the person in the software must be wise to determine
-where the discrenpacies occur in the fabrics and do the corresponding modifications
-"""
-
-
-"""So many attributes are optional, but thats what it is currently """
-
-
 class Fabric(TimestampMixin, table=True):
-    __tablename__ = "fabric"  # type:ignore #type:ignore
+    __tablename__ = "fabric"  # type:ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     tube_id: int = Field(foreign_key="tube.id")
@@ -192,12 +167,9 @@ class Fabric(TimestampMixin, table=True):
     fabric_classification_id: int = Field(foreign_key="fabric_classification.id")
     supplier_id: Optional[int] = Field(default=None, foreign_key="supplier.id")
 
-    # meters
     original_width: Decimal
     original_height: Decimal
-    is_archived: bool = Field(
-        default=False
-    )  # Fabrics that are of no use no more but kept in history
+    is_archived: bool = Field(default=False)
     remaining_percent: Decimal = Field(default=Decimal(100), index=True)
 
     # Relationships
@@ -207,7 +179,6 @@ class Fabric(TimestampMixin, table=True):
     classification: Optional[FabricClassification] = Relationship(
         back_populates="fabrics"
     )
-
     supplier: Optional[Supplier] = Relationship(back_populates="fabrics")
     comments: List["FabricComment"] = Relationship(
         back_populates="fabric",
@@ -259,13 +230,6 @@ class FabricUpdate(SQLModel):
     is_archived: Optional[bool] = None
 
 
-class FabricMarkForDeletion(TimestampMixin):
-    __tablename__ = "fabric_mark_for_deletion"  # type:ignore #type:ignore
-    comment: str = Field()
-    tube_id: int = Field(foreign_key="tube.id")
-    tube: Optional[Fabric] = Relationship(back_populates="fabric_mark_for_deletion")
-
-
 class FabricComment(TimestampMixin, table=True):
     __tablename__ = "fabric_comment"  # type:ignore
 
@@ -279,22 +243,6 @@ class FabricComment(TimestampMixin, table=True):
 class FabricCommentUpdate(TimestampMixin):
     id: Optional[int] = Field(default=None, primary_key=True)
     comment: Optional[str] = Field(default=None, max_length=500)
-
-
-"""
-So we are going to display the original measurement and also the actual value that it has
-The history of quantity removed (We can only remove, not possible to add but we can update history)
-If you try to remove more that it makes the current value less that 0 , then it must error cause you cant and 
-you are tring to squeeze more out of the lemon when there is none.
-Finally when the value is set to 0 
-The fabric gets flagged for adding it to the archive, so that it is not searchable in the current active blinds
-Maybe if a tube has only that fabric, then the tube is also sent to the archive or idk
-I think only height is ever removed from the blind i think, gotta ask
-Example
-
-Current value 2.0 m | original 3.0 m
-        - 1.0 m
-"""
 
 
 class FabricDeduction(TimestampMixin, table=True):
@@ -326,7 +274,7 @@ class FabricDeductionUpdate(SQLModel):
 
 
 class AuditLog(TimestampMixin, table=True):
-    __tablename__ = "audit_log"  # type: ignore #type:ignore
+    __tablename__ = "audit_log"  # type: ignore
 
     id: Optional[int] = Field(default=None, primary_key=True)
     action: str = Field(max_length=50)
@@ -348,27 +296,17 @@ class ExcelInfoLocationLink(SQLModel, table=True):
 
 
 class ExcelTubeInfo(TimestampMixin, table=True):
-    """
-    If id == excel_tube_id, it means that the tube can mantain tube_id
-    If id != excel_tube_id, it means that the tube needs to change id in the real world
-    """
-
-    __tablename__ = "excel_tube_info"  # type:ignore #type:ignore
+    __tablename__ = "excel_tube_info"  # type:ignore
     id: Optional[int] = Field(default=None, primary_key=True)
     tube_id: int = Field(foreign_key="tube.id")
     excel_tube_id: int
     verified: bool = Field(default=True, index=False)
-    rename_transformation_complete: bool = Field(
-        default=True, index=False
-    )  # physical tube id has  changed to new tube id
+    rename_transformation_complete: bool = Field(default=True, index=False)
 
     textile_id: int = Field(default=None, foreign_key="fabric_classification.id")
 
     tube: Optional[Tube] = Relationship()
-
-    textile: Optional[FabricClassification] = (
-        Relationship()
-    )  # To know which duplicate we are searchig for
+    textile: Optional[FabricClassification] = Relationship()
     locations: List["ExcelTubeLocation"] = Relationship(
         back_populates="infos", link_model=ExcelInfoLocationLink
     )
@@ -407,7 +345,6 @@ def touch_parent_tube(mapper, connection, target: Fabric):
     )
 
 
-from datetime import datetime
 from sqlalchemy import event, select
 
 
@@ -420,12 +357,10 @@ def update_fabric_and_tube_on_deduction_change(
     log.debug("update_fabric_and_tube_on_deduction_change()")
     now = datetime.now(timezone.utc)
 
-    # 1. Update parent Fabric
     connection.execute(
         update(Fabric).where(Fabric.id == target.fabric_id).values(updated_at=now)
     )
 
-    # 2. Query tube_id directly using the Core connection
     tube_id = connection.scalar(
         select(Fabric.tube_id).where(Fabric.id == target.fabric_id)
     )
@@ -434,7 +369,6 @@ def update_fabric_and_tube_on_deduction_change(
         log.error("Fabric or Tube ID not found for fabric_id %s", target.fabric_id)
         return
 
-    # 3. Update grandparent Tube
     connection.execute(update(Tube).where(Tube.id == tube_id).values(updated_at=now))
 
 
@@ -445,12 +379,10 @@ def update_fabric_and_tube_on_comment_change(mapper, connection, target: FabricC
     log.debug("update_fabric_and_tube_on_comment_change()")
     now = datetime.now(timezone.utc)
 
-    # 1. Update parent Fabric
     connection.execute(
         update(Fabric).where(Fabric.id == target.fabric_id).values(updated_at=now)
     )
 
-    # 2. Query tube_id directly using the Core connection
     tube_id = connection.scalar(
         select(Fabric.tube_id).where(Fabric.id == target.fabric_id)
     )
@@ -459,13 +391,11 @@ def update_fabric_and_tube_on_comment_change(mapper, connection, target: FabricC
         log.error("Fabric or Tube ID not found for fabric_id %s", target.fabric_id)
         return
 
-    # 3. Update grandparent Tube
     connection.execute(update(Tube).where(Tube.id == tube_id).values(updated_at=now))
 
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
-    # Only execute for SQLite databases
     if db.engine.dialect.name == "sqlite":
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
@@ -500,3 +430,4 @@ db = SQLAlchemy(model_class=SQLModel)
 
 if __name__ == "__main__":
     pass
+

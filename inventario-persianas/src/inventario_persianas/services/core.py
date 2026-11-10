@@ -1,7 +1,7 @@
 import logging
 
 from operator import and_
-from typing import List, Optional
+from typing import Dict, List, Optional,Tuple
 from decimal import Decimal
 from functools import wraps
 
@@ -119,7 +119,7 @@ def delete_tube(id):
 
 
 @handle_db_exceptions
-def update_tube(tube_id: int, payload: dict):
+def update_tube(tube_id: int, payload: Dict):
     with db.session.begin():
         tube = db.session.get(Tube, tube_id)
 
@@ -250,8 +250,8 @@ def apply_filters(stmt, filters):
     for key, relationship_attr in EXCEL_INFO_FILTERS.items():
         values = filters.get(key)
         if values:
-            # Ensure values is treated as a list for .in_()
-            if not isinstance(values, (list, tuple)):
+            # Ensure values is treated as a List for .in_()
+            if not isinstance(values, (List, Tuple)):
                 values = [values]
 
             stmt = stmt.where(relationship_attr.any(ExcelTubeLocation.id.in_(values)))
@@ -371,7 +371,7 @@ def get_tube_data(id: int):
 
 
 @handle_db_exceptions
-def add_fabric(fabric_data: dict):
+def add_fabric(fabric_data: Dict):
 
     log.debug(f"Fabrics to add data {fabric_data} ")
     with db.session.begin():
@@ -447,7 +447,7 @@ def delete_fabric(id: int):
 
 # TODO prevent if trying to move to current tube
 @handle_db_exceptions
-def move_fabric(fabric_id: int, payload: dict):
+def move_fabric(fabric_id: int, payload: Dict):
     log.debug("move_fabric")
 
     retval = update_fabric(fabric_id, payload, {"message": "Move to another tube"})
@@ -536,7 +536,7 @@ def search_excel_tubes(query):
 
 
 @handle_db_exceptions
-def update_fabrics(data: list[dict]) -> tuple[List[dict], int]:
+def update_fabrics(data: List[Dict]) -> Tuple[List[Dict], int]:
     updated_fabrics = []
     with db.session.begin():
         for index, item in enumerate(data):
@@ -596,7 +596,7 @@ def update_fabrics(data: list[dict]) -> tuple[List[dict], int]:
         return updated_fabrics, 200
 
 
-def prevent_fabric_invalid_measurement_update(fabric: Fabric, payload: dict):
+def prevent_fabric_invalid_measurement_update(fabric: Fabric, payload: Dict):
     if len(fabric.deductions) > 0 and (
         payload.get("original_width" or payload.get("original_height"))
     ):
@@ -606,7 +606,7 @@ def prevent_fabric_invalid_measurement_update(fabric: Fabric, payload: dict):
 
 
 @handle_db_exceptions
-def update_fabric(id: int, payload: dict, extra: dict[str, str] = None):
+def update_fabric(id: int, payload: Dict, extra: Dict[str, str] = None):
     if not extra:
         extra = {}
     with db.session.begin():
@@ -785,8 +785,8 @@ def deduction_new(deduction):
 
 @handle_db_exceptions
 def update_deduction(
-    fabric_id: int, deduction_id: int, deduction_payload: dict
-) -> tuple[dict, int]:
+    fabric_id: int, deduction_id: int, deduction_payload: Dict
+) -> Tuple[Dict, int]:
     log.debug("update_deduction(fabric_id, deduction)")
     log.debug(fabric_id, deduction_payload)
     with db.session.begin():
@@ -884,7 +884,7 @@ def deduction_delete(fabric_id: int, deduction_id: int):
 
 
 @handle_db_exceptions
-def comment_new(comment: dict):
+def comment_new(comment: Dict):
     log.info("comment_new(comment:")
     with db.session.begin():
         fabric_id = comment.get("fabric_id")
@@ -909,7 +909,7 @@ def comment_new(comment: dict):
 
 
 @handle_db_exceptions
-def comment_update(comment_id: int, payload: dict):
+def comment_update(comment_id: int, payload: Dict):
 
     with db.session.begin():
         comment = db.session.get(FabricComment, comment_id)

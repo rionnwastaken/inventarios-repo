@@ -13,7 +13,7 @@ from typing import Any, Dict
 log = logging.getLogger()
 
 
-type Action = Literal["Insert", "Delete", "Update"]
+Action = Literal["Insert", "Delete", "Update"]
 
 
 class Error:
@@ -21,7 +21,7 @@ class Error:
     default_status: int
 
     def __init__(self, obj, default_status=400) -> None:
-        if isinstance(obj, Exception) and obj.args and isinstance(obj.args[0], dict):
+        if isinstance(obj, Exception) and obj.args and isinstance(obj.args[0], Dict):
             self.obj = obj.args[0]
         else:
             self.obj = obj
@@ -32,7 +32,7 @@ class Error:
         log.debug("bublebutt")
         log.debug(self.obj)
 
-        if isinstance(self.obj, dict):
+        if isinstance(self.obj, Dict):
             status = self.obj.get("status")
             log.debug(f"status is {status}")
             if status is None:
@@ -64,16 +64,16 @@ class AuditLogger:
     def _build_changes(
         cls,
         action: Action,
-        old_values: Optional[dict],
-        new_values: Optional[dict],
-    ) -> dict:
-        """Enforces required payload inputs and constructs the changes dictionary."""
+        old_values: Optional[Dict],
+        new_values: Optional[Dict],
+    ) -> Dict:
+        """Enforces required payload inputs and constructs the changes Dictionary."""
         changes = {}
 
         if action == "Insert":
             if not new_values:
                 raise ValueError(
-                    "`new_values` dictionary is required for INSERT action."
+                    "`new_values` Dictionary is required for INSERT action."
                 )
             for column, new_val in new_values.items():
                 if new_val == None:
@@ -95,7 +95,7 @@ class AuditLogger:
         elif action == "Delete":
             if not old_values:
                 raise ValueError(
-                    "`old_values` dictionary is required for DELETE action."
+                    "`old_values` Dictionary is required for DELETE action."
                 )
             for column, old_val in old_values.items():
                 if old_val == None:
@@ -110,11 +110,11 @@ class AuditLogger:
         action: Action,
         target_table: str,
         target_id: int,
-        old_values: Optional[dict] = None,
-        new_values: Optional[dict] = None,
+        old_values: Optional[Dict] = None,
+        new_values: Optional[Dict] = None,
         message: Optional[str] = None,
         flush: bool = True,
-    ) -> dict:
+    ) -> Dict:
         """
         Single entrypoint to construct, persist, and dump an AuditLog entry.
         """

@@ -1,5 +1,5 @@
-from typing import TypedDict
+from typing import TypedDict,Dict
 
 
 class Change(TypedDict):
-    data: dict
+    data: Dict

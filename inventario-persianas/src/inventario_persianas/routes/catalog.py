@@ -2,7 +2,7 @@ import json
 import logging
 
 from sqlalchemy.orm import selectinload
-
+from typing import List
 import inventario_persianas.services.catalogs as service
 import inventario_persianas.model as mod
 from flask import Blueprint, request
@@ -26,11 +26,11 @@ log = logging.getLogger(__name__)
 catalago_bp = Blueprint("catalago", __name__)
 
 
-@catalago_bp.get("/colors/list")
+@catalago_bp.get("/colors/List")
 def colors():
     colors = db.session.scalars(Select(mod.Color))
     return {
-        "data": ([color.model_dump() for color in list(colors)]),
+        "data": ([color.model_dump() for color in List(colors)]),
     }
 
 
@@ -40,7 +40,7 @@ def table_names():
     names = {
         CatalogTableNames.color: "Color",
         CatalogTableNames.blind_model: "Modelo de Tela",
-        CatalogTableNames.supploer: "Proveedor",
+        CatalogTableNames.supplier: "Proveedor",
         CatalogTableNames.fabric_classification: "Tejido",
     }
 
@@ -97,10 +97,10 @@ def colors_remove():
 def colors_bulk_remove():
 
     data = request.get_json()
-    id_colors: list[int] = data.get("id_colors")
+    id_colors: List[int] = data.get("id_colors")
 
     if not id_colors:
-        return {"error": "'id_colors' list[int] not passed"}, 400
+        return {"error": "'id_colors' List[int] not passed"}, 400
 
     stmt = delete(Color).where(Color.id.in_(id_colors))
     try:

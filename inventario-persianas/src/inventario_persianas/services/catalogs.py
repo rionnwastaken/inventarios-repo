@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from typing import List,Dict
 from sqlmodel import SQLModel, select
 
 from inventario_persianas import constants
@@ -42,7 +43,7 @@ def delete_color(db: Session, id: int):
 
 @handle_db_exceptions
 def create_item(table_name, value):
-    cat_arr: list[type[SQLModel]] = [
+    cat_arr: List[type[SQLModel]] = [
         Color,
         Supplier,
         FabricClassification,
@@ -103,7 +104,7 @@ def update_image(files, location_id):
 
         process_file(files, location)
         location_json = location.payload()
-        # TODO WHY it complains if new values and olva values empty dict
+        # TODO WHY it complains if new values and olva values empty Dict
         AuditLogger.log(
             "Update",
             "location",
@@ -161,7 +162,7 @@ def process_and_save_thumbnail(
 
 
 @handle_db_exceptions
-def location_update_data(location_data: dict, id):
+def location_update_data(location_data: Dict, id):
     with db.session.begin():
         location = db.session.get(Location, id, options=[selectinload(Location.tags)])
 
@@ -206,7 +207,7 @@ def location_delete(id: int):
 
 
 @handle_db_exceptions
-def location_update(id: int, payload: dict):
+def location_update(id: int, payload: Dict):
     log.debug("location_update:")
     log.debug("payload is ", payload)
     with db.session.begin():
@@ -216,8 +217,8 @@ def location_update(id: int, payload: dict):
 
         tags_id = payload.get("tags_id")
 
-        if tags_id != None and not isinstance(tags_id, list):
-            raise ValueError(f"attribute tags_id is not a list {tags_id}")
+        if tags_id != None and not isinstance(tags_id, List):
+            raise ValueError(f"attribute tags_id is not a List {tags_id}")
 
         before_location_json = location.payload()
 
@@ -227,7 +228,7 @@ def location_update(id: int, payload: dict):
 
             if current_ids != incoming_ids:
                 statement = select(LocationTag).where(LocationTag.id.in_(incoming_ids))
-                tags = list(db.session.execute(statement).scalars())
+                tags = List(db.session.execute(statement).scalars())
 
                 found_ids = {tag.id for tag in tags}
                 missing_ids = incoming_ids - found_ids

@@ -103,7 +103,7 @@ def search_excel_tubes():
     return core.search_excel_tubes(query)
 
 
-# If q is empty or not digits, return an empty list immediately
+# If q is empty or not digits, return an empty List immediately
 
 
 @core_bp.post("/tube/update/")
