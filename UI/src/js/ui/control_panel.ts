@@ -577,6 +577,21 @@ class ControlPanel {
     state.active_view = "tube";
     this.view_text.textContent = get_view_text(state.active_view);
   }
+
+  update_tom_data(table_name) {
+    let tom = this.map_tom_selects.get(table_name);
+
+    if (tom == undefined) {
+      return;
+    }
+
+    tom.clear();
+    state.catalagoData.data[table_name].forEach((item) => {
+      let display = item.name ? item.name : item.id;
+      tom.addOption({ value: item.id, text: display, table_name: table_name });
+      // log.debug({ value: item.id, text: display });
+    });
+  }
 }
 
 function get_view_text(state: ViewMode) {

@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 from pydantic import field_serializer
 import decimal
 
+from enum import Enum
+
 
 from sqlalchemy import JSON, Column, DateTime, Engine, event, update
 from sqlmodel import Field, Relationship, SQLModel
@@ -62,6 +64,21 @@ class BlindModel(SQLModel, table=True):
     name: str = Field(max_length=100)
 
     fabrics: List["Fabric"] = Relationship(back_populates="blind_model")
+
+
+class CatalogTableNames(str, Enum):
+    color = "color"
+    blind_model = "blind_model"
+    supploer = "supplier"
+    fabric_classification = "fabric_classification"
+
+
+class CatalogItemCount(SQLModel, table=True):
+    __tablename__ = "catalog_item_count"  # type:ignore
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(max_length=100)
+    table_name: CatalogTableNames = Field(sa_column_kwargs={"nullable": False})
+    count: int = Field(default=0)
 
 
 class LocationTagLink(SQLModel, table=True):
@@ -464,6 +481,8 @@ catalago_models = [
     LocationTag,
     ExcelTubeLocation,
 ]
+
+model_map = {model.__tablename__: model for model in catalago_models}
 
 
 fabric_column2catalago_models = {

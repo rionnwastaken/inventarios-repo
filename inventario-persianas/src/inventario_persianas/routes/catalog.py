@@ -8,6 +8,7 @@ import inventario_persianas.model as mod
 from flask import Blueprint, request
 from inventario_persianas.model import (
     BlindModel,
+    CatalogTableNames,
     Color,
     FabricClassification,
     Location,
@@ -31,6 +32,19 @@ def colors():
     return {
         "data": ([color.model_dump() for color in list(colors)]),
     }
+
+
+@catalago_bp.get("/catalago/table_names")
+def table_names():
+
+    names = {
+        CatalogTableNames.color: "Color",
+        CatalogTableNames.blind_model: "Modelo de Tela",
+        CatalogTableNames.supploer: "Proveedor",
+        CatalogTableNames.fabric_classification: "Tejido",
+    }
+
+    return names, 200
 
 
 @catalago_bp.post("/colors/add")
@@ -201,3 +215,44 @@ def location_update():
 @catalago_bp.get("/location/create/")
 def location_create():
     return service.location_create()
+
+
+@catalago_bp.post("/item/rename/")
+def item_rename():
+
+    data = request.get_json() or {}
+    id = data.get("id")
+    value = data.get("value")
+    table_name = data.get("table_name")
+
+    if id == None or not value or not table_name:
+        return Error(f"id or value or table_name not found {data}").returnIt()
+
+    return service.item_rename(id, value, table_name)
+
+
+@catalago_bp.post("/item/replace/")
+def item_replace():
+
+    data = request.get_json() or {}
+    previous_id = data.get("previous_id")
+    new_id = data.get("new_id")
+    table_name = data.get("table_name")
+
+    if previous_id == None or new_id == None or not table_name:
+        return Error(f"previous_id or new_id or table_name not found {data}").returnIt()
+
+    return service.item_replace(previous_id, new_id, table_name)
+
+
+@catalago_bp.post("/item/delete/")
+def item_delete():
+
+    data = request.get_json() or {}
+    id = data.get("id")
+    table_name = data.get("table_name")
+
+    if id == None or not table_name:
+        return Error(f"id or table_name not found {data}").returnIt()
+
+    return service.item_delete(id, table_name)

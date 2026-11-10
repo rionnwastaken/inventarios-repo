@@ -67,6 +67,37 @@ export const CatalogApi = {
     });
   },
 
+  item_rename: async (id: Number, value: String, table_name: String) => {
+    return await api.post("/item/rename/", {
+      id: id,
+      value: value,
+      table_name: table_name,
+    });
+  },
+
+  item_replace: async (
+    previous_id: Number,
+    new_id: Number,
+    table_name: String,
+  ) => {
+    return await api.post("/item/replace/", {
+      previous_id: previous_id,
+      new_id: new_id,
+      table_name: table_name,
+    });
+  },
+
+  item_delete: async (id: Number, table_name: String) => {
+    return await api.post("/item/delete/", {
+      id: id,
+      table_name: table_name,
+    });
+  },
+
+  get_catalago_table_names: async () => {
+    return await api.get("/catalago/table_names");
+  },
+
   location_update: async (location_id: number, paylod: Partial<Location>) => {
     return await api.post("/location/update/", {
       id: location_id,

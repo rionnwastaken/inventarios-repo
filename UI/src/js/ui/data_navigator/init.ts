@@ -219,6 +219,10 @@ class TableController {
     return true;
   }
 
+  reload() {
+    this.table.ajax.reload(null, false);
+  }
+
   async delete_fabric(fabric: Fabric, row) {
     let res = await CoreAPI.fabric_delete(fabric.id);
     if (!res.success) {

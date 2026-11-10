@@ -6,10 +6,12 @@ from inventario_persianas import constants
 from inventario_persianas.model import (
     BlindModel,
     Color,
+    Fabric,
     FabricClassification,
     LocationTag,
     Supplier,
     Tube,
+    model_map,
 )
 from sqlalchemy import Delete, exists
 from sqlalchemy.orm import Session, selectinload
@@ -272,3 +274,149 @@ def location_create():
         )
 
         return location_json
+
+
+@handle_db_exceptions
+def item_rename(id: int, value: str, table_name: str):
+
+    with db.session.begin():
+        model = model_map.get(table_name)
+        if not model:
+            raise ValueError(f"Model not found with table_name {table_name}")
+
+        item: SQLModel | None = db.session.get(model, id)
+        if not item:
+            raise ValueError(f"Item not found with {model} and id {id}")
+
+        value = value.lower().strip()
+        item_already_exists = db.session.scalar(
+            select(model).where(model.name == value)
+        )
+
+        if item_already_exists:
+            raise ValueError({"message": f"Item {value} already exists", "status": 409})
+
+        item_previous_dump = item.model_dump(mode="json")
+
+        item.name = value
+        db.session.add(item)
+
+        item_dump = item.model_dump(mode="json")
+        AuditLogger.log(
+            "Update",
+            table_name,
+            id,
+            old_values=item_previous_dump,
+            new_values=item_dump,
+        )
+
+        return item_dump
+
+
+@handle_db_exceptions
+def item_replace(previous_id: int, new_id: int, table_name: str):
+    with db.session.begin():
+        model = model_map.get(table_name)
+        if not model:
+            raise ValueError(f"Model not found with table_name '{table_name}'")
+
+        previous_item = db.session.get(model, previous_id)
+        if not previous_item:
+            raise ValueError(
+                f"Previous item not found with model {model.__name__} and id {previous_id}"
+            )
+
+        new_item = db.session.get(model, new_id)
+        if not new_item:
+            raise ValueError(
+                f"New item not found with model {model.__name__} and id {new_id}"
+            )
+
+        # Derive the foreign key attribute name on Fabric (e.g., table_name = "category" -> "category_id")
+        fk_attribute_name = f"{table_name}_id"
+
+        # Verify the Fabric model actually has this attribute
+        if not hasattr(Fabric, fk_attribute_name):
+            raise AttributeError(f"Model Fabric has no attribute '{fk_attribute_name}'")
+
+        fk_column = getattr(Fabric, fk_attribute_name)
+
+        # Query fabrics linked to the previous item ID
+        fabrics = db.session.scalars(
+            select(Fabric).where(fk_column == previous_id)
+        ).all()
+
+        count = 0
+        for fabric in fabrics:
+            old_fabric_payload = fabric.payload()
+
+            # Update the foreign key value using setattr
+            setattr(fabric, fk_attribute_name, new_id)
+
+            fabric_payload = fabric.payload()
+
+            db.session.add(fabric)
+            AuditLogger.log(
+                "Update",
+                "fabric",
+                fabric.id,
+                old_values=old_fabric_payload,
+                new_values=fabric_payload,
+            )
+            count += 1
+
+        old_values = previous_item.model_dump(mode="json")
+        new_values = new_item.model_dump(mode="json")
+
+        db.session.delete(previous_item)
+        AuditLogger.log(
+            "Delete", model.__tablename__, previous_id, old_values=old_values
+        )
+
+        return {"old": old_values, "new": new_values}
+
+
+@handle_db_exceptions
+def item_delete(id: int, table_name: str):
+
+    with db.session.begin():
+        model = model_map.get(table_name)
+        if not model:
+            raise ValueError(f"Model not found with table_name {table_name}")
+
+        item: SQLModel | None = db.session.get(model, id)
+        if not item:
+            raise ValueError(f"Item not found with {model} and id {id}")
+
+        fk_attribute_name = f"{table_name}_id"
+
+        if not hasattr(Fabric, fk_attribute_name):
+            raise AttributeError(f"Model Fabric has no attribute '{fk_attribute_name}'")
+
+        fk_column = getattr(Fabric, fk_attribute_name)
+        fabrics = db.session.scalars(select(Fabric).where(fk_column == id)).all()
+
+        for fabric in fabrics:
+            fabric_previous_dump = fabric.payload()
+            setattr(fabric, fk_attribute_name, None)
+            fabric_dump = fabric.payload()
+
+            AuditLogger.log(
+                "Update",
+                "fabric",
+                id,
+                old_values=fabric_previous_dump,
+                new_values=fabric_dump,
+            )
+
+        item_dump = item.model_dump(mode="json")
+        db.session.delete(item)
+
+        AuditLogger.log(
+            "Delete",
+            table_name,
+            id,
+            old_values=item_dump,
+        )
+
+        return item_dump

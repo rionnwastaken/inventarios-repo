@@ -315,6 +315,7 @@ export class FabricCraft {
   }
 
   insert_data_to_tom_selects(fabric: Fabric) {
+    log.debug("inserting fabric in farbcicraft ", fabric);
     for (let tom of this.tom_selects) {
       tom.clear();
       let table_name = tom.customData.table_name;
@@ -414,6 +415,21 @@ export class FabricCraft {
 
     tom.refreshOptions();
     tom.close();
+  }
+
+  update_tom_data(table_name) {
+    let tom = this.map_tom_selects.get(table_name);
+
+    if (tom == undefined) {
+      return;
+    }
+
+    tom.clear();
+    state.catalagoData.data[table_name].forEach((item) => {
+      let display = item.name ? item.name : item.id;
+      tom.addOption({ value: item.id, text: display, table_name: table_name });
+      // log.debug({ value: item.id, text: display });
+    });
   }
 
   cb_initModalDropdowns() {

@@ -45,6 +45,10 @@ export interface CatalogItem {
   table_name: string;
 }
 
+export interface CatalogItemCount extends CatalogItem {
+  count: number;
+}
+
 export interface Location extends SchemaLocation {
   tags: LocationTag[];
 }

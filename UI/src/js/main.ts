@@ -22,8 +22,29 @@ import { TableView } from "./typeObj.ts";
 import { state } from "./state.ts";
 import { deductionKardex } from "./ui/deduction_kardex/deduction_kardex.ts";
 
+import { catalogEditor } from "./ui/catalog_editor/inits.ts";
+
+catalogEditor.init();
 deductionKardex.init();
 state.init();
+
+catalogEditor.events.on("item:renamed", (item, table_name) => {
+  tableController.reload();
+  controlPanel.update_tom_data(table_name);
+  tubeOverview.fabricCraft.update_tom_data(table_name);
+});
+
+catalogEditor.events.on("item:replaced", (item, table_name) => {
+  tableController.reload();
+  controlPanel.update_tom_data(table_name);
+  tubeOverview.fabricCraft.update_tom_data(table_name);
+});
+
+catalogEditor.events.on("item:deleted", (item, table_name) => {
+  tableController.reload();
+  controlPanel.update_tom_data(table_name);
+  tubeOverview.fabricCraft.update_tom_data(table_name);
+});
 
 controlPanel.events.on("view:changed", () => {
   console.log("hey?");
@@ -56,6 +77,7 @@ state.events.on("catalago:loaded", () => {
   tubeOverview.locationController.loadSlots();
   tubeOverview.locationController.loadTags();
   controlPanel.cb_initModalDropdowns();
+  catalogEditor.init_table_with_catalago_data();
 });
 
 tubeOverview.events.on("catalog_item:added", (...args) => {
