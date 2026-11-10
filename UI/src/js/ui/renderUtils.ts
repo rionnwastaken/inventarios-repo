@@ -28,14 +28,14 @@ export function render_plain(
 }
 
 export function render_plain2(info: RenderingInfo) {
+  let value = info.data?.[info.column_id] ?? "";
   if (info.type === "display") {
-    let value = info.data?.[info.column_id] ?? "";
     if (info.format_func) {
       value = info.format_func(value, info.data);
       // log.debug("value here is ", value);
     }
-    return value;
   }
+  return value;
 }
 
 export function format_measurement(value) {

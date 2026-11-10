@@ -8,5 +8,4 @@ export const fabric_catalago_title_id: [string, string][] = [
 export let tube_title_id = [
   ["Tubo ID", "id"],
   ["Cantidad Telas", "fabric_count"],
-  ["Ubicacion ID", "location_id"],
 ];

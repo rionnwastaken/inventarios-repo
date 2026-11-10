@@ -91,6 +91,17 @@ export class NavigationTable extends Table {
           rendering_func: render_plain2,
         }),
       ),
+
+      column2({
+        id: "",
+        column_name: "Ubicacion ID",
+        group: "tube",
+        rendering_func: (info: RenderingInfo) => {
+          let data = info.data as Tube;
+          let text = data.location_id ? data.location_id : "Sin ubicacion";
+          return text;
+        },
+      }),
     ];
 
     const fabric_columns = [
