@@ -1,24 +1,32 @@
 Features
-  button to mark fabric as archived
-  button to show only archived fabrics in tube view
   tab to be able to edit items in catalago, maybe rename and delete ( lets you know that all that have it will become null now)
-  implement filtering logic and UI
-  TableController to use Table class
-  Delete tube without any fabric 
   create manual tutorial and concepts of the program
-  Replace the icons toones that represent the action
-  fabrcs that are added by script should keep their possible locations
   make the tables overflow y  clip  and fix the overlay that overlaps with the scroll bar
-  fix add tube btn
-  change text  modelo de persiana to modelo de tejido
-  search tubes of with excel_id
-  filters for searching data with excel info, (excel_tube_id,excel_location)
   configuration, option to toggle tools for searching with excel_info (hide and show)
-  prevent tube creating in fabric vierw
-  button to add tube with tube id as input and validations
   fix spinner size searchng tubes
+  add action overlay in  navigation table for fabrics with the actions of tube view
+  multiple selection to do action in selected rows (edit,delete,archive)
+  filter location tom select (also allow without location [first option] ) 
+
+  #Task Item Editor
 
 
+in the scripts that gathers fabrics, make sure to include the ones where measurements is null and insert as 0
+
+
+  Replace the icons toones that represent the action done
+  fabrcs that are added by script should keep their possible locations done
+  change text  modelo de persiana to modelo de tejido d done
+  search tubes of with excel_id done
+  filters for searching data with excel info, (excel_tube_id,excel_location) done
+  Delete tube without any fabric done
+  TableController to use Table class done
+  implement filtering logic and UI done
+  button to show  archived fabrics in tube view done
+  button to mark fabric as archived done
+
+  prevent tube creating in fabric vierw done
+  button to add tube with tube id as input and validations done
   make sure list of exel tubes shows repeatedd tubes together, not far away done
   fabric show tube number done
   error en fabriccraft actualizar tabla con nuevo valor bug done
@@ -62,3 +70,28 @@ Karla
 Blackout
 
 
+
+Task description
+
+
+#Item Editor
+dialog to edit catalago data, maybe displays  a dt table of one catalago, there is a button to switch to another catalago
+and in the table should display the catalago item and the count being used, a row can be clicked to select  and options appear
+delete,edit,
+edit:
+    allows to change name
+        if the name does not exist, prompts for it and warns what will happen
+
+    if new name exists:
+        it warns that it will update the name of  the  item 
+
+delete:
+    it warns that it will the delete the item, and all fabrics that use the item will remove that item from it
+
+the first time the program runs, it checks if the table that stores the count is empty, if so, ruuns a  function that gathers 
+the counts  for each catalago item
+
+the table holds 
+catalago_table_name
+item_name
+count

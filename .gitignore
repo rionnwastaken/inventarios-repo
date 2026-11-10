@@ -103,3 +103,8 @@ Thumbs.db
 
 # JetBrains IDEs (WebStorm, PyCharm, etc.)
 .idea/
+
+assets/
+carambas_images/
+carambas_names.txt
+inventario-persianas/filtered_out_rows.csv

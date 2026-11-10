@@ -38,7 +38,6 @@ import edit_icon from "../../../assets/icons/edit2.svg?raw";
 import move_icon from "../../../assets/icons/move.svg?raw";
 import delete_icon from "../../../assets/icons/delete.svg?raw";
 import archive_icon from "../../../assets/icons/archive.svg?raw";
-import un_archive_icon from "../../../assets/icons/un_archive.svg?raw";
 
 let log = getLogger("app");
 

@@ -525,7 +525,9 @@ class TubeOverview {
 
   async cb_open_modal_tube(tube: Tube, fabrics: Fabric[]) {
     if (this.modal_dialog.opened) {
-      return;
+      log.debug("Modal dialog opened, so cant open lol");
+      this.modal_dialog.close(); //TODO There is a bug with modal dialog huh NEEDS FIXING
+      // return;
     }
 
     this.tube_title.textContent = `Tubo ${tube.id}`;

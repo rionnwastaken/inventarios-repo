@@ -80,7 +80,7 @@ export class ActionOverlay {
       this.update_row_actions_overlay(row);
       this.callback_row_click(data, row);
       if (this.selected_row == null) {
-        log.debug("Assing row", row);
+        log.debug("Assing row", row.data);
         this.selected_row = row;
         return;
       }
