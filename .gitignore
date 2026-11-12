@@ -11,7 +11,7 @@ out/
 
 schema.ts
 query.sql
-icons/
+#icons/
 lib/
 model_test.py
 
@@ -104,7 +104,7 @@ Thumbs.db
 # JetBrains IDEs (WebStorm, PyCharm, etc.)
 .idea/
 
-assets/
+#assets/
 carambas_images/
 carambas_names.txt
 inventario-persianas/filtered_out_rows.csv
