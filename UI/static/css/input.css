@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes:
+    winter --default,
+    winter --prefersdark,
+    cupcake,
+    dracula;
+}
+
+@source "../src/**/*";
+
+:root {
+  color-scheme: light;
+}
+
+table.dataTable th.dt-left,
+table.dataTable td.dt-left {
+  text-align: left !important;
+}
+
+/* Add to your global CSS stylesheet */
+.ts-dropdown {
+  z-index: 9999 !important;
+}
+
+.input-lowercase {
+  text-transform: lowercase;
+}
+
+#myTable tbody tr {
+  height: 45px; /* Must match the rowHeight setting in Scroller */
+}
+
+#myTable tbody td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 45px;
+}
+
+/* Disables both vertical and horizontal scrolling */
+.disable-scrolling {
+  overflow: hidden;
+}
+
+/* Disables only horizontal scrolling */
+.disable-horizontal {
+  overflow-x: hidden;
+}
+
+/* Disables only vertical scrolling */
+.disable-vertical {
+  overflow-y: hidden;
+}
+
+#myTable_wrapper > div.dt-layout-row:first-child {
+  display: none;
+}
+
+#myTable_wrapper div:has(> .dt-paging) {
+  display: none;
+}
+
+div.dt-paging {
+  display: none !important;
+}
+
+div.dts_label {
+  display: none !important;
+}

@@ -1,6 +1,5 @@
 {
-
-  "UI/**/*.{js,jsx,ts,tsx,json,css}": [
+  "UI/{src,app,components}/**/*.{js,jsx,ts,tsx,json,css}": [
     "prettier --check"
   ],
   "inventario-persianas/**/*.py": [

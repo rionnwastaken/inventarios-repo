@@ -1,7 +1,7 @@
 out/
 *.js
 *.pyc
-static/
+#static/
 
 *.xls
 *.xlsx
@@ -27,7 +27,7 @@ scripts/
 node_modules/
 
 # Build outputs and distribution directories
-dist/
+# dist/
 build/
 .next/
 .nuxt/

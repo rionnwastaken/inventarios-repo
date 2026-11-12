@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/static/css/output.css" rel="stylesheet" />
+
+    <title></title>
+  <script defer src="../bundle.js"></script></head>
+  <body class="disable-scrolling disable-vertical disable-horizontal">
+    <div class="flex flex-col h-screen overflow-hidden">
+      <div class="navbar bg-base-100 shadow-sm">
+        <div class="flex-1">
+          <a class="btn btn-ghost text-xl">Horvert Persianas</a>
+        </div>
+        <div class="flex items-center gap-x-2.5">
+          <button id="edit-catalago-btn" class="rounded-1xl bg-gray-100 p-2">
+            Editar catalago
+          </button>
+          <button class="btn btn-square btn-ghost">
+            
+      <svg
+	xmlns="http://www.w3.org/2000/svg"
+	class="inline-block h-5 w-5 stroke-current fill-none"
+	viewBox="0 0 24 24"
+	stroke="currentColor"
+      >
+	<path
+	  stroke-linecap="round"
+	  stroke-linejoin="round"
+	  stroke-width="2"
+	  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+	/>
+	<path
+	  stroke-linecap="round"
+	  stroke-linejoin="round"
+	  stroke-width="2"
+	  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+	/>
+      </svg>
+
+          </button>
+        </div>
+      </div>
+
+      <!-- Container with 12 columns -->
+
+      <div
+        class="grid grid-rows-[auto_1fr] gap-4 w-full flex-1 min-h-0 overflow-hidden "
+      >
+        <!-- Takes up 25% width (3 out of 12 columns) -->
+
+        <div
+          class="flex col-span-3 data-name-control-panel"
+          id="panel-control-container"
+        ></div>
+
+        <div id="table-controller-container"></div>
+      </div>
+    </div>
+
+    <script type="module" src="/static/bundle.js"></script>
+  </body>
+</html>
