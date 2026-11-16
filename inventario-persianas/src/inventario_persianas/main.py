@@ -53,5 +53,8 @@ def serve_location_image(filename):
         return send_from_directory(const.LOCATION_IMAGES, "default_image.webp")
 
 
+import sys
+
 if __name__ == "__main__":
-    app.run("localhost", 9999, debug=True)
+    is_linux = sys.platform.startswith("linux")
+    app.run(host="127.0.0.1", port=9999, debug=is_linux)

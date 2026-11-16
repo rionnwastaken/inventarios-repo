@@ -17,9 +17,7 @@ APP_SCRIPT = PROJECT_DIR / "src" / "inventario_persianas" / "main.py"
 
 # Common Supermium install locations on Windows 7
 SUPERMIUM_PATHS = [
-    r"C:\Program Files\Supermium\supermium.exe",
-    r"C:\Program Files (x86)\Supermium\supermium.exe",
-    os.path.expandvars(r"%LOCALAPPDATA%\Supermium\Application\supermium.exe"),
+    r"C:\Program Files\Supermium\chrome.exe",
 ]
 
 
@@ -45,8 +43,44 @@ def wait_for_server(host=HOST, port=PORT, timeout=15):
     return False
 
 
+def is_webapp_browser_running(exe_name, profile_tag="supermium_webapp_profile"):
+    """Check if any browser process is still running with our isolated profile."""
+    try:
+        output = subprocess.check_output(
+            [
+                "wmic",
+                "process",
+                "where",
+                f"name='{exe_name}'",
+                "get",
+                "CommandLine",
+            ],
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        return profile_tag in output
+    except Exception:
+        return False
+
+
+def kill_server_tree(proc):
+    """Force-kill the Python server and any child processes."""
+    if proc.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        proc.terminate()
+        proc.wait()
+
+
 if __name__ == "__main__":
-    # Optional: ensures `from inventario_persianas...` imports work cleanly
     env = os.environ.copy()
     src_path = str(PROJECT_DIR / "src")
     env["PYTHONPATH"] = (
@@ -55,7 +89,6 @@ if __name__ == "__main__":
         else src_path
     )
 
-    # Hide the console window on Windows when launching the Flask subprocess
     creation_flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
     # 1. Start the local web server with cwd set to inventario-persianas
@@ -71,11 +104,11 @@ if __name__ == "__main__":
             supermium_exe = find_supermium()
 
             if supermium_exe:
-                # Windows 7 with Supermium: isolated app window tied to server lifespan
-                profile_dir = os.path.join(
-                    tempfile.gettempdir(), "supermium_webapp_profile"
-                )
-                browser_process = subprocess.Popen(
+                exe_name = os.path.basename(supermium_exe)  # e.g., "chrome.exe"
+                profile_tag = "supermium_webapp_profile"
+                profile_dir = os.path.join(tempfile.gettempdir(), profile_tag)
+
+                subprocess.Popen(
                     [
                         supermium_exe,
                         f"--user-data-dir={profile_dir}",
@@ -84,9 +117,14 @@ if __name__ == "__main__":
                         "--no-default-browser-check",
                     ]
                 )
-                browser_process.wait()
+
+                # Wait for Supermium to initialize its window process
+                time.sleep(2)
+
+                # 2. Stay alive as long as the isolated Supermium window is open
+                while is_webapp_browser_running(exe_name, profile_tag):
+                    time.sleep(1)
             else:
-                # Fallback (Linux or Windows without Supermium): open default browser
                 webbrowser.open(URL)
                 print(
                     f"Server running at {URL}. Press Ctrl+C in this terminal to stop."
@@ -97,7 +135,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
     finally:
-        # 2. Cleanly shut down the Python server when the browser/terminal exits
-        if server_process.poll() is None:
-            server_process.terminate()
-            server_process.wait()
+        # 3. Cleanly shut down the entire server tree when the browser exits
+        kill_server_tree(server_process)
