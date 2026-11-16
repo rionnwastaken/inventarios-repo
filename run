@@ -1,32 +1,24 @@
 #!/bin/bash
 set -e
-# cd inventario-persianas/
-# echo "hi"
-# uv run  src/inventario_persianas/main.py
-#
-# cd UI/
-# npm run dev
-#
-#
-# # Kill all background jobs when you press Ctrl+C or script exits
-# trap 'kill 0' EXIT
-#
-# # 1. Run Backend in its own isolated subshell
-# (
-#   cd inventario-persianas/ 
-#   echo "Starting Backend from $(pwd)..."
-#   uv run src/inventario_persianas/main.py
-# ) &
-#
-# # 2. Run Frontend in its own isolated subshell
-# (
-#   cd ~/programming/projects/inverntarios-persianas/Back/UI
-#   echo "Starting Frontend from $(pwd)..."
-#   npm run dev
-# ) &
-#
-# # Keep the script running to listen for Ctrl+C
-# wait
 
+cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
-(cd inventario-persianas/ && uv run src/inventario_persianas/main.py)
+VENV_DIR="inventario-persianas/venv"
+
+# Activate the venv if it isn't already active in the current shell
+if [ -z "$VIRTUAL_ENV" ]; then
+    if [ -f "$VENV_DIR/bin/activate" ]; then
+        source "$VENV_DIR/bin/activate"
+    else
+        echo "Warning: Virtual environment not found at $VENV_DIR"
+    fi
+fi
+
+# Run the launcher using the active venv Python (or fallback to python3)
+if command -v python >/dev/null 2>&1; then
+    exec python run_app.py
+else
+    exec python3 run_app.py
+fi
+
+# (cd inventario-persianas/ && uv run src/inventario_persianas/main.py)
